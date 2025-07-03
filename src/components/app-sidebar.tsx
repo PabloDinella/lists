@@ -12,6 +12,8 @@ import {
   Plus,
   Trash2
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { Task } from "@/lib/supabase";
 
 import {
   Sidebar,
@@ -25,6 +27,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
+import { TaskForm } from "./task-form";
+import { TaskService } from "@/lib/supabase";
 
 // GTD Main areas
 const mainItems = [
@@ -106,6 +110,38 @@ const otherItems = [
 ];
 
 export function AppSidebar() {
+  const [taskFormOpen, setTaskFormOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks from Supabase
+  const fetchTasks = async () => {
+    setLoading(true);
+    const fetched = await TaskService.getTasks();
+    setTasks(fetched);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  // Save new task to Supabase and refresh list
+  const handleSaveTask = async (task: Omit<Task, "id" | "user_id" | "created_at">) => {
+    try {
+      await TaskService.createTask(task);
+      await fetchTasks();
+    } catch (error) {
+      console.error("Failed to create task:", error);
+    }
+  };
+
+  // Calculate inbox count from tasks
+  const inboxCount = tasks.filter((t) => t.status === "inbox").length;
+  const dynamicMainItems = mainItems.map((item) =>
+    item.title === "Inbox" ? { ...item, count: inboxCount } : item
+  );
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -113,16 +149,17 @@ export function AppSidebar() {
           <h1 className="text-xl font-bold">GTD Tasks</h1>
         </div>
         <div className="px-3 py-2">
-          <Button className="w-full justify-start" size="sm">
+          <Button className="w-full justify-start" size="sm" onClick={() => setTaskFormOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
         </div>
+        <TaskForm open={taskFormOpen} onOpenChange={setTaskFormOpen} onSave={handleSaveTask} />
         <SidebarGroup>
           <SidebarGroupLabel>Collection</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {dynamicMainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url} className="flex justify-between w-full">

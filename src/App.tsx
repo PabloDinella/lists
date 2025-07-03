@@ -33,6 +33,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./components/ui/tooltip";
+import { SignIn } from "./components/sign-in";
+import { supabase } from "@/lib/supabase";
 
 // Task interface based on GTD method
 interface Task {
@@ -95,6 +97,7 @@ const mockTasks: Task[] = [
 ];
 
 function App() {
+  const [user, setUser] = useState<any>(null);
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [activeView, setActiveView] = useState<string>("inbox");
   const [newTaskTitle, setNewTaskTitle] = useState<string>("");
@@ -191,6 +194,20 @@ function App() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!user) {
+    return <SignIn />;
+  }
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
