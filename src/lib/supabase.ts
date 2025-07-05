@@ -1,3 +1,4 @@
+import { Database } from '@/database.types';
 import { createClient } from '@supabase/supabase-js';
 
 // Task interface based on GTD method
@@ -19,7 +20,7 @@ export interface Task {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 // Task Service
 export const TaskService = {

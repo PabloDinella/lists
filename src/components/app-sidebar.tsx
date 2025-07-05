@@ -1,5 +1,4 @@
 import { 
-  Calendar, 
   Inbox, 
   Search, 
   Settings, 
@@ -10,9 +9,10 @@ import {
   FolderArchive, 
   Bookmark,
   Plus,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/supabase";
 
 import {
@@ -112,14 +112,12 @@ const otherItems = [
 export function AppSidebar() {
   const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Fetch tasks from Supabase
   const fetchTasks = async () => {
-    setLoading(true);
     const fetched = await TaskService.getTasks();
     setTasks(fetched);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -156,7 +154,20 @@ export function AppSidebar() {
         </div>
         <TaskForm open={taskFormOpen} onOpenChange={setTaskFormOpen} onSave={handleSaveTask} />
         <SidebarGroup>
-          <SidebarGroupLabel>Collection</SidebarGroupLabel>
+          <div className="flex items-center justify-between">
+            <SidebarGroupLabel>Lists</SidebarGroupLabel>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => {
+                // Navigate to list management page
+                navigate("/lists/manage");
+              }}
+            >
+              <Settings className="h-3 w-3" />
+            </Button>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {dynamicMainItems.map((item) => (
