@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 type CreateListParams = {
   name: string;
+  userId: string;
 };
 
 type CreateListResult =
@@ -10,6 +11,7 @@ type CreateListResult =
         id: number;
         name: string;
         createdAt: Date;
+        user_id: string;
       };
     }
   | {
@@ -20,7 +22,8 @@ export async function createList(
   params: CreateListParams
 ): Promise<CreateListResult> {
   const newList = {
-    ...params,
+    name: params.name,
+    user_id: params.userId,
   };
 
   const { data, error } = await supabase

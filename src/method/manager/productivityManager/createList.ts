@@ -3,6 +3,7 @@ import { List } from "./viewLists";
 
 type CreateListParams = {
   name: string;
+  userId: string;
 };
 
 export async function createList(params: CreateListParams): Promise<List> {

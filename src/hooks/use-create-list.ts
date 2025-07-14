@@ -5,10 +5,10 @@ export function useCreateList() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createList,
-    onSuccess: () => {
-      // Invalidate and refetch lists query
-      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    mutationFn: ({ name, userId }: { name: string; userId: string }) => createList({ name, userId }),
+    onSuccess: (_, { userId }) => {
+      // Invalidate and refetch lists query for this user
+      queryClient.invalidateQueries({ queryKey: ['lists', userId] });
     },
   });
 } 

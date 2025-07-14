@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { AppLayout } from "./app-layout";
 import { useLists } from "@/hooks/use-lists";
 import { useCreateList } from "@/hooks/use-create-list";
+import { supabase } from "@/lib/supabase";
 
 interface EditableList {
   id: number;
@@ -13,7 +14,8 @@ interface EditableList {
 }
 
 export function ListManagement() {
-  const { data: lists, isLoading, isError, refetch } = useLists();
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const { data: lists, isLoading, isError, refetch } = useLists(user?.id);
   const createListMutation = useCreateList();
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
@@ -22,10 +24,28 @@ export function ListManagement() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: unknown, session: { user: { id: string } | null } | null) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!user) {
+    return <div>Please sign in to manage lists.</div>;
+  }
+
   const handleCreateList = async () => {
-    if (newListName.trim()) {
+    if (newListName.trim() && user?.id) {
       try {
-        await createListMutation.mutateAsync({ name: newListName.trim() });
+        await createListMutation.mutateAsync({ 
+          name: newListName.trim(), 
+          userId: user.id 
+        });
         setNewListName("");
         setNewListDescription("");
         setShowCreateForm(false);
