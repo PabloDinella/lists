@@ -15,7 +15,7 @@ type ViewListsResult =
 
 export async function viewLists(userId: string): Promise<ViewListsResult> {
   const { data, error } = await supabase
-    .from("lists")
+    .from("list")
     .select()
     .eq("user_id", userId)
     .order("created_at", { ascending: false });

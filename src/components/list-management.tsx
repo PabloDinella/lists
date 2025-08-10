@@ -15,7 +15,7 @@ interface EditableList {
 
 export function ListManagement() {
   const [user, setUser] = useState<{ id: string } | null>(null);
-  const { data: lists, isLoading, isError, refetch } = useLists(user?.id);
+  const { data: lists, isLoading, isError, refetch } = useLists(user ? user.id : "");
   const createListMutation = useCreateList();
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");

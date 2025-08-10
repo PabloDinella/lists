@@ -1,19 +1,16 @@
 import { 
-  Inbox, 
   Search, 
   Settings, 
-  ListChecks, 
-  CheckCircle, 
-  Clock, 
-  Calendar as CalendarIcon, 
   FolderArchive, 
-  Bookmark,
   Plus,
   Trash2,
+  List,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/supabase";
+import { useLists } from "@/hooks/use-lists";
+import { supabase } from "@/lib/supabase";
 
 import {
   Sidebar,
@@ -29,41 +26,6 @@ import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { TaskForm } from "./task-form";
 import { TaskService } from "@/lib/supabase";
-
-// GTD Main areas
-const mainItems = [
-  {
-    title: "Inbox",
-    url: "#inbox",
-    icon: Inbox,
-    count: 5,
-  },
-  {
-    title: "Next Actions",
-    url: "#next-actions",
-    icon: CheckCircle,
-  },
-  {
-    title: "Waiting For",
-    url: "#waiting-for",
-    icon: Clock,
-  },
-  {
-    title: "Scheduled",
-    url: "#scheduled",
-    icon: CalendarIcon,
-  },
-  {
-    title: "Someday",
-    url: "#someday",
-    icon: Bookmark,
-  },
-  {
-    title: "Projects",
-    url: "#projects",
-    icon: ListChecks,
-  },
-];
 
 // Areas of focus
 const areas = [
@@ -111,34 +73,31 @@ const otherItems = [
 
 export function AppSidebar() {
   const [taskFormOpen, setTaskFormOpen] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const navigate = useNavigate();
 
-  // Fetch tasks from Supabase
-  const fetchTasks = async () => {
-    const fetched = await TaskService.getTasks();
-    setTasks(fetched);
-  };
-
+  // Get current user
   useEffect(() => {
-    fetchTasks();
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: unknown, session: { user: { id: string } | null } | null) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
+
+  // Use the lists hook
+  const { data: lists, isLoading: listsLoading } = useLists(user ? user.id : "");
 
   // Save new task to Supabase and refresh list
   const handleSaveTask = async (task: Omit<Task, "id" | "user_id" | "created_at">) => {
     try {
       await TaskService.createTask(task);
-      await fetchTasks();
     } catch (error) {
       console.error("Failed to create task:", error);
     }
   };
-
-  // Calculate inbox count from tasks
-  const inboxCount = tasks.filter((t) => t.status === "inbox").length;
-  const dynamicMainItems = mainItems.map((item) =>
-    item.title === "Inbox" ? { ...item, count: inboxCount } : item
-  );
 
   return (
     <Sidebar>
@@ -165,28 +124,38 @@ export function AppSidebar() {
                 navigate("/lists/manage");
               }}
             >
-              <Settings className="h-3 w-3" />
+              <Plus className="h-3 w-3" />
             </Button>
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
-              {dynamicMainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex justify-between w-full">
-                      <span className="flex items-center">
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.title}</span>
-                      </span>
-                      {item.count && (
-                        <span className="bg-primary/10 text-primary rounded-md px-2 text-xs">
-                          {item.count}
-                        </span>
-                      )}
-                    </a>
+              {listsLoading ? (
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled>
+                    <span>Loading lists...</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
+              ) : lists && lists.length > 0 ? (
+                lists.map((list) => (
+                  <SidebarMenuItem key={list.id}>
+                    <SidebarMenuButton asChild>
+                      <button 
+                        onClick={() => navigate(`/lists/${list.id}`)}
+                        className="w-full text-left"
+                      >
+                        <List className="mr-2 h-4 w-4" />
+                        <span>{list.name}</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              ) : (
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled>
+                    <span className="text-muted-foreground text-sm">No lists yet</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

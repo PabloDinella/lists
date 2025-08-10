@@ -1,49 +1,52 @@
 import { supabase } from "@/lib/supabase";
 
-export interface Task {
-  id: string;
+export interface Item {
+  id: number;
   title: string;
-  description: string;
-  status:
-    | "inbox"
-    | "next"
-    | "waiting"
-    | "scheduled"
-    | "someday"
-    | "completed"
-    | "trashed";
   createdAt: Date;
-  dueDate?: Date;
-  project?: string;
-  area?: string;
-  tags?: string[];
+  listId: number;
 }
 
 export async function createItem({
   title,
+  listId,
   userId,
 }: {
   title: string;
+  listId: number;
   userId: string;
-}): Promise<Task | null> {
-  const newTask = {
+}): Promise<Item | null> {
+  // First, verify that the user owns the list
+  const { data: listData, error: listError } = await supabase
+    .from("list")
+    .select("id")
+    .eq("id", listId)
+    .eq("user_id", userId)
+    .single();
+
+  if (listError || !listData) {
+    console.error("User does not own this list or list not found");
+    return null;
+  }
+
+  const newItem = {
     title,
-    description: "",
-    status: "inbox",
+    list: listId,
     created_at: new Date().toISOString(),
     user_id: userId,
   };
   const { data, error } = await supabase
-    .from("tasks")
-    .insert([newTask])
+    .from("item")
+    .insert([newItem])
     .select()
     .single();
 
   if (error || !data) return null;
 
   return {
-    ...data,
+    id: data.id,
+    title: data.title,
     createdAt: new Date(data.created_at),
-    dueDate: data.due_date ? new Date(data.due_date) : undefined,
+    listId: data.list || 0,
   };
 }

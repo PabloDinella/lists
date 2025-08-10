@@ -4,6 +4,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { TaskManager } from "./components/task-manager";
 import { ListManagement } from "./components/list-management";
+import { ItemManager } from "./components/item-manager";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route path="/" element={<TaskManager />} />
             <Route path="/lists/manage" element={<ListManagement />} />
+            <Route path="/lists/:listId" element={<ItemManager />} />
           </Routes>
         </SidebarProvider>
       </TooltipProvider>

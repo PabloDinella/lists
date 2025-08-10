@@ -27,7 +27,7 @@ export async function createList(
   };
 
   const { data, error } = await supabase
-    .from("lists")
+    .from("list")
     .insert([newList])
     .select()
     .single();
