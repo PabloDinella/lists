@@ -5,6 +5,7 @@ import {
   Plus,
   Trash2,
   List,
+  Tag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +64,11 @@ const otherItems = [
     title: "Search",
     url: "#search",
     icon: Search,
+  },
+  {
+    title: "Manage tags",
+    url: "/tags/manage",
+    icon: Tag,
   },
   {
     title: "Settings",
@@ -188,10 +194,20 @@ export function AppSidebar() {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.title}</span>
-                    </a>
+                    {item.url.startsWith('/') ? (
+                      <button 
+                        onClick={() => navigate(item.url)}
+                        className="w-full text-left"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span>{item.title}</span>
+                      </button>
+                    ) : (
+                      <a href={item.url}>
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span>{item.title}</span>
+                      </a>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
