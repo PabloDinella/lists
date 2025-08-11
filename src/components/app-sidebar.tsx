@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/supabase";
-import { useLists } from "@/hooks/use-lists";
+import { useNodes } from "@/hooks/use-nodes";
 import { supabase } from "@/lib/supabase";
 
 import {
@@ -66,7 +66,7 @@ const otherItems = [
     icon: Search,
   },
   {
-    title: "Manage tags",
+    title: "Manage lists",
     url: "/tags/manage",
     icon: Tag,
   },
@@ -93,8 +93,11 @@ export function AppSidebar() {
     };
   }, []);
 
-  // Use the lists hook
-  const { data: lists, isLoading: listsLoading } = useLists(user ? user.id : "");
+  // Use the lists hook: treat top-level nodes as lists
+  const { data: lists, isLoading: listsLoading } = useNodes({ 
+    user_id: user?.id, 
+    parent_node: null 
+  });
 
   // Save new task to Supabase and refresh list
   const handleSaveTask = async (task: Omit<Task, "id" | "user_id" | "created_at">) => {

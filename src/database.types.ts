@@ -14,131 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      item: {
+      menu: {
         Row: {
           created_at: string
           id: number
-          list: number | null
-          parent_item: number | null
-          title: string
+          nodes: number[] | null
+          section_name: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: number
-          list?: number | null
-          parent_item?: number | null
-          title: string
+          nodes?: number[] | null
+          section_name: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: number
-          list?: number | null
-          parent_item?: number | null
-          title?: string
+          nodes?: number[] | null
+          section_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      node: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: number
+          name: string
+          order: number | null
+          parent_node: number | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          name: string
+          order?: number | null
+          parent_node?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          name?: string
+          order?: number | null
+          parent_node?: number | null
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "items_list_fkey"
-            columns: ["list"]
+            foreignKeyName: "node_parent_node_fkey"
+            columns: ["parent_node"]
             isOneToOne: false
-            referencedRelation: "list"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "items_parent_item_fkey"
-            columns: ["parent_item"]
-            isOneToOne: false
-            referencedRelation: "item"
+            referencedRelation: "node"
             referencedColumns: ["id"]
           },
         ]
       }
-      list: {
+      ordering: {
         Row: {
           created_at: string
           id: number
-          name: string
+          order: number[]
+          root_node: number | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: number
-          name: string
+          order: number[]
+          root_node?: number | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: number
-          name?: string
+          order?: number[]
+          root_node?: number | null
           user_id?: string
         }
-        Relationships: []
-      }
-      list_type: {
-        Row: {
-          created_at: string
-          id: number
-          name: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      tag: {
-        Row: {
-          created_at: string
-          id: number
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      tag_type: {
-        Row: {
-          created_at: string
-          id: number
-          name: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          name?: string | null
-          user_id?: string
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ordering_root_node_fkey"
+            columns: ["root_node"]
+            isOneToOne: true
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

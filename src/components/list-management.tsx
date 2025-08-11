@@ -3,20 +3,21 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { AppLayout } from "./app-layout";
-import { useLists } from "@/hooks/use-lists";
-import { useCreateList } from "@/hooks/use-create-list";
+import { useNodes } from "@/hooks/use-nodes";
+import { useCreateNode } from "@/hooks/use-create-node";
+import { useUpdateNode } from "@/hooks/use-update-node";
+import { useDeleteNode } from "@/hooks/use-delete-node";
 import { supabase } from "@/lib/supabase";
-
-interface EditableList {
-  id: number;
-  name: string;
-  description?: string;
-}
 
 export function ListManagement() {
   const [user, setUser] = useState<{ id: string } | null>(null);
-  const { data: lists, isLoading, isError, refetch } = useLists(user ? user.id : "");
-  const createListMutation = useCreateList();
+  const { data: lists, isLoading, isError } = useNodes({ 
+    user_id: user?.id, 
+    parent_node: null 
+  });
+  const createNodeMutation = useCreateNode();
+  const updateNodeMutation = useUpdateNode();
+  const deleteNodeMutation = useDeleteNode();
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -42,9 +43,10 @@ export function ListManagement() {
   const handleCreateList = async () => {
     if (newListName.trim() && user?.id) {
       try {
-        await createListMutation.mutateAsync({ 
+        await createNodeMutation.mutateAsync({ 
           name: newListName.trim(), 
-          userId: user.id 
+          content: newListDescription.trim() || undefined,
+          user_id: user.id 
         });
         setNewListName("");
         setNewListDescription("");
@@ -56,23 +58,36 @@ export function ListManagement() {
     }
   };
 
-  // TODO: Replace with mutation and refetch
-  const handleDeleteList = async () => {
-    // TODO: Call backend to delete list
-    await refetch();
+  const handleDeleteList = async (listId: number) => {
+    if (user?.id) {
+      try {
+        await deleteNodeMutation.mutateAsync({ node_id: listId, user_id: user.id });
+      } catch (error) {
+        console.error("Failed to delete list:", error);
+      }
+    }
   };
 
-  const handleEditList = (list: EditableList) => {
+  const handleEditList = (list: { id: number; name: string; content?: string | null }) => {
     setEditingId(list.id);
     setEditName(list.name);
-    setEditDescription(list.description || "");
+    setEditDescription(list.content || "");
   };
 
-  // TODO: Replace with mutation and refetch
   const handleSaveEdit = async () => {
-    // TODO: Call backend to update list
-    setEditingId(null);
-    await refetch();
+    if (editingId && user?.id) {
+      try {
+        await updateNodeMutation.mutateAsync({
+          node_id: editingId,
+          name: editName.trim(),
+          content: editDescription.trim() || undefined,
+          user_id: user.id
+        });
+        setEditingId(null);
+      } catch (error) {
+        console.error("Failed to update list:", error);
+      }
+    }
   };
 
   return (
@@ -96,7 +111,7 @@ export function ListManagement() {
                 onChange={(e) => setNewListName(e.target.value)}
                 placeholder="Enter list name"
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
-                disabled={createListMutation.isPending}
+                disabled={createNodeMutation.isPending}
               />
             </div>
             <div>
@@ -109,26 +124,26 @@ export function ListManagement() {
                 onChange={(e) => setNewListDescription(e.target.value)}
                 placeholder="Enter description"
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
-                disabled={createListMutation.isPending}
+                disabled={createNodeMutation.isPending}
               />
             </div>
             <div className="flex space-x-2">
               <Button 
                 onClick={handleCreateList} 
-                disabled={!newListName.trim() || createListMutation.isPending}
+                disabled={!newListName.trim() || createNodeMutation.isPending}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                {createListMutation.isPending ? "Creating..." : "Create List"}
+                {createNodeMutation.isPending ? "Creating..." : "Create List"}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setShowCreateForm(false)}
-                disabled={createListMutation.isPending}
+                disabled={createNodeMutation.isPending}
               >
                 Cancel
               </Button>
             </div>
-            {createListMutation.isError && (
+            {createNodeMutation.isError && (
               <p className="text-red-500 text-sm">
                 Failed to create list. Please try again.
               </p>
@@ -176,7 +191,9 @@ export function ListManagement() {
                 ) : (
                   <div>
                     <h3 className="font-medium">{list.name}</h3>
-                    {/* No description field in backend yet */}
+                    {list.content && (
+                      <p className="text-sm text-muted-foreground">{list.content}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -192,7 +209,7 @@ export function ListManagement() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={handleDeleteList}
+                    onClick={() => handleDeleteList(list.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -209,4 +226,4 @@ export function ListManagement() {
       </div>
     </AppLayout>
   );
-} 
+}

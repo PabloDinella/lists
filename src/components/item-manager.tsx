@@ -4,9 +4,9 @@ import { Button } from "./ui/button";
 import { AppLayout } from "./app-layout";
 import { Input } from "./ui/input";
 import { Plus, Trash2, Edit2 } from "lucide-react";
-import { useItems } from "@/hooks/use-items";
-import { useCreateItem } from "@/hooks/use-create-item";
-import { useLists } from "@/hooks/use-lists";
+import { useNodes } from "@/hooks/use-nodes";
+import { useCreateNode } from "@/hooks/use-create-node";
+import { useDeleteNode } from "@/hooks/use-delete-node";
 import { supabase } from "@/lib/supabase";
 
 export function ItemManager() {
@@ -25,15 +25,19 @@ export function ItemManager() {
     };
   }, []);
 
-  // Get the list data to show the list name
-  const { data: lists } = useLists(user ? user.id : "");
+  // Get the list data to show the list name (top-level nodes without parent)
+  const { data: lists } = useNodes({ user_id: user?.id, parent_node: null });
   const currentList = lists?.find(list => list.id === parseInt(listId || "0"));
 
-  // Get items for this list
-  const { data: items, isLoading } = useItems(listId ? parseInt(listId) : null);
+  // Get items for this list (children of this node)
+  const { data: items, isLoading } = useNodes({ 
+    user_id: user?.id, 
+    parent_node: listId ? parseInt(listId) : undefined 
+  });
   
   // Create item mutation
-  const createItemMutation = useCreateItem();
+  const createNodeMutation = useCreateNode();
+  const deleteNodeMutation = useDeleteNode();
 
   if (!user) {
     return <div>Please sign in to view list items.</div>;
@@ -44,13 +48,13 @@ export function ItemManager() {
   }
 
   const handleCreateItem = async () => {
-    if (!newItemTitle.trim() || !user?.id) return;
+    if (!newItemTitle.trim() || !user?.id || !listId) return;
     
     try {
-      await createItemMutation.mutateAsync({
-        title: newItemTitle.trim(),
-        listId: parseInt(listId),
-        userId: user.id
+      await createNodeMutation.mutateAsync({
+        name: newItemTitle.trim(),
+        parent_node: parseInt(listId),
+        user_id: user.id
       });
       setNewItemTitle("");
     } catch (error) {
@@ -59,9 +63,13 @@ export function ItemManager() {
   };
 
   const handleDeleteItem = async (itemId: number) => {
-    // TODO: Implement deleteItem API call
-    console.log("Deleting item:", itemId);
-    // When delete API is implemented, it should also invalidate the query
+    if (!user?.id) return;
+    
+    try {
+      await deleteNodeMutation.mutateAsync({ node_id: itemId, user_id: user.id });
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+    }
   };
 
   return (
@@ -78,18 +86,18 @@ export function ItemManager() {
           onChange={(e) => setNewItemTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCreateItem()}
           className="flex-1"
-          disabled={createItemMutation.isPending}
+          disabled={createNodeMutation.isPending}
         />
         <Button 
           onClick={handleCreateItem}
-          disabled={!newItemTitle.trim() || createItemMutation.isPending}
+          disabled={!newItemTitle.trim() || createNodeMutation.isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
-          {createItemMutation.isPending ? "Adding..." : "Add"}
+          {createNodeMutation.isPending ? "Adding..." : "Add"}
         </Button>
       </div>
 
-      {createItemMutation.isError && (
+      {createNodeMutation.isError && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
           <p className="text-red-500 text-sm">
             Failed to create item. Please try again.
@@ -106,9 +114,9 @@ export function ItemManager() {
             items.map((item) => (
               <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex-1">
-                  <h3 className="font-medium">{item.title}</h3>
+                  <h3 className="font-medium">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Created: {item.createdAt.toLocaleDateString()}
+                    Created: {new Date(item.created_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex space-x-2">

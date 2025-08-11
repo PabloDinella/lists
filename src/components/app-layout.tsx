@@ -19,15 +19,15 @@ export function AppLayout({ children, title, onNewItem, newItemLabel }: AppLayou
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
-          <h1 className="text-xl font-semibold flex-1">
-            {title}
-          </h1>
-          {onNewItem && (
-            <Button variant="outline" onClick={onNewItem}>
-              <Plus className="h-4 w-4 mr-2" />
-              {newItemLabel || "New Item"}
-            </Button>
-          )}
+          <div className="flex items-center gap-4 flex-1">
+            <h1 className="text-xl font-semibold">{title}</h1>
+            {onNewItem && (
+              <Button onClick={onNewItem}>
+                <Plus className="h-4 w-4 mr-2" />
+                {newItemLabel || "New Item"}
+              </Button>
+            )}
+          </div>
           <ModeToggle />
         </header>
 
@@ -37,4 +37,4 @@ export function AppLayout({ children, title, onNewItem, newItemLabel }: AppLayou
       </SidebarInset>
     </>
   );
-} 
+}
