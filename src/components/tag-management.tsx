@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { AppLayout } from "./app-layout";
 import { supabase } from "@/lib/supabase";
 import { useNodes } from "@/hooks/use-nodes";
@@ -264,7 +264,7 @@ export function TagManagement() {
 
           {localLists && localLists.length > 0 ? (
             localLists.map((list, index) => (
-              <div key={list.id}>
+              <Fragment key={list.id}>
                 {/* drop placeholder before */}
                 {hoverIndex === index && !hoverAfter && (
                   <div
@@ -331,7 +331,7 @@ export function TagManagement() {
                     style={{ height: placeholderHeight ?? 64 }}
                   />
                 )}
-              </div>
+              </Fragment>
             ))
           ) : (
             <p className="text-center text-muted-foreground py-8">No lists found.</p>
