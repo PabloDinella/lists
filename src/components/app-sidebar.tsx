@@ -1,17 +1,17 @@
-import { 
-  Search, 
-  Settings, 
-  FolderArchive, 
+import {
+  Search,
+  Settings,
+  FolderArchive,
   Plus,
   Trash2,
-  List,
   Tag,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Task } from "@/lib/supabase";
 import { useNodes } from "@/hooks/use-nodes";
 import { supabase } from "@/lib/supabase";
+import { useOrdering } from "@/hooks/use-ordering";
 
 import {
   Sidebar,
@@ -27,26 +27,6 @@ import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { TaskForm } from "./task-form";
 import { TaskService } from "@/lib/supabase";
-
-// Areas of focus
-const areas = [
-  {
-    title: "Work",
-    url: "#area-work",
-  },
-  {
-    title: "Personal",
-    url: "#area-personal",
-  },
-  {
-    title: "Health",
-    url: "#area-health",
-  },
-  {
-    title: "Learning",
-    url: "#area-learning",
-  },
-];
 
 // Other sections
 const otherItems = [
@@ -77,6 +57,73 @@ const otherItems = [
   },
 ];
 
+// Component to display children nodes for a list
+function ListSection({ listId, listName, userId }: { listId: number; listName: string; userId: string }) {
+  const navigate = useNavigate();
+  
+  // Fetch children nodes for this list
+  const { data: childrenNodes, isLoading: childrenLoading } = useNodes({
+    user_id: userId,
+    parent_node: listId,
+  });
+  const { data: childrenOrdering } = useOrdering({
+    user_id: userId,
+    root_node: listId,
+  });
+
+  // derive ordered children per ordering table
+  const orderedChildren = useMemo(() => {
+    const children = childrenNodes;
+    if (!children) return [];
+    if (!childrenOrdering?.order?.length) return children;
+    const byId = new Map(children.map((c) => [c.id, c] as const));
+    const inOrder = childrenOrdering.order
+      .map((id) => byId.get(id))
+      .filter(Boolean) as typeof children;
+    const missing = children.filter((c) => !childrenOrdering.order.includes(c.id));
+    return [...inOrder, ...missing];
+  }, [childrenNodes, childrenOrdering]);
+
+  return (
+    <SidebarGroup key={listId}>
+      <SidebarGroupLabel
+        className="cursor-pointer"
+        onClick={() => navigate(`/lists/${listId}`)}
+      >
+        {listName}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {childrenLoading ? (
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled>
+                <span className="text-muted-foreground text-sm">Loading...</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ) : orderedChildren.length > 0 ? (
+            orderedChildren.map((child) => (
+              <SidebarMenuItem key={child.id}>
+                <SidebarMenuButton
+                  className="cursor-pointer pl-6"
+                  onClick={() => navigate(`/lists/${listId}/nodes/${child.id}`)}
+                >
+                  <span>{child.name}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))
+          ) : (
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled>
+                <span className="text-muted-foreground text-sm pl-6">No items</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 export function AppSidebar() {
   const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [user, setUser] = useState<{ id: string } | null>(null);
@@ -84,23 +131,48 @@ export function AppSidebar() {
 
   // Get current user
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => setUser(data.user));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: unknown, session: { user: { id: string } | null } | null) => {
-      setUser(session?.user ?? null);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }: { data: { user: { id: string } | null } }) =>
+        setUser(data.user)
+      );
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event: unknown, session: { user: { id: string } | null } | null) => {
+        setUser(session?.user ?? null);
+      }
+    );
     return () => {
       listener.subscription.unsubscribe();
     };
   }, []);
 
   // Use the lists hook: treat top-level nodes as lists
-  const { data: lists, isLoading: listsLoading } = useNodes({ 
-    user_id: user?.id, 
-    parent_node: null 
+  const { data: topLevelNodes, isLoading: listsLoading } = useNodes({
+    user_id: user?.id,
+    parent_node: null,
+  });
+  const { data: ordering } = useOrdering({
+    user_id: user?.id,
+    root_node: null,
   });
 
+  // derive ordered lists per ordering table
+  const orderedLists = useMemo(() => {
+    const lists = topLevelNodes;
+    if (!lists) return [];
+    if (!ordering?.order?.length) return lists;
+    const byId = new Map(lists.map((l) => [l.id, l] as const));
+    const inOrder = ordering.order
+      .map((id) => byId.get(id))
+      .filter(Boolean) as typeof lists;
+    const missing = lists.filter((l) => !ordering.order.includes(l.id));
+    return [...inOrder, ...missing];
+  }, [topLevelNodes, ordering]);
+
   // Save new task to Supabase and refresh list
-  const handleSaveTask = async (task: Omit<Task, "id" | "user_id" | "created_at">) => {
+  const handleSaveTask = async (
+    task: Omit<Task, "id" | "user_id" | "created_at">
+  ) => {
     try {
       await TaskService.createTask(task);
     } catch (error) {
@@ -115,81 +187,60 @@ export function AppSidebar() {
           <h1 className="text-xl font-bold">GTD Tasks</h1>
         </div>
         <div className="px-3 py-2">
-          <Button className="w-full justify-start" size="sm" onClick={() => setTaskFormOpen(true)}>
+          <Button
+            className="w-full justify-start"
+            size="sm"
+            onClick={() => setTaskFormOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
         </div>
-        <TaskForm open={taskFormOpen} onOpenChange={setTaskFormOpen} onSave={handleSaveTask} />
-        <SidebarGroup>
-          <div className="flex items-center justify-between">
-            <SidebarGroupLabel>Lists</SidebarGroupLabel>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
-              onClick={() => {
-                // Navigate to list management page
-                navigate("/lists/manage");
-              }}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {listsLoading ? (
+        <TaskForm
+          open={taskFormOpen}
+          onOpenChange={setTaskFormOpen}
+          onSave={handleSaveTask}
+        />
+
+        {/* Each top-level list as its own section */}
+        {listsLoading ? (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton disabled>
                     <span>Loading lists...</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ) : lists && lists.length > 0 ? (
-                lists.map((list) => (
-                  <SidebarMenuItem key={list.id}>
-                    <SidebarMenuButton asChild>
-                      <button 
-                        onClick={() => navigate(`/lists/${list.id}`)}
-                        className="w-full text-left"
-                      >
-                        <List className="mr-2 h-4 w-4" />
-                        <span>{list.name}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))
-              ) : (
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : topLevelNodes && topLevelNodes.length > 0 ? (
+          orderedLists.map((list) => (
+            <ListSection 
+              key={list.id} 
+              listId={list.id} 
+              listName={list.name} 
+              userId={user!.id} 
+            />
+          ))
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton disabled>
-                    <span className="text-muted-foreground text-sm">No lists yet</span>
+                    <span className="text-muted-foreground text-sm">
+                      No lists yet
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <Separator className="my-2" />
-        
-        <SidebarGroup>
-          <SidebarGroupLabel>Areas of Focus</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {areas.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        
-        <Separator className="my-2" />
-        
         <SidebarGroup>
           <SidebarGroupLabel>Other</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -197,8 +248,8 @@ export function AppSidebar() {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    {item.url.startsWith('/') ? (
-                      <button 
+                    {item.url.startsWith("/") ? (
+                      <button
                         onClick={() => navigate(item.url)}
                         className="w-full text-left"
                       >
