@@ -8,7 +8,7 @@ type UseNodesParams = {
 
 export function useNodes(params: UseNodesParams) {
   return useQuery({
-    queryKey: ["nodes", params.user_id, params.parent_node],
+    queryKey: ["nodes", params.user_id, String(params.parent_node)],
     queryFn: async () => {
       if (!params.user_id) {
         return { result: [] };

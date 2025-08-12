@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { AppLayout } from "./app-layout";
+import { Container } from "./ui/container";
 import { Input } from "./ui/input";
 import {
   CheckCircle,
@@ -173,8 +174,9 @@ export function TaskManager() {
       onNewItem={openNewTaskForm}
       newItemLabel="New Task"
     >
-      {/* Quick Add Task */}
-      <div className="flex items-center space-x-2 mb-6">
+      <Container size="md">
+        {/* Quick Add Task */}
+        <div className="flex items-center space-x-2 mb-6">
         <Input
           placeholder="Add a new task..."
           value={newTaskTitle}
@@ -319,6 +321,7 @@ export function TaskManager() {
         task={selectedTask}
         onSave={handleSaveTask}
       />
+      </Container>
     </AppLayout>
   );
 }

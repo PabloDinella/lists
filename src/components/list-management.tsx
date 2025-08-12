@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Container } from "./ui/container";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { AppLayout } from "./app-layout";
 import { useNodes } from "@/hooks/use-nodes";
@@ -96,134 +97,136 @@ export function ListManagement() {
       onNewItem={() => setShowCreateForm(true)}
       newItemLabel="New List"
     >
-      {/* Create new list form */}
-      {showCreateForm && (
-        <div className="bg-card border rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Create New List</h2>
+      <Container size="md">
+        {/* Create new list form */}
+        {showCreateForm && (
+          <div className="bg-card border rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Create New List</h2>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="listName" className="block text-sm font-medium mb-2">
+                  List Name
+                </label>
+                <Input
+                  id="listName"
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Enter list name"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
+                  disabled={createNodeMutation.isPending}
+                />
+              </div>
+              <div>
+                <label htmlFor="listDescription" className="block text-sm font-medium mb-2">
+                  Description (optional)
+                </label>
+                <Input
+                  id="listDescription"
+                  value={newListDescription}
+                  onChange={(e) => setNewListDescription(e.target.value)}
+                  placeholder="Enter description"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
+                  disabled={createNodeMutation.isPending}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleCreateList} 
+                  disabled={!newListName.trim() || createNodeMutation.isPending}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {createNodeMutation.isPending ? "Creating..." : "Create List"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCreateForm(false)}
+                  disabled={createNodeMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+              {createNodeMutation.isError && (
+                <p className="text-red-500 text-sm">
+                  Failed to create list. Please try again.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Existing lists */}
+        <div className="bg-card border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Your Lists</h2>
+          {isLoading && <p>Loading lists...</p>}
+          {isError && <p className="text-red-500">Failed to load lists.</p>}
           <div className="space-y-4">
-            <div>
-              <label htmlFor="listName" className="block text-sm font-medium mb-2">
-                List Name
-              </label>
-              <Input
-                id="listName"
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                placeholder="Enter list name"
-                onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
-                disabled={createNodeMutation.isPending}
-              />
-            </div>
-            <div>
-              <label htmlFor="listDescription" className="block text-sm font-medium mb-2">
-                Description (optional)
-              </label>
-              <Input
-                id="listDescription"
-                value={newListDescription}
-                onChange={(e) => setNewListDescription(e.target.value)}
-                placeholder="Enter description"
-                onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
-                disabled={createNodeMutation.isPending}
-              />
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleCreateList} 
-                disabled={!newListName.trim() || createNodeMutation.isPending}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {createNodeMutation.isPending ? "Creating..." : "Create List"}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowCreateForm(false)}
-                disabled={createNodeMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </div>
-            {createNodeMutation.isError && (
-              <p className="text-red-500 text-sm">
-                Failed to create list. Please try again.
+            {lists && lists.map((list) => (
+              <div key={list.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  {editingId === list.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                      />
+                      <Input
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                      />
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          onClick={handleSaveEdit}
+                        >
+                          Save
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="font-medium">{list.name}</h3>
+                      {list.content && (
+                        <p className="text-sm text-muted-foreground">{list.content}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {editingId !== list.id && (
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditList(list)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteList(list.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {lists && lists.length === 0 && !isLoading && (
+              <p className="text-center text-muted-foreground py-8">
+                No lists created yet. Create your first list using the "New List" button!
               </p>
             )}
           </div>
         </div>
-      )}
-
-      {/* Existing lists */}
-      <div className="bg-card border rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Your Lists</h2>
-        {isLoading && <p>Loading lists...</p>}
-        {isError && <p className="text-red-500">Failed to load lists.</p>}
-        <div className="space-y-4">
-          {lists && lists.map((list) => (
-            <div key={list.id} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex-1">
-                {editingId === list.id ? (
-                  <div className="space-y-2">
-                    <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                    />
-                    <Input
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      placeholder="Description (optional)"
-                    />
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        onClick={handleSaveEdit}
-                      >
-                        Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => setEditingId(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="font-medium">{list.name}</h3>
-                    {list.content && (
-                      <p className="text-sm text-muted-foreground">{list.content}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              {editingId !== list.id && (
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditList(list)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteList(list.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-          {lists && lists.length === 0 && !isLoading && (
-            <p className="text-center text-muted-foreground py-8">
-              No lists created yet. Create your first list using the "New List" button!
-            </p>
-          )}
-        </div>
-      </div>
+      </Container>
     </AppLayout>
   );
 }

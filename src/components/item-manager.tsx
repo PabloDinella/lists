@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "./ui/button";
 import { AppLayout } from "./app-layout";
+import { Container } from "./ui/container";
 import { Input } from "./ui/input";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useNodes } from "@/hooks/use-nodes";
@@ -78,8 +79,9 @@ export function ItemManager() {
       onNewItem={() => {}}
       newItemLabel="New Item"
     >
-      {/* Quick Add Item */}
-      <div className="flex items-center space-x-2 mb-6">
+      <Container size="md">
+        {/* Quick Add Item */}
+        <div className="flex items-center space-x-2 mb-6">
         <Input
           placeholder="Add a new item..."
           value={newItemTitle}
@@ -147,6 +149,7 @@ export function ItemManager() {
           )}
         </div>
       </div>
+      </Container>
     </AppLayout>
   );
 }
