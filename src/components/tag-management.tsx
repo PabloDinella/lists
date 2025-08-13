@@ -6,6 +6,7 @@ import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { CreateListForm } from "./tag-management/create-list-form";
 import { DraggableList } from "./tag-management/draggable-list";
+import { MovableList } from "./tag-management/movable-list";
 import { useListData } from "./tag-management/use-list-data";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
@@ -104,19 +105,40 @@ export function TagManagement() {
             )}
 
             {flattenedItems.length > 0 ? (
-              <DraggableList
-                flattenedItems={flattenedItems}
-                userId={userId}
-                editingId={editingId}
-                editName={editName}
-                editDescription={editDescription}
-                onEditStart={handleEditStart}
-                onEditNameChange={setEditName}
-                onEditDescriptionChange={setEditDescription}
-                onEditSave={handleEditSave}
-                onEditCancel={handleEditCancel}
-                onDelete={handleDelete}
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">React Beautiful DnD</h2>
+                  <DraggableList
+                    flattenedItems={flattenedItems}
+                    userId={userId}
+                    editingId={editingId}
+                    editName={editName}
+                    editDescription={editDescription}
+                    onEditStart={handleEditStart}
+                    onEditNameChange={setEditName}
+                    onEditDescriptionChange={setEditDescription}
+                    onEditSave={handleEditSave}
+                    onEditCancel={handleEditCancel}
+                    onDelete={handleDelete}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">React Movable</h2>
+                  <MovableList
+                    flattenedItems={flattenedItems}
+                    userId={userId}
+                    editingId={editingId}
+                    editName={editName}
+                    editDescription={editDescription}
+                    onEditStart={handleEditStart}
+                    onEditNameChange={setEditName}
+                    onEditDescriptionChange={setEditDescription}
+                    onEditSave={handleEditSave}
+                    onEditCancel={handleEditCancel}
+                    onDelete={handleDelete}
+                  />
+                </div>
+              </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
                 No lists found.

@@ -1,14 +1,15 @@
-import { useCallback } from "react";
-import { DragDropContext, Droppable, type DropResult, type DroppableProvided } from '@hello-pangea/dnd';
+import { useCallback, useState, useEffect } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  type DropResult,
+  type DroppableProvided,
+} from "@hello-pangea/dnd";
 import { NodeItem } from "./node-item";
-import { useUpdateNode } from "@/hooks/use-update-node";
-import { useUpsertOrdering } from "@/hooks/use-ordering";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
 type FlattenedItem = {
-  type: 'parent' | 'child';
   node: DBNode;
-  parentId?: number;
   dragIndex: number;
 };
 
@@ -28,7 +29,7 @@ interface DraggableListProps {
 
 export function DraggableList({
   flattenedItems,
-  userId,
+  // userId,
   editingId,
   editName,
   editDescription,
@@ -39,84 +40,76 @@ export function DraggableList({
   onEditCancel,
   onDelete,
 }: DraggableListProps) {
-  const updateNodeMutation = useUpdateNode();
-  const upsertOrdering = useUpsertOrdering();
+  // const upsertOrdering = useUpsertOrdering();
 
-  // Functional arrayMove helper
-  const arrayMove = useCallback(<T,>(arr: readonly T[], from: number, to: number): T[] => {
-    const result = [...arr];
-    const [item] = result.splice(from, 1);
-    result.splice(to, 0, item);
-    return result;
-  }, []);
+  const [items, setItems] = useState(flattenedItems);
 
-  // onDragEnd handler for library
-  const onDragEnd = useCallback(async (result: DropResult) => {
-    const { source, destination, draggableId } = result;
-    if (!destination || source.index === destination.index) return;
+  // Sync with external prop changes
+  useEffect(() => {
+    setItems(flattenedItems);
+  }, [flattenedItems]);
 
-    const isChild = draggableId.startsWith('child-');
-    const nodeId = parseInt(isChild ? draggableId.replace('child-', '') : draggableId);
+  console.log({ items});
+  
 
-    if (isChild) {
-      // Handle child node movement
-      const sourceItem = flattenedItems.find(item => item.node.id === nodeId);
-      const sourceParentId = sourceItem?.type === 'child' ? sourceItem.parentId : null;
-      
-      // Find the new parent based on destination index using functional approach
-      const newParentId = flattenedItems
-        .slice(0, destination.index + 1)
-        .reverse()
-        .find(item => item.type === 'parent')
-        ?.node.id || sourceParentId;
+  // Simple arrayMove helper
+  const arrayMove = useCallback(
+    <T,>(arr: readonly T[], from: number, to: number): T[] => {
+      const result = [...arr];
+      const [item] = result.splice(from, 1);
+      result.splice(to, 0, item);
+      return result;
+    },
+    []
+  );
 
-      // Update parent if changed
-      if (newParentId !== sourceParentId && userId && newParentId) {
-        try {
-          await updateNodeMutation.mutateAsync({
-            node_id: nodeId,
-            parent_node: newParentId,
-            user_id: userId,
-          });
-        } catch (error) {
-          console.error('Failed to update parent:', error);
-        }
-      }
-    } else {
-      // Handle parent list movement using functional approach
-      const sourceIndex = flattenedItems.findIndex(item => item.type === 'parent' && item.node.id === nodeId);
-      const destinationIndex = flattenedItems
-        .slice(0, destination.index + 1)
-        .filter(item => item.type === 'parent').length - 1;
-      
-      if (sourceIndex !== -1 && destinationIndex !== -1 && sourceIndex !== destinationIndex) {
-        const parentItems = flattenedItems.filter(item => item.type === 'parent');
-        const reorderedParents = arrayMove(parentItems, sourceIndex, destinationIndex);
-        const newOrder = reorderedParents.map(item => item.node.id);
-        
-        // Persist asynchronously
-        if (userId) {
-          try {
-            await upsertOrdering.mutateAsync({ user_id: userId, root_node: null, order: newOrder });
-          } catch (error) {
-            console.error('Failed to persist ordering:', error);
-          }
-        }
-      }
-    }
-  }, [flattenedItems, userId, updateNodeMutation, upsertOrdering, arrayMove]);
+  // Simple onDragEnd handler
+  const onDragEnd = useCallback(
+    async (result: DropResult) => {
+      const { source, destination } = result;
+      if (!destination || source.index === destination.index) return;
+
+      // Reorder the items array
+      const reorderedItems = arrayMove(
+        items,
+        source.index,
+        destination.index
+      );
+
+      setItems(reorderedItems);
+
+      // Persist the new order
+      // const newOrder = reorderedItems.map((item) => item.node.id);
+      // if (userId) {
+      //   try {
+      //     await upsertOrdering.mutateAsync({
+      //       user_id: userId,
+      //       root_node: null,
+      //       order: newOrder,
+      //     });
+      //   } catch (error) {
+      //     console.error("Failed to persist ordering:", error);
+      //   }
+      // }
+    },
+    [items, arrayMove]
+  );
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="root">
         {(provided: DroppableProvided) => (
-          <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
-            {flattenedItems.map((item, index) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="space-y-2"
+          >
+            {items.map((item, index) => (
               <NodeItem
-                key={item.type === 'parent' ? item.node.id : `child-${item.node.id}`}
+                key={item.node.id}
                 node={item.node}
                 index={index}
-                isChild={item.type === 'child'}
+                isChild={false}
                 editingId={editingId}
                 editName={editName}
                 editDescription={editDescription}
