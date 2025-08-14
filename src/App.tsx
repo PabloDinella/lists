@@ -3,8 +3,6 @@ import { ThemeProvider } from "./components/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { TaskManager } from "./components/task-manager";
-import { ListManagement } from "./components/list-management";
-import { ItemManager } from "./components/item-manager";
 import { TagManagement } from "./components/tag-management";
 
 function App() {
@@ -14,9 +12,8 @@ function App() {
         <SidebarProvider>
           <Routes>
             <Route path="/" element={<TaskManager />} />
-            <Route path="/lists/manage" element={<ListManagement />} />
-            <Route path="/lists/:listId" element={<ItemManager />} />
-            <Route path="/tags/manage" element={<TagManagement />} />
+            <Route path="/lists/manage" element={<TagManagement />} />
+            <Route path="/lists/:listId" element={<TagManagement />} />
           </Routes>
         </SidebarProvider>
       </TooltipProvider>

@@ -47,7 +47,7 @@ const otherItems = [
   },
   {
     title: "Manage lists",
-    url: "/tags/manage",
+    url: "/lists/manage",
     icon: Tag,
   },
   {
@@ -105,7 +105,7 @@ function ListSection({ listId, listName, userId }: { listId: number; listName: s
               <SidebarMenuItem key={child.id}>
                 <SidebarMenuButton
                   className="cursor-pointer pl-6"
-                  onClick={() => navigate(`/lists/${listId}/nodes/${child.id}`)}
+                  onClick={() => navigate(`/lists/${child.id}`)}
                 >
                   <span>{child.name}</span>
                 </SidebarMenuButton>
