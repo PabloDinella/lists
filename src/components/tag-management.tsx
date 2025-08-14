@@ -5,7 +5,6 @@ import { supabase } from "@/lib/supabase";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { CreateListForm } from "./tag-management/create-list-form";
-import { DraggableList } from "./tag-management/draggable-list";
 import { MovableList } from "./tag-management/movable-list";
 import { EditNodeSheet } from "./tag-management/edit-node-sheet";
 import { useListData } from "./tag-management/use-list-data";
@@ -23,6 +22,11 @@ export function TagManagement() {
   const { flattenedItems, ordering, isLoading, isError } = useListData({
     userId,
   });
+
+  // Calculate available parents (only root nodes)
+  const availableParents = flattenedItems
+    .filter(item => item.node.parent_node === null)
+    .map(item => item.node);
 
   useEffect(() => {
     supabase.auth
@@ -42,13 +46,14 @@ export function TagManagement() {
     setEditingNode(node);
   };
 
-  const handleEditSave = async (name: string, description: string) => {
+  const handleEditSave = async (name: string, description: string, parentId: number | null) => {
     if (!editingNode || !userId) return;
     try {
       await updateNodeMutation.mutateAsync({
         node_id: editingNode.id,
         name: name,
         content: description || undefined,
+        parent_node: parentId,
         user_id: userId,
       });
       setEditingNode(null);
@@ -120,6 +125,7 @@ export function TagManagement() {
 
       <EditNodeSheet
         node={editingNode}
+        availableParents={availableParents}
         isOpen={editingNode !== null}
         onClose={handleEditCancel}
         onSave={handleEditSave}
