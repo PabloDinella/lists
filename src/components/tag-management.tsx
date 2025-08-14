@@ -7,14 +7,13 @@ import { useDeleteNode } from "@/hooks/use-delete-node";
 import { CreateListForm } from "./tag-management/create-list-form";
 import { DraggableList } from "./tag-management/draggable-list";
 import { MovableList } from "./tag-management/movable-list";
+import { EditNodeSheet } from "./tag-management/edit-node-sheet";
 import { useListData } from "./tag-management/use-list-data";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
 export function TagManagement() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
+  const [editingNode, setEditingNode] = useState<DBNode | null>(null);
   const [creating, setCreating] = useState(false);
 
   const updateNodeMutation = useUpdateNode();
@@ -40,28 +39,26 @@ export function TagManagement() {
   }, []);
 
   const handleEditStart = (node: DBNode) => {
-    setEditingId(node.id);
-    setEditName(node.name);
-    setEditDescription(node.content || "");
+    setEditingNode(node);
   };
 
-  const handleEditSave = async () => {
-    if (!editingId || !userId) return;
+  const handleEditSave = async (name: string, description: string) => {
+    if (!editingNode || !userId) return;
     try {
       await updateNodeMutation.mutateAsync({
-        node_id: editingId,
-        name: editName.trim(),
-        content: editDescription.trim() || undefined,
+        node_id: editingNode.id,
+        name: name,
+        content: description || undefined,
         user_id: userId,
       });
-      setEditingId(null);
+      setEditingNode(null);
     } catch (error) {
       console.error("Failed to update list:", error);
     }
   };
 
   const handleEditCancel = () => {
-    setEditingId(null);
+    setEditingNode(null);
   };
 
   const handleDelete = async (nodeId: number) => {
@@ -109,14 +106,7 @@ export function TagManagement() {
               <MovableList
                 flattenedItems={flattenedItems}
                 userId={userId}
-                editingId={editingId}
-                editName={editName}
-                editDescription={editDescription}
                 onEditStart={handleEditStart}
-                onEditNameChange={setEditName}
-                onEditDescriptionChange={setEditDescription}
-                onEditSave={handleEditSave}
-                onEditCancel={handleEditCancel}
                 onDelete={handleDelete}
               />
             ) : (
@@ -127,6 +117,14 @@ export function TagManagement() {
           </div>
         )}
       </Container>
+
+      <EditNodeSheet
+        node={editingNode}
+        isOpen={editingNode !== null}
+        onClose={handleEditCancel}
+        onSave={handleEditSave}
+        isSaving={updateNodeMutation.isPending}
+      />
       {/* <Container size="md">
         {isLoading && <p>Loading lists…</p>}
         {isError && <p className="text-red-500 text-sm">Failed to load lists.</p>}

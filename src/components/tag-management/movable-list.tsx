@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
-import { it } from "node:test";
 
 type FlattenedItem = {
   node: DBNode;
@@ -12,28 +11,14 @@ type FlattenedItem = {
 interface MovableListProps {
   flattenedItems: FlattenedItem[];
   userId: string;
-  editingId: number | null;
-  editName: string;
-  editDescription: string;
   onEditStart: (node: DBNode) => void;
-  onEditNameChange: (name: string) => void;
-  onEditDescriptionChange: (description: string) => void;
-  onEditSave: () => void;
-  onEditCancel: () => void;
   onDelete: (nodeId: number) => void;
 }
 
 export function MovableList({
   flattenedItems,
   // userId,
-  editingId,
-  editName,
-  editDescription,
   onEditStart,
-  onEditNameChange,
-  onEditDescriptionChange,
-  onEditSave,
-  onEditCancel,
   onDelete,
 }: MovableListProps) {
   // const upsertOrdering = useUpsertOrdering();
@@ -84,32 +69,29 @@ export function MovableList({
             {children}
           </div>
         )}
-        renderItem={({ value: item, props, isDragged }) => (
-          <div
-            {...props}
-            className="p-2"
-            style={{
-              ...props.style,
-              // only the handle should show grab; item itself keeps default cursor
-              cursor: isDragged ? "grabbing" : "default",
-            }}
-          >
-            <BaseNodeItem
-              node={item.node}
-              isChild={item.node.parent_node !== null}
-              editingId={editingId}
-              editName={editName}
-              editDescription={editDescription}
-              onEditStart={onEditStart}
-              onEditNameChange={onEditNameChange}
-              onEditDescriptionChange={onEditDescriptionChange}
-              onEditSave={onEditSave}
-              onEditCancel={onEditCancel}
-              onDelete={onDelete}
-              isDragging={isDragged}
-            />
-          </div>
-        )}
+        renderItem={({ value: item, props, isDragged }) => {
+          const { key, ...restProps } = props;
+          return (
+            <div
+              key={key}
+              {...restProps}
+              className="p-2"
+              style={{
+                ...restProps.style,
+                // only the handle should show grab; item itself keeps default cursor
+                cursor: isDragged ? "grabbing" : "default",
+              }}
+            >
+              <BaseNodeItem
+                node={item.node}
+                isChild={item.node.parent_node !== null}
+                onEditStart={onEditStart}
+                onDelete={onDelete}
+                isDragging={isDragged}
+              />
+            </div>
+          );
+        }}
       />
     </div>
   );
