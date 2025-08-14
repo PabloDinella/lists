@@ -92,10 +92,46 @@ export function TagManagement() {
     >
       <Container size="md">
         {isLoading && <p>Loading lists…</p>}
+        {isError && (
+          <p className="text-red-500 text-sm">Failed to load lists.</p>
+        )}
+        {!isLoading && !isError && (
+          <div className="space-y-4">
+            {creating && (
+              <CreateListForm
+                userId={userId}
+                ordering={ordering}
+                onCancel={() => setCreating(false)}
+              />
+            )}
+
+            {flattenedItems.length > 0 ? (
+              <MovableList
+                flattenedItems={flattenedItems}
+                userId={userId}
+                editingId={editingId}
+                editName={editName}
+                editDescription={editDescription}
+                onEditStart={handleEditStart}
+                onEditNameChange={setEditName}
+                onEditDescriptionChange={setEditDescription}
+                onEditSave={handleEditSave}
+                onEditCancel={handleEditCancel}
+                onDelete={handleDelete}
+              />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No lists found.
+              </p>
+            )}
+          </div>
+        )}
+      </Container>
+      {/* <Container size="md">
+        {isLoading && <p>Loading lists…</p>}
         {isError && <p className="text-red-500 text-sm">Failed to load lists.</p>}
         {!isLoading && !isError && (
           <div className="space-y-4">
-            {/* Inline create form */}
             {creating && (
               <CreateListForm
                 userId={userId}
@@ -146,7 +182,7 @@ export function TagManagement() {
             )}
           </div>
         )}
-      </Container>
+      </Container> */}
     </AppLayout>
   );
 }

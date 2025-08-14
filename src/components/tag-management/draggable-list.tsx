@@ -49,8 +49,7 @@ export function DraggableList({
     setItems(flattenedItems);
   }, [flattenedItems]);
 
-  console.log({ items});
-  
+  console.log({ items });
 
   // Simple arrayMove helper
   const arrayMove = useCallback(
@@ -70,11 +69,7 @@ export function DraggableList({
       if (!destination || source.index === destination.index) return;
 
       // Reorder the items array
-      const reorderedItems = arrayMove(
-        items,
-        source.index,
-        destination.index
-      );
+      const reorderedItems = arrayMove(items, source.index, destination.index);
 
       setItems(reorderedItems);
 
@@ -102,24 +97,25 @@ export function DraggableList({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="space-y-2"
+            // className="space-y-2"
           >
             {items.map((item, index) => (
-              <NodeItem
-                key={item.node.id}
-                node={item.node}
-                index={index}
-                isChild={false}
-                editingId={editingId}
-                editName={editName}
-                editDescription={editDescription}
-                onEditStart={onEditStart}
-                onEditNameChange={onEditNameChange}
-                onEditDescriptionChange={onEditDescriptionChange}
-                onEditSave={onEditSave}
-                onEditCancel={onEditCancel}
-                onDelete={onDelete}
-              />
+              <div className="p-2" key={item.node.id}>
+                <NodeItem
+                  node={item.node}
+                  index={index}
+                  isChild={false}
+                  editingId={editingId}
+                  editName={editName}
+                  editDescription={editDescription}
+                  onEditStart={onEditStart}
+                  onEditNameChange={onEditNameChange}
+                  onEditDescriptionChange={onEditDescriptionChange}
+                  onEditSave={onEditSave}
+                  onEditCancel={onEditCancel}
+                  onDelete={onDelete}
+                />
+              </div>
             ))}
             {provided.placeholder}
           </div>

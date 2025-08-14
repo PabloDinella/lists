@@ -4,6 +4,7 @@ import { Input } from "../ui/input";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import clsx from "clsx";
 
 interface BaseNodeItemProps {
   node: DBNode;
@@ -39,55 +40,49 @@ export function BaseNodeItem({
   const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
-  const containerClassName = isChild 
-    ? "ml-8 p-4 border rounded-lg bg-background transition-[box-shadow,transform] duration-150"
-    : "p-4 border rounded-lg bg-background transition-[box-shadow,transform] duration-150";
-
   return (
     <div
-      className={`${containerClassName} ${
-        isDragging ? 'shadow-md ring-1 ring-border' : 'hover:shadow-sm'
-      }`}
+      className={clsx(
+        "p-4 border rounded-lg bg-background transition-[box-shadow,transform] duration-150",
+        {
+          "shadow-md ring-1 ring-border": isDragging,
+          "hover:shadow-sm": !isDragging,
+          "ml-8": isChild,
+        }
+      )}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1">
-          {/* drag handle with optional hierarchy indicator */}
-          {dragHandleProps && Object.keys(dragHandleProps).length > 0 ? (
-            <button
-              className="p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-              {...dragHandleProps}
-              aria-label="Drag to reorder"
-              title="Drag to reorder"
-            >
-              {isChild ? (
-                <div className="relative">
-                  <GripVertical className="h-4 w-4" />
-                </div>
-              ) : (
+          {/* drag handle with optional hierarchy indicator; supports react-movable via data-movable-handle and @hello-pangea/dnd via dragHandleProps */}
+          <button
+            // react-movable handle
+            data-movable-handle
+            // keep it focusable off the tab order to avoid stealing focus while still clickable
+            tabIndex={-1}
+            className="p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+            aria-label="Drag to reorder"
+            title="Drag to reorder"
+            {...(dragHandleProps ?? {})}
+          >
+            {isChild ? (
+              <div className="relative">
                 <GripVertical className="h-4 w-4" />
-              )}
-            </button>
-          ) : (
-            <div className="p-1 text-muted-foreground">
-              {isChild ? (
-                <div className="relative">
-                  <GripVertical className="h-4 w-4" />
-                </div>
-              ) : (
-                <GripVertical className="h-4 w-4" />
-              )}
-            </div>
-          )}
+              </div>
+            ) : (
+              <GripVertical className="h-4 w-4" />
+            )}
+          </button>
+
           {editingId === node.id ? (
             <div className="flex-1 grid gap-2 sm:grid-cols-2">
-              <Input 
-                value={editName} 
-                onChange={(e) => onEditNameChange(e.target.value)} 
+              <Input
+                value={editName}
+                onChange={(e) => onEditNameChange(e.target.value)}
               />
-              <Input 
-                value={editDescription} 
-                onChange={(e) => onEditDescriptionChange(e.target.value)} 
-                placeholder="Description (optional)" 
+              <Input
+                value={editDescription}
+                onChange={(e) => onEditDescriptionChange(e.target.value)}
+                placeholder="Description (optional)"
               />
             </div>
           ) : (
@@ -97,7 +92,8 @@ export function BaseNodeItem({
                 <p className="text-sm text-muted-foreground">{node.content}</p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                Created {new Date(node.created_at).toLocaleString()} • ID: {node.id}
+                Created {new Date(node.created_at).toLocaleString()} • ID:{" "}
+                {node.id}
               </p>
             </div>
           )}
@@ -105,17 +101,17 @@ export function BaseNodeItem({
         <div className="flex items-center gap-2">
           {editingId === node.id ? (
             <>
-              <Button 
-                size="sm" 
-                onClick={onEditSave} 
+              <Button
+                size="sm"
+                onClick={onEditSave}
                 disabled={updateNodeMutation.isPending}
               >
                 Save
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={onEditCancel} 
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEditCancel}
                 disabled={updateNodeMutation.isPending}
               >
                 Cancel
@@ -123,17 +119,17 @@ export function BaseNodeItem({
             </>
           ) : (
             <>
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => onEditStart(node)}
               >
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => onDelete(node.id)} 
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onDelete(node.id)}
                 disabled={deleteNodeMutation.isPending}
               >
                 <Trash2 className="h-4 w-4" />

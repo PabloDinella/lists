@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import { it } from "node:test";
 
 type FlattenedItem = {
   node: DBNode;
@@ -45,7 +46,13 @@ export function MovableList({
 
   console.log({ movableItems: items });
 
-  const handleChange = async ({ oldIndex, newIndex }: { oldIndex: number; newIndex: number }) => {
+  const handleChange = async ({
+    oldIndex,
+    newIndex,
+  }: {
+    oldIndex: number;
+    newIndex: number;
+  }) => {
     const reorderedItems = arrayMove(items, oldIndex, newIndex);
     setItems(reorderedItems);
 
@@ -69,16 +76,27 @@ export function MovableList({
       <List
         values={items}
         onChange={handleChange}
-        renderList={({ children, props }) => (
-          <div {...props} className="space-y-2">
+        renderList={({ children, props, isDragged }) => (
+          <div
+            {...props}
+            style={{ cursor: isDragged ? "grabbing" : "default" }}
+          >
             {children}
           </div>
         )}
         renderItem={({ value: item, props, isDragged }) => (
-          <div {...props} key={item.node.id} style={{ ...props.style, cursor: isDragged ? 'grabbing' : 'grab' }}>
+          <div
+            {...props}
+            className="p-2"
+            style={{
+              ...props.style,
+              // only the handle should show grab; item itself keeps default cursor
+              cursor: isDragged ? "grabbing" : "default",
+            }}
+          >
             <BaseNodeItem
               node={item.node}
-              isChild={false}
+              isChild={item.node.parent_node !== null}
               editingId={editingId}
               editName={editName}
               editDescription={editDescription}
@@ -89,7 +107,6 @@ export function MovableList({
               onEditCancel={onEditCancel}
               onDelete={onDelete}
               isDragging={isDragged}
-              dragHandleProps={{}}
             />
           </div>
         )}
