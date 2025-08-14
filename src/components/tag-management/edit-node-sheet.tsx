@@ -15,12 +15,13 @@ import { Select } from "../ui/select";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
 interface EditNodeSheetProps {
-  node: DBNode | null;
+  node: DBNode | null; // null when creating a new item
   availableParents: DBNode[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, description: string, parentId: number | null) => void;
   isSaving?: boolean;
+  mode: 'edit' | 'create';
 }
 
 export function EditNodeSheet({
@@ -30,6 +31,7 @@ export function EditNodeSheet({
   onClose,
   onSave,
   isSaving = false,
+  mode,
 }: EditNodeSheetProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -37,12 +39,18 @@ export function EditNodeSheet({
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
-    if (node && isOpen) {
-      setName(node.name);
-      setDescription(node.content || "");
-      setParentId(node.parent_node);
+    if (isOpen) {
+      if (mode === 'edit' && node) {
+        setName(node.name);
+        setDescription(node.content || "");
+        setParentId(node.parent_node);
+      } else if (mode === 'create') {
+        setName("");
+        setDescription("");
+        setParentId(null);
+      }
     }
-  }, [node, isOpen]);
+  }, [node, isOpen, mode]);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -63,9 +71,12 @@ export function EditNodeSheet({
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent className="sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Edit Item</SheetTitle>
+          <SheetTitle>{mode === 'create' ? 'Create New Item' : 'Edit Item'}</SheetTitle>
           <SheetDescription>
-            Make changes to your item. Click save when you're done.
+            {mode === 'create' 
+              ? 'Create a new item. You can optionally assign it to a parent.'
+              : 'Make changes to your item. Click save when you\'re done.'
+            }
           </SheetDescription>
         </SheetHeader>
 
@@ -91,8 +102,8 @@ export function EditNodeSheet({
               disabled={isSaving}
             />
           </div>
-          {/* Only show parent selection if node already has a parent */}
-          {node && node.parent_node !== null && (
+          {/* Show parent selection for create mode or edit mode with existing parent */}
+          {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && (
             <div className="grid gap-2">
               <Label htmlFor="parent">Parent Item</Label>
               <Select
@@ -113,7 +124,7 @@ export function EditNodeSheet({
               </p>
             </div>
           )}
-          {node && (
+          {mode === 'edit' && node && (
             <div className="text-xs text-muted-foreground">
               Created {new Date(node.created_at).toLocaleString()} • ID: {node.id}
             </div>
@@ -132,7 +143,7 @@ export function EditNodeSheet({
             onClick={handleSave}
             disabled={!name.trim() || isSaving}
           >
-            {isSaving ? "Saving..." : "Save changes"}
+            {isSaving ? (mode === 'create' ? 'Creating...' : 'Saving...') : (mode === 'create' ? 'Create item' : 'Save changes')}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "./app-layout";
 import { Container } from "./ui/container";
 import { supabase } from "@/lib/supabase";
+import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
-import { CreateListForm } from "./tag-management/create-list-form";
 import { MovableList } from "./tag-management/movable-list";
 import { EditNodeSheet } from "./tag-management/edit-node-sheet";
 import { useListData } from "./tag-management/use-list-data";
@@ -13,13 +13,14 @@ import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 export function TagManagement() {
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [sheetMode, setSheetMode] = useState<'edit' | 'create'>('edit');
 
+  const createNodeMutation = useCreateNode();
   const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
   // Get data using custom hook
-  const { flattenedItems, ordering, isLoading, isError } = useListData({
+  const { flattenedItems, isLoading, isError } = useListData({
     userId,
   });
 
@@ -44,26 +45,43 @@ export function TagManagement() {
 
   const handleEditStart = (node: DBNode) => {
     setEditingNode(node);
+    setSheetMode('edit');
   };
 
-  const handleEditSave = async (name: string, description: string, parentId: number | null) => {
-    if (!editingNode || !userId) return;
+  const handleCreateStart = () => {
+    setEditingNode(null);
+    setSheetMode('create');
+  };
+
+  const handleSave = async (name: string, description: string, parentId: number | null) => {
+    if (!userId) return;
+    
     try {
-      await updateNodeMutation.mutateAsync({
-        node_id: editingNode.id,
-        name: name,
-        content: description || undefined,
-        parent_node: parentId,
-        user_id: userId,
-      });
-      setEditingNode(null);
+      if (sheetMode === 'create') {
+        await createNodeMutation.mutateAsync({
+          name: name,
+          content: description || undefined,
+          parent_node: parentId || undefined,
+          user_id: userId,
+        });
+      } else if (sheetMode === 'edit' && editingNode) {
+        await updateNodeMutation.mutateAsync({
+          node_id: editingNode.id,
+          name: name,
+          content: description || undefined,
+          parent_node: parentId,
+          user_id: userId,
+        });
+      }
+      handleSheetClose(); // Close the sheet after successful save
     } catch (error) {
-      console.error("Failed to update list:", error);
+      console.error(`Failed to ${sheetMode} node:`, error);
     }
   };
 
-  const handleEditCancel = () => {
+  const handleSheetClose = () => {
     setEditingNode(null);
+    setSheetMode('edit'); // Reset to edit mode
   };
 
   const handleDelete = async (nodeId: number) => {
@@ -89,7 +107,7 @@ export function TagManagement() {
   return (
     <AppLayout
       title="Manage Lists"
-      onNewItem={() => setCreating(true)}
+      onNewItem={handleCreateStart}
       newItemLabel="New List"
     >
       <Container size="md">
@@ -99,14 +117,6 @@ export function TagManagement() {
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
-            {creating && (
-              <CreateListForm
-                userId={userId}
-                ordering={ordering}
-                onCancel={() => setCreating(false)}
-              />
-            )}
-
             {flattenedItems.length > 0 ? (
               <MovableList
                 flattenedItems={flattenedItems}
@@ -126,10 +136,11 @@ export function TagManagement() {
       <EditNodeSheet
         node={editingNode}
         availableParents={availableParents}
-        isOpen={editingNode !== null}
-        onClose={handleEditCancel}
-        onSave={handleEditSave}
-        isSaving={updateNodeMutation.isPending}
+        isOpen={sheetMode === 'create' || editingNode !== null}
+        onClose={handleSheetClose}
+        onSave={handleSave}
+        isSaving={createNodeMutation.isPending || updateNodeMutation.isPending}
+        mode={sheetMode}
       />
       {/* <Container size="md">
         {isLoading && <p>Loading lists…</p>}
