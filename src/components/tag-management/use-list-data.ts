@@ -3,6 +3,17 @@ import { useNodes } from "@/hooks/use-nodes";
 import { useOrdering } from "@/hooks/use-ordering";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
+type TreeNode = {
+  id: number;
+  name: string;
+  content: string | null;
+  parent_node: number | null;
+  user_id: string;
+  created_at: string;
+  order: number | null;
+  children: TreeNode[];
+};
+
 type FlattenedItem = {
   type: "parent" | "child";
   node: DBNode;
@@ -12,6 +23,7 @@ type FlattenedItem = {
 
 interface UseListDataProps {
   userId: string | null;
+  parentNodeId?: number | null;
 }
 
 interface UseListDataReturn {
@@ -20,28 +32,59 @@ interface UseListDataReturn {
   allNodes: DBNode[] | undefined;
   flattenedItems: FlattenedItem[];
   childrenByParent: Map<number, DBNode[]>;
+  hierarchicalTree: TreeNode[];
   isLoading: boolean;
   isError: boolean;
 }
 
-export function useListData({ userId }: UseListDataProps): UseListDataReturn {
+export function useListData({
+  userId,
+  parentNodeId,
+}: UseListDataProps): UseListDataReturn {
   const {
     data: lists,
     isLoading,
     isError,
   } = useNodes({
     user_id: userId ?? undefined,
-    parent_node: null,
+    parent_node: parentNodeId ?? null,
   });
   const { data: ordering } = useOrdering({
     user_id: userId ?? undefined,
-    root_node: null,
+    root_node: parentNodeId ?? null,
   });
   const { data: allNodes } = useNodes({
     user_id: userId ?? undefined,
   });
 
-  // Create a flattened structure for drag and drop
+  // Create hierarchical tree structure
+  const hierarchicalTree = useMemo(() => {
+    if (!lists || !allNodes) return [];
+
+    // Apply ordering to root lists
+    const orderedLists = ordering?.order?.length
+      ? [
+          ...(ordering.order
+            .map((id) => lists.find((l) => l.id === id))
+            .filter(Boolean) as DBNode[]),
+          ...lists.filter((l) => !ordering.order.includes(l.id)),
+        ]
+      : lists;
+
+    // Build tree structure
+    const buildTree = (nodes: DBNode[], parentId: number | null): TreeNode[] => {
+      return nodes
+        .filter(node => node.parent_node === parentId)
+        .map(node => ({
+          ...node,
+          children: buildTree(allNodes, node.id)
+        }));
+    };
+
+    return buildTree(orderedLists, parentNodeId ?? null);
+  }, [lists, allNodes, ordering, parentNodeId]);
+
+  // Create a flattened structure for drag and drop (keeping for backward compatibility)
   const { flattenedItems, childrenByParent } = useMemo(() => {
     if (!lists || !allNodes)
       return { flattenedItems: [], childrenByParent: new Map() };
@@ -98,12 +141,15 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
     };
   }, [lists, allNodes, ordering]);
 
+
+
   return {
     lists,
     ordering,
     allNodes,
     flattenedItems,
     childrenByParent,
+    hierarchicalTree,
     isLoading,
     isError,
   };

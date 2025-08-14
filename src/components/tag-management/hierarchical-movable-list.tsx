@@ -3,33 +3,70 @@ import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
-type FlattenedItem = {
+type TreeNode = {
+  id: number;
+  name: string;
+  content: string | null;
+  parent_node: number | null;
+  user_id: string;
+  created_at: string;
+  order: number | null;
+  children: TreeNode[];
+};
+
+type HierarchicalItem = {
   node: DBNode;
+  depth: number;
   dragIndex: number;
 };
 
-interface MovableListProps {
-  flattenedItems: FlattenedItem[];
+interface HierarchicalMovableListProps {
+  hierarchicalTree: TreeNode[];
   userId: string;
   onEditStart: (node: DBNode) => void;
   onDelete: (nodeId: number) => void;
 }
 
-export function MovableList({
-  flattenedItems,
-  // userId,
+export function HierarchicalMovableList({
+  hierarchicalTree,
+  userId,
   onEditStart,
   onDelete,
-}: MovableListProps) {
-  // const upsertOrdering = useUpsertOrdering();
-  const [items, setItems] = useState(flattenedItems);
+}: HierarchicalMovableListProps) {
+  // Convert hierarchical tree to flat list with depth information
+  const flattenTree = (nodes: TreeNode[], depth: number = 0): HierarchicalItem[] => {
+    const items: HierarchicalItem[] = [];
+    
+    nodes.forEach((node, index) => {
+      items.push({
+        node: {
+          id: node.id,
+          name: node.name,
+          content: node.content,
+          parent_node: node.parent_node,
+          user_id: node.user_id,
+          created_at: node.created_at,
+          order: node.order,
+        },
+        depth,
+        dragIndex: items.length,
+      });
+      
+      // Recursively add children
+      if (node.children && node.children.length > 0) {
+        items.push(...flattenTree(node.children, depth + 1));
+      }
+    });
+    
+    return items;
+  };
+
+  const [items, setItems] = useState<HierarchicalItem[]>([]);
 
   // Sync with external prop changes
   useEffect(() => {
-    setItems(flattenedItems);
-  }, [flattenedItems]);
-
-
+    setItems(flattenTree(hierarchicalTree));
+  }, [hierarchicalTree]);
 
   const handleChange = async ({
     oldIndex,
@@ -45,11 +82,11 @@ export function MovableList({
     // const newOrder = reorderedItems.map((item) => item.node.id);
     // if (userId) {
     //   try {
-    //     await upsertOrdering.mutateAsync({
-    //       user_id: userId,
-    //       root_node: null,
-    //       order: newOrder,
-    //     });
+    //   await upsertOrdering.mutateAsync({
+    //     user_id: userId,
+    //     root_node: null,
+    //     order: newOrder,
+    //   });
     //   } catch (error) {
     //     console.error("Failed to persist ordering:", error);
     //   }
@@ -78,16 +115,16 @@ export function MovableList({
               className="p-2"
               style={{
                 ...restProps.style,
-                // only the handle should show grab; item itself keeps default cursor
                 cursor: isDragged ? "grabbing" : "default",
               }}
             >
               <BaseNodeItem
                 node={item.node}
-                isChild={item.node.parent_node !== null}
+                isChild={item.depth > 0}
                 onEditStart={onEditStart}
                 onDelete={onDelete}
                 isDragging={isDragged}
+                depth={item.depth}
               />
             </div>
           );

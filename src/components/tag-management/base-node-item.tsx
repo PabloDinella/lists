@@ -11,6 +11,7 @@ interface BaseNodeItemProps {
   onDelete: (nodeId: number) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   isDragging?: boolean;
+  depth?: number;
 }
 
 export function BaseNodeItem({
@@ -20,6 +21,7 @@ export function BaseNodeItem({
   onDelete,
   dragHandleProps,
   isDragging = false,
+  depth = 0,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
 
@@ -30,9 +32,9 @@ export function BaseNodeItem({
         {
           "shadow-md ring-1 ring-border": isDragging,
           "hover:shadow-sm": !isDragging,
-          "ml-8": isChild,
         }
       )}
+      style={{ marginLeft: depth > 0 ? `${depth * 24}px` : undefined }}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1">

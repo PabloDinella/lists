@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { AppLayout } from "./app-layout";
 import { Container } from "./ui/container";
 import { supabase } from "@/lib/supabase";
@@ -6,28 +7,31 @@ import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { MovableList } from "./tag-management/movable-list";
+import { HierarchicalMovableList } from "./tag-management/hierarchical-movable-list";
 import { EditNodeSheet } from "./tag-management/edit-node-sheet";
 import { useListData } from "./tag-management/use-list-data";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
 export function TagManagement() {
+  const { listId } = useParams<{ listId: string }>();
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
   const [sheetMode, setSheetMode] = useState<'edit' | 'create'>('edit');
+  const [viewMode, setViewMode] = useState<'flat' | 'hierarchical'>('flat');
 
   const createNodeMutation = useCreateNode();
   const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
   // Get data using custom hook
-  const { flattenedItems, isLoading, isError } = useListData({
+  const { hierarchicalTree, flattenedItems, isLoading, isError } = useListData({
     userId,
+    parentNodeId: listId ? parseInt(listId, 10) : null,
   });
 
   // Calculate available parents (only root nodes)
-  const availableParents = flattenedItems
-    .filter(item => item.node.parent_node === null)
-    .map(item => item.node);
+  const availableParents = hierarchicalTree
+    .filter(node => node.parent_node === null);
 
   useEffect(() => {
     supabase.auth
@@ -106,9 +110,9 @@ export function TagManagement() {
 
   return (
     <AppLayout
-      title="Manage Lists"
+      title={listId ? "List Items" : "Manage Lists"}
       onNewItem={handleCreateStart}
-      newItemLabel="New List"
+      newItemLabel={listId ? "New Item" : "New List"}
     >
       <Container size="md">
         {isLoading && <p>Loading lists…</p>}
@@ -117,16 +121,53 @@ export function TagManagement() {
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
+            <h2 className="text-xl font-semibold">
+              {listId ? "Items" : "Your lists"}
+            </h2>
+            
+            {/* Toggle between views */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setViewMode('flat')}
+                className={`px-3 py-1 rounded text-sm ${
+                  viewMode === 'flat' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-secondary text-secondary-foreground'
+                }`}
+              >
+                Flat List
+              </button>
+              <button
+                onClick={() => setViewMode('hierarchical')}
+                className={`px-3 py-1 rounded text-sm ${
+                  viewMode === 'hierarchical' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-secondary text-secondary-foreground'
+                }`}
+              >
+                Tree View
+              </button>
+            </div>
+
             {flattenedItems.length > 0 ? (
-              <MovableList
-                flattenedItems={flattenedItems}
-                userId={userId}
-                onEditStart={handleEditStart}
-                onDelete={handleDelete}
-              />
+              viewMode === 'flat' ? (
+                <MovableList
+                  flattenedItems={flattenedItems}
+                  userId={userId}
+                  onEditStart={handleEditStart}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <HierarchicalMovableList
+                  hierarchicalTree={hierarchicalTree}
+                  userId={userId}
+                  onEditStart={handleEditStart}
+                  onDelete={handleDelete}
+                />
+              )
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                No lists found.
+                {listId ? "No items found in this list." : "No lists found."}
               </p>
             )}
           </div>
