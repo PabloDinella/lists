@@ -17,6 +17,7 @@ import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 interface EditNodeSheetProps {
   node: DBNode | null; // null when creating a new item
   availableParents: DBNode[];
+  defaultParentId?: number; // Default parent ID when creating new items
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, description: string, parentId: number | null) => void;
@@ -27,6 +28,7 @@ interface EditNodeSheetProps {
 export function EditNodeSheet({
   node,
   availableParents,
+  defaultParentId,
   isOpen,
   onClose,
   onSave,
@@ -47,10 +49,10 @@ export function EditNodeSheet({
       } else if (mode === 'create') {
         setName("");
         setDescription("");
-        setParentId(null);
+        setParentId(defaultParentId || null);
       }
     }
-  }, [node, isOpen, mode]);
+  }, [node, isOpen, mode, defaultParentId]);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -122,11 +124,6 @@ export function EditNodeSheet({
               <p className="text-xs text-muted-foreground">
                 Only root items (items without parents) can be selected as parents.
               </p>
-            </div>
-          )}
-          {mode === 'edit' && node && (
-            <div className="text-xs text-muted-foreground">
-              Created {new Date(node.created_at).toLocaleString()} • ID: {node.id}
             </div>
           )}
         </div>

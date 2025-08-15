@@ -63,10 +63,6 @@ export function BaseNodeItem({
             {node.content && (
               <p className="text-sm text-muted-foreground">{node.content}</p>
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Created {new Date(node.created_at).toLocaleString()} • ID:{" "}
-              {node.id}
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

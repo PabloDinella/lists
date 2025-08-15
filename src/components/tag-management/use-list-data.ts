@@ -24,6 +24,7 @@ type FlattenedItem = {
 interface UseListDataProps {
   userId: string | null;
   parentNodeId?: number | null;
+  maxDepth?: number; // Maximum depth to build the tree
 }
 
 interface UseListDataReturn {
@@ -33,6 +34,7 @@ interface UseListDataReturn {
   flattenedItems: FlattenedItem[];
   childrenByParent: Map<number, DBNode[]>;
   hierarchicalTree: TreeNode[];
+  parentNode: DBNode | undefined; // The parent node when viewing a specific list
   isLoading: boolean;
   isError: boolean;
 }
@@ -40,6 +42,7 @@ interface UseListDataReturn {
 export function useListData({
   userId,
   parentNodeId,
+  maxDepth,
 }: UseListDataProps): UseListDataReturn {
   const {
     data: lists,
@@ -57,6 +60,12 @@ export function useListData({
     user_id: userId ?? undefined,
   });
 
+  // Fetch the parent node when viewing a specific list
+  const parentNode = useMemo(() => {
+    if (!parentNodeId || !allNodes) return undefined;
+    return allNodes.find(node => node.id === parentNodeId);
+  }, [parentNodeId, allNodes]);
+
   // Create hierarchical tree structure
   const hierarchicalTree = useMemo(() => {
     if (!lists || !allNodes) return [];
@@ -71,18 +80,22 @@ export function useListData({
         ]
       : lists;
 
-    // Build tree structure
-    const buildTree = (nodes: DBNode[], parentId: number | null): TreeNode[] => {
+    // Build tree structure with depth limitation
+    const buildTree = (nodes: DBNode[], parentId: number | null, currentDepth: number = 0): TreeNode[] => {
+      if (maxDepth !== undefined && currentDepth >= maxDepth) {
+        return [];
+      }
+      
       return nodes
         .filter(node => node.parent_node === parentId)
         .map(node => ({
           ...node,
-          children: buildTree(allNodes, node.id)
+          children: buildTree(allNodes, node.id, currentDepth + 1)
         }));
     };
 
     return buildTree(orderedLists, parentNodeId ?? null);
-  }, [lists, allNodes, ordering, parentNodeId]);
+  }, [lists, allNodes, ordering, parentNodeId, maxDepth]);
 
   // Create a flattened structure for drag and drop (keeping for backward compatibility)
   const { flattenedItems, childrenByParent } = useMemo(() => {
@@ -148,8 +161,9 @@ export function useListData({
     ordering,
     allNodes,
     flattenedItems,
-    childrenByParent,
     hierarchicalTree,
+    childrenByParent,
+    parentNode, // The parent node when viewing a specific list
     isLoading,
     isError,
   };

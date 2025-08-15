@@ -6,32 +6,48 @@ import { supabase } from "@/lib/supabase";
 import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
-import { MovableList } from "./tag-management/movable-list";
 import { HierarchicalMovableList } from "./tag-management/hierarchical-movable-list";
 import { EditNodeSheet } from "./tag-management/edit-node-sheet";
 import { useListData } from "./tag-management/use-list-data";
+import { Button } from "./ui/button";
+import { Edit } from "lucide-react";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
 export function TagManagement() {
   const { listId } = useParams<{ listId: string }>();
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
-  const [sheetMode, setSheetMode] = useState<'edit' | 'create'>('edit');
-  const [viewMode, setViewMode] = useState<'flat' | 'hierarchical'>('flat');
+  const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
+
+  console.log(listId);
+
+  // Determine if we're managing lists (root level) or viewing a specific list
+  const isManagingLists = !listId;
 
   const createNodeMutation = useCreateNode();
   const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
   // Get data using custom hook
-  const { hierarchicalTree, flattenedItems, isLoading, isError } = useListData({
+  const { hierarchicalTree, parentNode, isLoading, isError } = useListData({
     userId,
     parentNodeId: listId ? parseInt(listId, 10) : null,
+    maxDepth: isManagingLists ? 2 : undefined, // Limit to 2 levels when managing lists
   });
 
-  // Calculate available parents (only root nodes)
-  const availableParents = hierarchicalTree
-    .filter(node => node.parent_node === null);
+  // Get all nodes to find second-level items for available parents
+  const { hierarchicalTree: allNodesTree } = useListData({
+    userId,
+    parentNodeId: null,
+    maxDepth: 2, // Always limit to 2 levels for available parents
+  });
+
+  // Calculate available parents (second level items - nodes with parent_node that is not null)
+  const availableParents = isManagingLists
+    ? allNodesTree
+        .flatMap((rootNode) => rootNode.children)
+        .filter((node) => node.parent_node !== null)
+    : allNodesTree.filter((node) => node.parent_node === null);
 
   useEffect(() => {
     supabase.auth
@@ -49,26 +65,30 @@ export function TagManagement() {
 
   const handleEditStart = (node: DBNode) => {
     setEditingNode(node);
-    setSheetMode('edit');
+    setSheetMode("edit");
   };
 
   const handleCreateStart = () => {
     setEditingNode(null);
-    setSheetMode('create');
+    setSheetMode("create");
   };
 
-  const handleSave = async (name: string, description: string, parentId: number | null) => {
+  const handleSave = async (
+    name: string,
+    description: string,
+    parentId: number | null
+  ) => {
     if (!userId) return;
-    
+
     try {
-      if (sheetMode === 'create') {
+      if (sheetMode === "create") {
         await createNodeMutation.mutateAsync({
           name: name,
           content: description || undefined,
           parent_node: parentId || undefined,
           user_id: userId,
         });
-      } else if (sheetMode === 'edit' && editingNode) {
+      } else if (sheetMode === "edit" && editingNode) {
         await updateNodeMutation.mutateAsync({
           node_id: editingNode.id,
           name: name,
@@ -85,7 +105,7 @@ export function TagManagement() {
 
   const handleSheetClose = () => {
     setEditingNode(null);
-    setSheetMode('edit'); // Reset to edit mode
+    setSheetMode("edit"); // Reset to edit mode
   };
 
   const handleDelete = async (nodeId: number) => {
@@ -110,9 +130,9 @@ export function TagManagement() {
 
   return (
     <AppLayout
-      title={listId ? "List Items" : "Manage Lists"}
+      title={isManagingLists ? "Manage Lists" : "List Items"}
       onNewItem={handleCreateStart}
-      newItemLabel={listId ? "New Item" : "New List"}
+      newItemLabel={isManagingLists ? "New List" : "New Item"}
     >
       <Container size="md">
         {isLoading && <p>Loading lists…</p>}
@@ -121,53 +141,44 @@ export function TagManagement() {
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              {listId ? "Items" : "Your lists"}
-            </h2>
-            
-            {/* Toggle between views */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setViewMode('flat')}
-                className={`px-3 py-1 rounded text-sm ${
-                  viewMode === 'flat' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-secondary text-secondary-foreground'
-                }`}
-              >
-                Flat List
-              </button>
-              <button
-                onClick={() => setViewMode('hierarchical')}
-                className={`px-3 py-1 rounded text-sm ${
-                  viewMode === 'hierarchical' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-secondary text-secondary-foreground'
-                }`}
-              >
-                Tree View
-              </button>
-            </div>
+            {isManagingLists && (
+              <h2 className="text-xl font-semibold">Your lists</h2>
+            )}
 
-            {flattenedItems.length > 0 ? (
-              viewMode === 'flat' ? (
-                <MovableList
-                  flattenedItems={flattenedItems}
-                  userId={userId}
-                  onEditStart={handleEditStart}
-                  onDelete={handleDelete}
-                />
-              ) : (
-                <HierarchicalMovableList
-                  hierarchicalTree={hierarchicalTree}
-                  userId={userId}
-                  onEditStart={handleEditStart}
-                  onDelete={handleDelete}
-                />
-              )
+            {/* Show current list name and description when viewing a specific list */}
+            {!isManagingLists && parentNode && (
+              <div className="space-y-2 group">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold">{parentNode.name}</h1>
+                    {parentNode.content && (
+                      <p className="text-muted-foreground">{parentNode.content}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEditStart(parentNode)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {hierarchicalTree.length > 0 ? (
+              <HierarchicalMovableList
+                hierarchicalTree={hierarchicalTree}
+                userId={userId}
+                onEditStart={handleEditStart}
+                onDelete={handleDelete}
+              />
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                {listId ? "No items found in this list." : "No lists found."}
+                {isManagingLists
+                  ? "No lists found."
+                  : "No items found in this list."}
               </p>
             )}
           </div>
@@ -177,68 +188,13 @@ export function TagManagement() {
       <EditNodeSheet
         node={editingNode}
         availableParents={availableParents}
-        isOpen={sheetMode === 'create' || editingNode !== null}
+        defaultParentId={isManagingLists ? undefined : parseInt(listId!, 10)}
+        isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
         onSave={handleSave}
         isSaving={createNodeMutation.isPending || updateNodeMutation.isPending}
         mode={sheetMode}
       />
-      {/* <Container size="md">
-        {isLoading && <p>Loading lists…</p>}
-        {isError && <p className="text-red-500 text-sm">Failed to load lists.</p>}
-        {!isLoading && !isError && (
-          <div className="space-y-4">
-            {creating && (
-              <CreateListForm
-                userId={userId}
-                ordering={ordering}
-                onCancel={() => setCreating(false)}
-              />
-            )}
-
-            {flattenedItems.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">React Beautiful DnD</h2>
-                  <DraggableList
-                    flattenedItems={flattenedItems}
-                    userId={userId}
-                    editingId={editingId}
-                    editName={editName}
-                    editDescription={editDescription}
-                    onEditStart={handleEditStart}
-                    onEditNameChange={setEditName}
-                    onEditDescriptionChange={setEditDescription}
-                    onEditSave={handleEditSave}
-                    onEditCancel={handleEditCancel}
-                    onDelete={handleDelete}
-                  />
-                </div>
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">React Movable</h2>
-                  <MovableList
-                    flattenedItems={flattenedItems}
-                    userId={userId}
-                    editingId={editingId}
-                    editName={editName}
-                    editDescription={editDescription}
-                    onEditStart={handleEditStart}
-                    onEditNameChange={setEditName}
-                    onEditDescriptionChange={setEditDescription}
-                    onEditSave={handleEditSave}
-                    onEditCancel={handleEditCancel}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No lists found.
-              </p>
-            )}
-          </div>
-        )}
-      </Container> */}
     </AppLayout>
   );
 }
