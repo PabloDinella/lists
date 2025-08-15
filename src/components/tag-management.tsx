@@ -38,8 +38,11 @@ export function TagManagement() {
   const { hierarchicalTree: allNodesTree } = useListData({
     userId,
     parentNodeId: null,
-    maxDepth: 2, // Always limit to 2 levels for available parents
   });
+
+  const flattenedAllItems = allNodesTree.flatMap(node => [node, ...node.children]);
+
+  console.log({allNodesTree, flattenedAllItems});
 
   // Get all first level nodes (nodes without parents) for the relationship fields
   const { hierarchicalTree: allFirstLevelNodes } = useListData({
@@ -195,12 +198,13 @@ export function TagManagement() {
         node={editingNode}
         availableParents={availableParents}
         firstLevelNodes={allFirstLevelNodes.filter(node => {
+          const targetNode = editingNode || parentNode;
           // Filter out the root node that contains the current editing item
-          if (!editingNode) return true;
+          if (!targetNode) return true;
           
           // Find which root level node contains the editing item by traversing up the hierarchy
           const findContainingRoot = (nodeId: number): number | null => {
-            const node = allNodesTree.find(n => n.id === nodeId);
+            const node = flattenedAllItems.find(n => n.id === nodeId);
             if (!node) return null;
             
             // If this node has no parent, it's a root
@@ -212,9 +216,9 @@ export function TagManagement() {
             return findContainingRoot(node.parent_node);
           };
           
-          const containingRootId = findContainingRoot(editingNode.id);
+          const containingRootId = findContainingRoot(targetNode.id);
 
-          console.log({containingRootId, nodeId: node.id, editingNode});
+          console.log({containingRootId, nodeId: node.id, editingNodeId: targetNode.id});
           
           // Filter out the root node that contains the editing item
           return containingRootId !== node.id;
