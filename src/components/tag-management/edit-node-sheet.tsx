@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -14,9 +14,21 @@ import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
+type TreeNode = {
+  id: number;
+  name: string;
+  content: string | null;
+  parent_node: number | null;
+  user_id: string;
+  created_at: string;
+  order: number | null;
+  children: TreeNode[];
+};
+
 interface EditNodeSheetProps {
   node: DBNode | null; // null when creating a new item
   availableParents: DBNode[];
+  firstLevelNodes: TreeNode[]; // All first level (root) nodes for relationship selection
   defaultParentId?: number; // Default parent ID when creating new items
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +40,7 @@ interface EditNodeSheetProps {
 export function EditNodeSheet({
   node,
   availableParents,
+  firstLevelNodes,
   defaultParentId,
   isOpen,
   onClose,
@@ -38,6 +51,10 @@ export function EditNodeSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
+  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>([]);
+  const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
+  const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>({});
+  const searchRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
@@ -53,6 +70,30 @@ export function EditNodeSheet({
       }
     }
   }, [node, isOpen, mode, defaultParentId]);
+
+  // Handle click outside to close search dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      let shouldCloseAll = true;
+      
+      // Check if click is inside any of the search dropdowns
+      Object.values(searchRefs.current).forEach(ref => {
+        if (ref && ref.contains(target)) {
+          shouldCloseAll = false;
+        }
+      });
+      
+      if (shouldCloseAll) {
+        setOpenDropdowns({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -123,6 +164,95 @@ export function EditNodeSheet({
               </Select>
               <p className="text-xs text-muted-foreground">
                 Only root items (items without parents) can be selected as parents.
+              </p>
+            </div>
+          )}
+
+          {/* Show related nodes selection for first level nodes */}
+          {firstLevelNodes.length > 0 && (
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Related Items by Category</Label>
+              
+              {firstLevelNodes.map((firstLevelNode) => (
+                <div key={firstLevelNode.id} className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    {firstLevelNode.name}
+                  </Label>
+                  <div className="relative" ref={(el) => searchRefs.current[firstLevelNode.id] = el}>
+                    <Input
+                      placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
+                      value={searchTerms[firstLevelNode.id] || ""}
+                      onChange={(e) => setSearchTerms(prev => ({ ...prev, [firstLevelNode.id]: e.target.value }))}
+                      onFocus={() => setOpenDropdowns(prev => ({ ...prev, [firstLevelNode.id]: true }))}
+                      disabled={isSaving}
+                    />
+                    {openDropdowns[firstLevelNode.id] && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {firstLevelNode.children
+                          ?.filter(child => 
+                            child.name.toLowerCase().includes((searchTerms[firstLevelNode.id] || "").toLowerCase()) &&
+                            !selectedRelatedNodes.includes(child.id)
+                          )
+                          .map((child) => (
+                            <div
+                              key={child.id}
+                              className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
+                              onClick={() => {
+                                setSelectedRelatedNodes([...selectedRelatedNodes, child.id]);
+                                setSearchTerms(prev => ({ ...prev, [firstLevelNode.id]: "" }));
+                                setOpenDropdowns(prev => ({ ...prev, [firstLevelNode.id]: false }));
+                              }}
+                            >
+                              {child.name}
+                            </div>
+                          ))}
+                        {(!firstLevelNode.children || firstLevelNode.children.filter(child => 
+                          child.name.toLowerCase().includes((searchTerms[firstLevelNode.id] || "").toLowerCase()) &&
+                          !selectedRelatedNodes.includes(child.id)
+                        ).length === 0) && (
+                          <div className="px-3 py-2 text-muted-foreground text-sm">
+                            No items found
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Show selected nodes */}
+              {selectedRelatedNodes.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Selected Items:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRelatedNodes.map((nodeId) => {
+                      // Find the node in all children of first level nodes
+                      const node = firstLevelNodes
+                        .flatMap(n => n.children || [])
+                        .find(n => n.id === nodeId);
+                      return node ? (
+                        <div
+                          key={nodeId}
+                          className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
+                        >
+                          <span>{node.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRelatedNodes(selectedRelatedNodes.filter(id => id !== nodeId))}
+                            className="text-blue-600 hover:text-blue-800"
+                            disabled={isSaving}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-muted-foreground">
+                Select items from each category that are related to this item.
               </p>
             </div>
           )}

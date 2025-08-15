@@ -19,7 +19,6 @@ export function TagManagement() {
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
 
-  console.log(listId);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !listId;
@@ -40,6 +39,13 @@ export function TagManagement() {
     userId,
     parentNodeId: null,
     maxDepth: 2, // Always limit to 2 levels for available parents
+  });
+
+  // Get all first level nodes (nodes without parents) for the relationship fields
+  const { hierarchicalTree: allFirstLevelNodes } = useListData({
+    userId,
+    parentNodeId: null,
+    maxDepth: undefined, // No depth limit to get all first level nodes
   });
 
   // Calculate available parents (second level items - nodes with parent_node that is not null)
@@ -188,6 +194,31 @@ export function TagManagement() {
       <EditNodeSheet
         node={editingNode}
         availableParents={availableParents}
+        firstLevelNodes={allFirstLevelNodes.filter(node => {
+          // Filter out the root node that contains the current editing item
+          if (!editingNode) return true;
+          
+          // Find which root level node contains the editing item by traversing up the hierarchy
+          const findContainingRoot = (nodeId: number): number | null => {
+            const node = allNodesTree.find(n => n.id === nodeId);
+            if (!node) return null;
+            
+            // If this node has no parent, it's a root
+            if (node.parent_node === null) {
+              return node.id;
+            }
+            
+            // Otherwise, traverse up to find the root
+            return findContainingRoot(node.parent_node);
+          };
+          
+          const containingRootId = findContainingRoot(editingNode.id);
+
+          console.log({containingRootId, nodeId: node.id, editingNode});
+          
+          // Filter out the root node that contains the editing item
+          return containingRootId !== node.id;
+        })}
         defaultParentId={isManagingLists ? undefined : parseInt(listId!, 10)}
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
