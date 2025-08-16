@@ -1,10 +1,10 @@
 import { supabase } from "@/lib/supabase";
-import type { Json } from "@/database.types";
 import { z } from "zod";
 
 export const metadataSchema = z.object({
   type: z
     .union([
+      z.literal("root"),
       z.literal("structure"),
       z.literal("list"),
       z.literal("tagging"),
@@ -33,7 +33,7 @@ type CreateNodeParams = {
   parent_node?: number;
   user_id: string;
   order?: number;
-  metadata?: Json;
+  metadata?: Metadata;
 };
 
 type CreateNodeResult =
@@ -81,7 +81,7 @@ export async function createNode(
       user_id: data.user_id!,
       created_at: data.created_at,
       order: data.order,
-      metadata: data.metadata,
+      metadata: metadataSchema.safeParse(data.metadata).data || null,
     },
   };
 }

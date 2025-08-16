@@ -1,14 +1,6 @@
-import {
-  Search,
-  Settings,
-  FolderArchive,
-  Plus,
-  Trash2,
-  Tag,
-} from "lucide-react";
+import { Search, Settings, FolderArchive, Trash2, Tag } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Task } from "@/lib/supabase";
 import { useNodes } from "@/hooks/use-nodes";
 import { supabase } from "@/lib/supabase";
 import { useOrdering } from "@/hooks/use-ordering";
@@ -23,10 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
-import { TaskForm } from "./task-form";
-import { TaskService } from "@/lib/supabase";
 
 // Other sections
 const otherItems = [
@@ -58,9 +47,17 @@ const otherItems = [
 ];
 
 // Component to display children nodes for a list
-function ListSection({ listId, listName, userId }: { listId: number; listName: string; userId: string }) {
+function ListSection({
+  listId,
+  listName,
+  userId,
+}: {
+  listId: number;
+  listName: string;
+  userId: string;
+}) {
   const navigate = useNavigate();
-  
+
   // Fetch children nodes for this list
   const { data: childrenNodes, isLoading: childrenLoading } = useNodes({
     user_id: userId,
@@ -80,7 +77,9 @@ function ListSection({ listId, listName, userId }: { listId: number; listName: s
     const inOrder = childrenOrdering.order
       .map((id) => byId.get(id))
       .filter(Boolean) as typeof children;
-    const missing = children.filter((c) => !childrenOrdering.order.includes(c.id));
+    const missing = children.filter(
+      (c) => !childrenOrdering.order.includes(c.id)
+    );
     return [...inOrder, ...missing];
   }, [childrenNodes, childrenOrdering]);
 
@@ -97,7 +96,9 @@ function ListSection({ listId, listName, userId }: { listId: number; listName: s
           {childrenLoading ? (
             <SidebarMenuItem>
               <SidebarMenuButton disabled>
-                <span className="text-muted-foreground text-sm">Loading...</span>
+                <span className="text-muted-foreground text-sm">
+                  Loading...
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : orderedChildren.length > 0 ? (
@@ -114,7 +115,9 @@ function ListSection({ listId, listName, userId }: { listId: number; listName: s
           ) : (
             <SidebarMenuItem>
               <SidebarMenuButton disabled>
-                <span className="text-muted-foreground text-sm pl-6">No items</span>
+                <span className="text-muted-foreground text-sm pl-6">
+                  No items
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
@@ -125,7 +128,6 @@ function ListSection({ listId, listName, userId }: { listId: number; listName: s
 }
 
 export function AppSidebar() {
-  const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [user, setUser] = useState<{ id: string } | null>(null);
   const navigate = useNavigate();
 
@@ -169,38 +171,12 @@ export function AppSidebar() {
     return [...inOrder, ...missing];
   }, [topLevelNodes, ordering]);
 
-  // Save new task to Supabase and refresh list
-  const handleSaveTask = async (
-    task: Omit<Task, "id" | "user_id" | "created_at">
-  ) => {
-    try {
-      await TaskService.createTask(task);
-    } catch (error) {
-      console.error("Failed to create task:", error);
-    }
-  };
-
   return (
     <Sidebar>
       <SidebarContent>
         <div className="flex items-center justify-between px-4 py-2">
-          <h1 className="text-xl font-bold">GTD Tasks</h1>
+          <h1 className="text-xl font-bold">trylists.app</h1>
         </div>
-        <div className="px-3 py-2">
-          <Button
-            className="w-full justify-start"
-            size="sm"
-            onClick={() => setTaskFormOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Task
-          </Button>
-        </div>
-        <TaskForm
-          open={taskFormOpen}
-          onOpenChange={setTaskFormOpen}
-          onSave={handleSaveTask}
-        />
 
         {/* Each top-level list as its own section */}
         {listsLoading ? (
@@ -217,11 +193,11 @@ export function AppSidebar() {
           </SidebarGroup>
         ) : topLevelNodes && topLevelNodes.length > 0 ? (
           orderedLists.map((list) => (
-            <ListSection 
-              key={list.id} 
-              listId={list.id} 
-              listName={list.name} 
-              userId={user!.id} 
+            <ListSection
+              key={list.id}
+              listId={list.id}
+              listName={list.name}
+              userId={user!.id}
             />
           ))
         ) : (

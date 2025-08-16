@@ -2,8 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./components/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SidebarProvider } from "./components/ui/sidebar";
-import { TaskManager } from "./components/task-manager";
-import { TagManagement } from "./components/tag-management";
+import { NodeView } from "./components/node-view/node-view";
 
 function App() {
   return (
@@ -11,9 +10,9 @@ function App() {
       <TooltipProvider>
         <SidebarProvider>
           <Routes>
-            <Route path="/" element={<TaskManager />} />
-            <Route path="/lists/manage" element={<TagManagement />} />
-            <Route path="/lists/:listId" element={<TagManagement />} />
+            <Route path="/" element={<NodeView />} />
+            <Route path="/lists/manage" element={<NodeView />} />
+            <Route path="/lists/:listId" element={<NodeView />} />
           </Routes>
         </SidebarProvider>
       </TooltipProvider>

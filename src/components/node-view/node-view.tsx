@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { AppLayout } from "./app-layout";
-import { Container } from "./ui/container";
+import { AppLayout } from "../app-layout";
+import { Container } from "../ui/container";
 import { supabase } from "@/lib/supabase";
 import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
-import { HierarchicalMovableList } from "./tag-management/hierarchical-movable-list";
-import { EditNodeSheet } from "./tag-management/edit-node-sheet";
-import { TreeNode, useListData } from "./tag-management/use-list-data";
-import { Button } from "./ui/button";
+import { HierarchicalMovableList } from "./hierarchical-movable-list";
+import { EditNodeSheet } from "./edit-node-sheet";
+import { TreeNode, useListData } from "./use-list-data";
+import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
@@ -35,7 +35,7 @@ const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
   return [...all, node];
 };
 
-export function TagManagement() {
+export function NodeView() {
   const { listId: listIdString } = useParams<{ listId: string }>();
   const listId = listIdString ? parseInt(listIdString, 10) : 0;
   const [userId, setUserId] = useState<string | null>(null);
@@ -61,7 +61,6 @@ export function TagManagement() {
     isError,
   } = useListData({
     userId,
-    parentNodeId: null,
   });
 
   const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
@@ -71,7 +70,7 @@ export function TagManagement() {
 
   // Calculate available parents (second level items - nodes with parent_node that is not null)
   const availableParents = isManagingLists
-    ? allNodesTree
+    ? flattenedAllItems.filter(filter)
     : editingNode?.metadata?.type === "loop"
     ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
     : undefined;
@@ -231,7 +230,7 @@ export function TagManagement() {
               </div>
             )}
 
-            {currentNode && currentNode.children.length > 0 ? (
+            {tree ? (
               <HierarchicalMovableList
                 hierarchicalTree={tree}
                 onEditStart={handleEditStart}
