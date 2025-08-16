@@ -13,6 +13,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import type { Json } from "@/database.types";
 
 type TreeNode = {
   id: number;
@@ -22,6 +23,7 @@ type TreeNode = {
   user_id: string;
   created_at: string;
   order: number | null;
+  metadata: Json | null;
   children: TreeNode[];
 };
 
@@ -55,6 +57,15 @@ export function EditNodeSheet({
   const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
   const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>({});
   const searchRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // Determine if the current node is structural based on metadata
+  const isStructuralMode = node?.metadata && 
+                          typeof node.metadata === 'object' && 
+                          node.metadata !== null && 
+                          !Array.isArray(node.metadata) &&
+                          'type' in node.metadata && 
+                          typeof node.metadata.type === 'string' &&
+                          node.metadata.type === 'structural';
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
@@ -110,16 +121,38 @@ export function EditNodeSheet({
     }, 300);
   };
 
+  // Determine the mode-specific title and description
+  const getModeSpecificContent = () => {
+    if (isStructuralMode) {
+      return {
+        title: mode === 'create' ? 'Create New List' : 'Edit List',
+        description: mode === 'create' 
+          ? 'Create a new list to organize your tasks and projects.'
+          : 'Make changes to your list. Click save when you\'re done.',
+        namePlaceholder: 'Enter list name',
+        descriptionPlaceholder: 'Enter list description (optional)'
+      };
+    } else {
+      return {
+        title: mode === 'create' ? 'Create New Task' : 'Edit Task',
+        description: mode === 'create' 
+          ? 'Create a new task. You can optionally assign it to a parent.'
+          : 'Make changes to your task. Click save when you\'re done.',
+        namePlaceholder: 'Enter task name',
+        descriptionPlaceholder: 'Enter task description (optional)'
+      };
+    }
+  };
+
+  const modeContent = getModeSpecificContent();
+
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent className="sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{mode === 'create' ? 'Create New Item' : 'Edit Item'}</SheetTitle>
+          <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>
-            {mode === 'create' 
-              ? 'Create a new item. You can optionally assign it to a parent.'
-              : 'Make changes to your item. Click save when you\'re done.'
-            }
+            {modeContent.description}
           </SheetDescription>
         </SheetHeader>
 
@@ -130,7 +163,7 @@ export function EditNodeSheet({
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter item name"
+              placeholder={modeContent.namePlaceholder}
               disabled={isSaving}
             />
           </div>
@@ -140,13 +173,14 @@ export function EditNodeSheet({
               id="description"
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder="Enter item description (optional)"
+              placeholder={modeContent.descriptionPlaceholder}
               rows={3}
               disabled={isSaving}
             />
           </div>
+          
           {/* Show parent selection for create mode or edit mode with existing parent */}
-          {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && (
+          {/* {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && ( */}
             <div className="grid gap-2">
               <Label htmlFor="parent">Parent Item</Label>
               <Select
@@ -166,10 +200,10 @@ export function EditNodeSheet({
                 Only root items (items without parents) can be selected as parents.
               </p>
             </div>
-          )}
+          {/* )} */}
 
-          {/* Show related nodes selection for first level nodes */}
-          {firstLevelNodes.length > 0 && (
+          {/* Show related nodes selection only in leaf mode (not structural mode) */}
+          {!isStructuralMode && firstLevelNodes.length > 0 && (
             <div className="space-y-4">
               <Label className="text-base font-medium">Related Items by Category</Label>
               
@@ -252,7 +286,7 @@ export function EditNodeSheet({
               )}
               
               <p className="text-xs text-muted-foreground">
-                Select items from each category that are related to this item.
+                Select items from each category that are related to this task.
               </p>
             </div>
           )}

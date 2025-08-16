@@ -7,42 +7,19 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      menu: {
-        Row: {
-          created_at: string
-          id: number
-          nodes: number[] | null
-          section_name: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          nodes?: number[] | null
-          section_name: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          nodes?: number[] | null
-          section_name?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       node: {
         Row: {
           content: string | null
           created_at: string
           id: number
+          metadata: Json | null
           name: string
           order: number | null
           parent_node: number | null
@@ -52,6 +29,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: number
+          metadata?: Json | null
           name: string
           order?: number | null
           parent_node?: number | null
@@ -61,6 +39,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: number
+          metadata?: Json | null
           name?: string
           order?: number | null
           parent_node?: number | null
@@ -98,15 +77,28 @@ export type Database = {
           root_node?: number | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ordering_root_node_fkey"
-            columns: ["root_node"]
-            isOneToOne: true
-            referencedRelation: "node"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          created_at: string
+          id: number
+          settings: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          settings?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          settings?: Json | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

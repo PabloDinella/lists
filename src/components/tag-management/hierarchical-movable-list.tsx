@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import type { Json } from "@/database.types";
 
 type TreeNode = {
   id: number;
@@ -11,6 +12,7 @@ type TreeNode = {
   user_id: string;
   created_at: string;
   order: number | null;
+  metadata: Json | null;
   children: TreeNode[];
 };
 
@@ -22,14 +24,12 @@ type HierarchicalItem = {
 
 interface HierarchicalMovableListProps {
   hierarchicalTree: TreeNode[];
-  userId: string;
   onEditStart: (node: DBNode) => void;
   onDelete: (nodeId: number) => void;
 }
 
 export function HierarchicalMovableList({
   hierarchicalTree,
-  userId,
   onEditStart,
   onDelete,
 }: HierarchicalMovableListProps) {
@@ -37,7 +37,7 @@ export function HierarchicalMovableList({
   const flattenTree = (nodes: TreeNode[], depth: number = 0): HierarchicalItem[] => {
     const items: HierarchicalItem[] = [];
     
-    nodes.forEach((node, index) => {
+    nodes.forEach((node) => {
       items.push({
         node: {
           id: node.id,
@@ -47,6 +47,7 @@ export function HierarchicalMovableList({
           user_id: node.user_id,
           created_at: node.created_at,
           order: node.order,
+          metadata: node.metadata,
         },
         depth,
         dragIndex: items.length,

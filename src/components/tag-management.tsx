@@ -31,7 +31,7 @@ export function TagManagement() {
   const { hierarchicalTree, parentNode, isLoading, isError } = useListData({
     userId,
     parentNodeId: listId ? parseInt(listId, 10) : null,
-    maxDepth: isManagingLists ? 2 : undefined, // Limit to 2 levels when managing lists
+    // maxDepth: isManagingLists ? 2 : undefined, // Limit to 2 levels when managing lists
   });
 
   // Get all nodes to find second-level items for available parents
@@ -48,15 +48,16 @@ export function TagManagement() {
   const { hierarchicalTree: allFirstLevelNodes } = useListData({
     userId,
     parentNodeId: null,
-    maxDepth: undefined, // No depth limit to get all first level nodes
   });
 
   // Calculate available parents (second level items - nodes with parent_node that is not null)
   const availableParents = isManagingLists
     ? allNodesTree
-        .flatMap((rootNode) => rootNode.children)
-        .filter((node) => node.parent_node !== null)
+        // .flatMap((rootNode) => rootNode.children)
+        // .filter((node) => node.parent_node !== null)
     : allNodesTree.filter((node) => node.parent_node === null);
+
+    console.log({availableParents});
 
   useEffect(() => {
     supabase.auth
@@ -179,7 +180,6 @@ export function TagManagement() {
             {hierarchicalTree.length > 0 ? (
               <HierarchicalMovableList
                 hierarchicalTree={hierarchicalTree}
-                userId={userId}
                 onEditStart={handleEditStart}
                 onDelete={handleDelete}
               />

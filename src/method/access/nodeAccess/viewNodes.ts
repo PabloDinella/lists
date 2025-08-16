@@ -52,6 +52,7 @@ export async function viewNodes(
       user_id: node.user_id!,
       created_at: node.created_at,
       order: node.order,
+      metadata: node.metadata,
     })),
   };
 }

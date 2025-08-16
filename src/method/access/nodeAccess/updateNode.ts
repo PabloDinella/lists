@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { Node } from "./createNode";
+import type { Json } from "@/database.types";
 
 type UpdateNodeParams = {
   node_id: number;
@@ -8,6 +9,7 @@ type UpdateNodeParams = {
   parent_node?: number | null;
   user_id: string;
   order?: number | null;
+  metadata?: Json;
 };
 
 type UpdateNodeResult =
@@ -26,12 +28,14 @@ export async function updateNode(
     content?: string | null;
     parent_node?: number | null;
     order?: number | null;
+    metadata?: Json;
   } = {};
   
   if (params.name !== undefined) updateData.name = params.name;
   if (params.content !== undefined) updateData.content = params.content;
   if (params.parent_node !== undefined) updateData.parent_node = params.parent_node;
   if (params.order !== undefined) updateData.order = params.order;
+  if (params.metadata !== undefined) updateData.metadata = params.metadata;
 
   const { data, error } = await supabase
     .from("node")
@@ -60,6 +64,7 @@ export async function updateNode(
       user_id: data.user_id!,
       created_at: data.created_at,
       order: data.order,
+      metadata: data.metadata,
     },
   };
 }

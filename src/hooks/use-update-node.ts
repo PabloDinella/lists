@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateNodeManager } from "@/method/manager/productivityManager/updateNode";
+import type { Json } from "@/database.types";
 
 type UpdateNodeParams = {
   node_id: number;
@@ -8,6 +9,7 @@ type UpdateNodeParams = {
   parent_node?: number | null;
   user_id: string;
   order?: number | null;
+  metadata?: Json;
 };
 
 export function useUpdateNode() {

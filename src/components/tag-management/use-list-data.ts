@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNodes } from "@/hooks/use-nodes";
 import { useOrdering } from "@/hooks/use-ordering";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import type { Json } from "@/database.types";
 
 type TreeNode = {
   id: number;
@@ -11,6 +12,7 @@ type TreeNode = {
   user_id: string;
   created_at: string;
   order: number | null;
+  metadata: Json | null;
   children: TreeNode[];
 };
 
@@ -24,7 +26,6 @@ type FlattenedItem = {
 interface UseListDataProps {
   userId: string | null;
   parentNodeId?: number | null;
-  maxDepth?: number; // Maximum depth to build the tree
 }
 
 interface UseListDataReturn {
@@ -39,10 +40,37 @@ interface UseListDataReturn {
   isError: boolean;
 }
 
+// Helper functions to work with node metadata
+const isStructuralNode = (node: DBNode): boolean => {
+  return node.metadata && 
+         typeof node.metadata === 'object' && 
+         node.metadata !== null && 
+         !Array.isArray(node.metadata) &&
+         'type' in node.metadata && 
+         typeof node.metadata.type === 'string' &&
+         node.metadata.type === 'structural';
+};
+
+const getNodeRenderDepth = (node: DBNode): number => {
+  if (node.metadata && 
+      typeof node.metadata === 'object' && 
+      node.metadata !== null && 
+      !Array.isArray(node.metadata) &&
+      'renderDepth' in node.metadata && 
+      typeof node.metadata.renderDepth === 'number') {
+    return node.metadata.renderDepth;
+  }
+  return 0;
+};
+
+const shouldRenderChildren = (node: DBNode, currentDepth: number): boolean => {
+  const maxDepth = getNodeRenderDepth(node);
+  return maxDepth === 0 || currentDepth < maxDepth;
+};
+
 export function useListData({
   userId,
   parentNodeId,
-  maxDepth,
 }: UseListDataProps): UseListDataReturn {
   const {
     data: lists,
@@ -80,22 +108,20 @@ export function useListData({
         ]
       : lists;
 
-    // Build tree structure with depth limitation
+    // Build tree structure with metadata-based depth limitation
     const buildTree = (nodes: DBNode[], parentId: number | null, currentDepth: number = 0): TreeNode[] => {
-      if (maxDepth !== undefined && currentDepth >= maxDepth) {
-        return [];
-      }
-      
       return nodes
         .filter(node => node.parent_node === parentId)
         .map(node => ({
           ...node,
-          children: buildTree(allNodes, node.id, currentDepth + 1)
+          children: shouldRenderChildren(node, currentDepth) 
+            ? buildTree(allNodes, node.id, currentDepth + 1)
+            : []
         }));
     };
 
     return buildTree(orderedLists, parentNodeId ?? null);
-  }, [lists, allNodes, ordering, parentNodeId, maxDepth]);
+  }, [lists, allNodes, ordering, parentNodeId]);
 
   // Create a flattened structure for drag and drop (keeping for backward compatibility)
   const { flattenedItems, childrenByParent } = useMemo(() => {

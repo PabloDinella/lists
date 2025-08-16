@@ -1,6 +1,7 @@
 import { GripVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { useDeleteNode } from "@/hooks/use-delete-node";
+import { useNavigate } from "react-router-dom";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 import clsx from "clsx";
 
@@ -24,6 +25,19 @@ export function BaseNodeItem({
   depth = 0,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
+  const navigate = useNavigate();
+
+  const handleNodeClick = () => {
+    // Navigate to the list view for this node
+    navigate(`/lists/${node.id}`);
+  };
+
+  const handleNodeRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Open the edit sheet on right-click
+    onEditStart(node);
+  };
 
   return (
     <div
@@ -54,11 +68,27 @@ export function BaseNodeItem({
                 <GripVertical className="h-4 w-4" />
               </div>
             ) : (
-              <GripVertical className="h-4 w-4" />
+              <div className="relative">
+                <GripVertical className="h-4 w-4" />
+              </div>
             )}
           </button>
 
-          <div className="flex-1">
+          {/* Clickable node content area */}
+          <div 
+            className="flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors"
+            onClick={handleNodeClick}
+            onContextMenu={handleNodeRightClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleNodeClick();
+              }
+            }}
+            aria-label={`View ${node.name}. Right-click to edit.`}
+          >
             <h3 className="font-medium">{node.name}</h3>
             {node.content && (
               <p className="text-sm text-muted-foreground">{node.content}</p>
@@ -69,14 +99,20 @@ export function BaseNodeItem({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onEditStart(node)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering node click
+              onEditStart(node);
+            }}
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onDelete(node.id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering node click
+              onDelete(node.id);
+            }}
             disabled={deleteNodeMutation.isPending}
           >
             <Trash2 className="h-4 w-4" />

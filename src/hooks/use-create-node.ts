@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNodeManager } from "@/method/manager/productivityManager/createNode";
+import type { Json } from "@/database.types";
 
 type CreateNodeParams = {
   name: string;
@@ -7,6 +8,7 @@ type CreateNodeParams = {
   parent_node?: number;
   user_id: string;
   order?: number;
+  metadata?: Json;
 };
 
 export function useCreateNode() {

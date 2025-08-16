@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { Json } from "@/database.types";
 
 export type Node = {
   id: number;
@@ -8,6 +9,7 @@ export type Node = {
   user_id: string;
   created_at: string;
   order: number | null;
+  metadata: Json | null;
 };
 
 type CreateNodeParams = {
@@ -16,6 +18,7 @@ type CreateNodeParams = {
   parent_node?: number;
   user_id: string;
   order?: number;
+  metadata?: Json;
 };
 
 type CreateNodeResult =
@@ -35,6 +38,7 @@ export async function createNode(
     parent_node: params.parent_node || null,
     user_id: params.user_id,
     order: params.order ?? null,
+    metadata: params.metadata || null,
   };
 
   const { data, error } = await supabase
@@ -62,6 +66,7 @@ export async function createNode(
       user_id: data.user_id!,
       created_at: data.created_at,
       order: data.order,
+      metadata: data.metadata,
     },
   };
 }
