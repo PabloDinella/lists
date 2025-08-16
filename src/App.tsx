@@ -3,18 +3,46 @@ import { ThemeProvider } from "./components/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { NodeView } from "./components/node-view/node-view";
+import { SignIn } from "./components/sign-in";
+import { ProtectedRoute } from "./components/protected-route";
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <TooltipProvider>
-        <SidebarProvider>
-          <Routes>
-            <Route path="/" element={<NodeView />} />
-            <Route path="/lists/manage" element={<NodeView />} />
-            <Route path="/lists/:listId" element={<NodeView />} />
-          </Routes>
-        </SidebarProvider>
+        <Routes>
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <NodeView />
+                </SidebarProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lists/manage"
+            element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <NodeView />
+                </SidebarProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lists/:listId"
+            element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <NodeView />
+                </SidebarProvider>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
       </TooltipProvider>
     </ThemeProvider>
   );

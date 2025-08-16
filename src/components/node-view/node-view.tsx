@@ -233,6 +233,7 @@ export function NodeView() {
             {tree ? (
               <HierarchicalMovableList
                 hierarchicalTree={tree}
+                rootNode={currentNode!}
                 onEditStart={handleEditStart}
                 onDelete={handleDelete}
               />

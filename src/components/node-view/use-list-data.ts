@@ -32,7 +32,7 @@ interface UseListDataReturn {
 export function useListData({ userId }: UseListDataProps): UseListDataReturn {
   const { data: ordering } = useOrdering({
     user_id: userId ?? undefined,
-    root_node: null,
+    // root_node: null,
   });
   const {
     data: allNodes,

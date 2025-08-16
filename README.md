@@ -22,6 +22,20 @@ The app follows the core principles of the GTD methodology:
 4. **Reflect**: Review your lists regularly
 5. **Engage**: Take action on your tasks with confidence
 
+## Roadmap
+
+- [x] Flexible lists (add, remove and modify any list)
+- [ ] Drag and drop reordering
+
+
+## Braindump
+
+Ideas and thoughts that could turn into new features:
+
+- Customizable shortcuts
+- Weekly and daily review flows
+- Processing aid (maybe AI could help)
+
 ## Tech Stack
 
 - **Frontend**:

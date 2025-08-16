@@ -2,72 +2,64 @@ import { useState, useEffect } from "react";
 import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
-import type { Json } from "@/database.types";
-
-type TreeNode = {
-  id: number;
-  name: string;
-  content: string | null;
-  parent_node: number | null;
-  user_id: string;
-  created_at: string;
-  order: number | null;
-  metadata: Json | null;
-  children: TreeNode[];
-};
+import { TreeNode } from "./use-list-data";
+import { useUpsertOrdering } from "@/hooks/use-ordering";
+import { supabase } from "@/lib/supabase";
 
 type HierarchicalItem = {
-  node: DBNode;
-  depth: number;
+  node: TreeNode;
+  // depth: number;
   dragIndex: number;
 };
 
 interface HierarchicalMovableListProps {
   hierarchicalTree: TreeNode[];
+  rootNode: TreeNode;
+  depth?: number;
   onEditStart: (node: DBNode) => void;
   onDelete: (nodeId: number) => void;
 }
 
 export function HierarchicalMovableList({
   hierarchicalTree,
+  rootNode,
+  depth = 0,
   onEditStart,
   onDelete,
 }: HierarchicalMovableListProps) {
-  // Convert hierarchical tree to flat list with depth information
-  const flattenTree = (nodes: TreeNode[], depth: number = 0): HierarchicalItem[] => {
-    const items: HierarchicalItem[] = [];
-    
-    nodes.forEach((node) => {
-      items.push({
-        node: {
-          id: node.id,
-          name: node.name,
-          content: node.content,
-          parent_node: node.parent_node,
-          user_id: node.user_id,
-          created_at: node.created_at,
-          order: node.order,
-          metadata: node.metadata,
-        },
-        depth,
-        dragIndex: items.length,
-      });
-      
-      // Recursively add children
-      if (node.children && node.children.length > 0) {
-        items.push(...flattenTree(node.children, depth + 1));
-      }
-    });
-    
-    return items;
-  };
-
   const [items, setItems] = useState<HierarchicalItem[]>([]);
+
+  const [user, setUser] = useState<{ id: string } | null>(null);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth
+      .getUser()
+      .then(({ data }: { data: { user: { id: string } | null } }) =>
+        setUser(data.user)
+      );
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event: unknown, session: { user: { id: string } | null } | null) => {
+        setUser(session?.user ?? null);
+      }
+    );
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Sync with external prop changes
   useEffect(() => {
-    setItems(flattenTree(hierarchicalTree));
+    // setItems(flattenTree(hierarchicalTree));
+    setItems(
+      hierarchicalTree.map((node, index) => ({
+        node,
+        dragIndex: index,
+      }))
+    );
   }, [hierarchicalTree]);
+
+  const upsertOrdering = useUpsertOrdering();
 
   const handleChange = async ({
     oldIndex,
@@ -80,22 +72,22 @@ export function HierarchicalMovableList({
     setItems(reorderedItems);
 
     // Persist the new order
-    // const newOrder = reorderedItems.map((item) => item.node.id);
-    // if (userId) {
-    //   try {
-    //   await upsertOrdering.mutateAsync({
-    //     user_id: userId,
-    //     root_node: null,
-    //     order: newOrder,
-    //   });
-    //   } catch (error) {
-    //     console.error("Failed to persist ordering:", error);
-    //   }
-    // }
+    const newOrder = reorderedItems.map((item) => item.node.id);
+    if (user?.id) {
+      try {
+        await upsertOrdering.mutateAsync({
+          user_id: user.id,
+          root_node: rootNode.id,
+          order: newOrder,
+        });
+      } catch (error) {
+        console.error("Failed to persist ordering:", error);
+      }
+    }
   };
 
   return (
-    <div className="space-y-2">
+    <div>
       <List
         values={items}
         onChange={handleChange}
@@ -113,7 +105,7 @@ export function HierarchicalMovableList({
             <div
               key={key}
               {...restProps}
-              className="p-2"
+              // className="p-2"
               style={{
                 ...restProps.style,
                 cursor: isDragged ? "grabbing" : "default",
@@ -121,12 +113,20 @@ export function HierarchicalMovableList({
             >
               <BaseNodeItem
                 node={item.node}
-                isChild={item.depth > 0}
+                // isChild={item.depth > 0}
                 onEditStart={onEditStart}
                 onDelete={onDelete}
                 isDragging={isDragged}
-                depth={item.depth}
-              />
+                depth={depth}
+              >
+                <HierarchicalMovableList
+                  hierarchicalTree={item.node.children}
+                  rootNode={item.node}
+                  depth={depth + 1}
+                  onEditStart={onEditStart}
+                  onDelete={onDelete}
+                />
+              </BaseNodeItem>
             </div>
           );
         }}

@@ -1,4 +1,4 @@
-import { Search, Settings, FolderArchive, Trash2, Tag } from "lucide-react";
+import { Search, Settings, FolderArchive, Trash2, Tag, LogOut } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -127,6 +127,12 @@ export function AppSidebar() {
   const [user, setUser] = useState<{ id: string } | null>(null);
   const navigate = useNavigate();
 
+  // Sign out function
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/sign-in');
+  };
+
   // Get current user
   useEffect(() => {
     supabase.auth
@@ -242,6 +248,17 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
