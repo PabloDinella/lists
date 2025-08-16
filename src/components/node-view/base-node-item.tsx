@@ -1,6 +1,9 @@
 import { GripVertical, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import { useDeleteNode } from "@/hooks/use-delete-node";
+import { useUpdateNode } from "@/hooks/use-update-node";
+import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 import clsx from "clsx";
@@ -11,7 +14,6 @@ interface BaseNodeItemProps {
   isChild?: boolean;
   onEditStart: (node: DBNode) => void;
   onDelete: (nodeId: number) => void;
-  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
   children: React.ReactNode;
   isDragging?: boolean;
   depth?: number;
@@ -22,12 +24,13 @@ export function BaseNodeItem({
   isChild = false,
   onEditStart,
   onDelete,
-  dragHandleProps,
   isDragging = false,
   depth = 0,
   children,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
+  const updateNodeMutation = useUpdateNode();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const handleNodeClick = () => {
@@ -40,6 +43,18 @@ export function BaseNodeItem({
     e.stopPropagation();
     // Open the edit sheet on right-click
     onEditStart(node);
+  };
+
+  const handleToggleCompleted = (checked: boolean) => {
+    if (!user?.id) return;
+    
+    updateNodeMutation.mutate({
+      node_id: node.id,
+      user_id: user.id,
+      metadata: {
+        completed: checked,
+      },
+    });
   };
 
   return (
@@ -77,9 +92,23 @@ export function BaseNodeItem({
                 )}
               </button>
 
+              {/* Checkbox for completion status - only show for loop type nodes */}
+              {node.metadata?.type === 'loop' && (
+                <Checkbox
+                  checked={node.metadata?.completed || false}
+                  onCheckedChange={handleToggleCompleted}
+                  aria-label={`Mark ${node.name} as ${node.metadata?.completed ? 'incomplete' : 'complete'}`}
+                />
+              )}
+
               {/* Clickable node content area */}
               <div
-                className="flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors"
+                className={clsx(
+                  "flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors",
+                  {
+                    "opacity-60": node.metadata?.completed,
+                  }
+                )}
                 onClick={handleNodeClick}
                 onContextMenu={handleNodeRightClick}
                 role="button"
@@ -92,9 +121,25 @@ export function BaseNodeItem({
                 }}
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
-                <h3 className="font-medium">{node.name}</h3>
+                <h3 
+                  className={clsx(
+                    "font-medium",
+                    {
+                      "line-through": node.metadata?.completed,
+                    }
+                  )}
+                >
+                  {node.name}
+                </h3>
                 {node.content && (
-                  <p className="text-sm text-muted-foreground">
+                  <p 
+                    className={clsx(
+                      "text-sm text-muted-foreground",
+                      {
+                        "line-through": node.metadata?.completed,
+                      }
+                    )}
+                  >
                     {node.content}
                   </p>
                 )}
