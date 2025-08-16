@@ -29,14 +29,14 @@ type TreeNode = {
 
 interface EditNodeSheetProps {
   node: DBNode | null; // null when creating a new item
-  availableParents: DBNode[];
-  firstLevelNodes: TreeNode[]; // All first level (root) nodes for relationship selection
+  availableParents?: TreeNode[];
+  firstLevelNodes?: TreeNode[]; // All first level (root) nodes for relationship selection
   defaultParentId?: number; // Default parent ID when creating new items
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, description: string, parentId: number | null) => void;
   isSaving?: boolean;
-  mode: 'edit' | 'create';
+  mode: "edit" | "create";
 }
 
 export function EditNodeSheet({
@@ -53,28 +53,33 @@ export function EditNodeSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
-  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>([]);
+  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
+    []
+  );
   const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
-  const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>({});
+  const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>(
+    {}
+  );
   const searchRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Determine if the current node is structural based on metadata
-  const isStructuralMode = node?.metadata && 
-                          typeof node.metadata === 'object' && 
-                          node.metadata !== null && 
-                          !Array.isArray(node.metadata) &&
-                          'type' in node.metadata && 
-                          typeof node.metadata.type === 'string' &&
-                          node.metadata.type === 'structural';
+  const isStructuralMode =
+    node?.metadata &&
+    typeof node.metadata === "object" &&
+    node.metadata !== null &&
+    !Array.isArray(node.metadata) &&
+    "type" in node.metadata &&
+    typeof node.metadata.type === "string" &&
+    node.metadata.type === "structural";
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'edit' && node) {
+      if (mode === "edit" && node) {
         setName(node.name);
         setDescription(node.content || "");
         setParentId(node.parent_node);
-      } else if (mode === 'create') {
+      } else if (mode === "create") {
         setName("");
         setDescription("");
         setParentId(defaultParentId || null);
@@ -87,22 +92,22 @@ export function EditNodeSheet({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       let shouldCloseAll = true;
-      
+
       // Check if click is inside any of the search dropdowns
-      Object.values(searchRefs.current).forEach(ref => {
+      Object.values(searchRefs.current).forEach((ref) => {
         if (ref && ref.contains(target)) {
           shouldCloseAll = false;
         }
       });
-      
+
       if (shouldCloseAll) {
         setOpenDropdowns({});
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -125,21 +130,23 @@ export function EditNodeSheet({
   const getModeSpecificContent = () => {
     if (isStructuralMode) {
       return {
-        title: mode === 'create' ? 'Create New List' : 'Edit List',
-        description: mode === 'create' 
-          ? 'Create a new list to organize your tasks and projects.'
-          : 'Make changes to your list. Click save when you\'re done.',
-        namePlaceholder: 'Enter list name',
-        descriptionPlaceholder: 'Enter list description (optional)'
+        title: mode === "create" ? "Create New List" : "Edit List",
+        description:
+          mode === "create"
+            ? "Create a new list to organize your tasks and projects."
+            : "Make changes to your list. Click save when you're done.",
+        namePlaceholder: "Enter list name",
+        descriptionPlaceholder: "Enter list description (optional)",
       };
     } else {
       return {
-        title: mode === 'create' ? 'Create New Task' : 'Edit Task',
-        description: mode === 'create' 
-          ? 'Create a new task. You can optionally assign it to a parent.'
-          : 'Make changes to your task. Click save when you\'re done.',
-        namePlaceholder: 'Enter task name',
-        descriptionPlaceholder: 'Enter task description (optional)'
+        title: mode === "create" ? "Create New Task" : "Edit Task",
+        description:
+          mode === "create"
+            ? "Create a new task. You can optionally assign it to a parent."
+            : "Make changes to your task. Click save when you're done.",
+        namePlaceholder: "Enter task name",
+        descriptionPlaceholder: "Enter task description (optional)",
       };
     }
   };
@@ -151,9 +158,7 @@ export function EditNodeSheet({
       <SheetContent className="sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{modeContent.title}</SheetTitle>
-          <SheetDescription>
-            {modeContent.description}
-          </SheetDescription>
+          <SheetDescription>{modeContent.description}</SheetDescription>
         </SheetHeader>
 
         <div className="grid gap-4 py-4">
@@ -172,21 +177,26 @@ export function EditNodeSheet({
             <Textarea
               id="description"
               value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setDescription(e.target.value)
+              }
               placeholder={modeContent.descriptionPlaceholder}
               rows={3}
               disabled={isSaving}
             />
           </div>
-          
+
           {/* Show parent selection for create mode or edit mode with existing parent */}
           {/* {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && ( */}
+          {availableParents && availableParents.length > 0 && (
             <div className="grid gap-2">
               <Label htmlFor="parent">Parent Item</Label>
               <Select
                 id="parent"
                 value={parentId?.toString() || ""}
-                onChange={(e) => setParentId(e.target.value ? parseInt(e.target.value) : null)}
+                onChange={(e) =>
+                  setParentId(e.target.value ? parseInt(e.target.value) : null)
+                }
                 disabled={isSaving}
               >
                 <option value="">No parent (make it a root item)</option>
@@ -197,114 +207,162 @@ export function EditNodeSheet({
                 ))}
               </Select>
               <p className="text-xs text-muted-foreground">
-                Only root items (items without parents) can be selected as parents.
-              </p>
-            </div>
-          {/* )} */}
-
-          {/* Show related nodes selection only in leaf mode (not structural mode) */}
-          {!isStructuralMode && firstLevelNodes.length > 0 && (
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Related Items by Category</Label>
-              
-              {firstLevelNodes.map((firstLevelNode) => (
-                <div key={firstLevelNode.id} className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    {firstLevelNode.name}
-                  </Label>
-                  <div className="relative" ref={(el) => searchRefs.current[firstLevelNode.id] = el}>
-                    <Input
-                      placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
-                      value={searchTerms[firstLevelNode.id] || ""}
-                      onChange={(e) => setSearchTerms(prev => ({ ...prev, [firstLevelNode.id]: e.target.value }))}
-                      onFocus={() => setOpenDropdowns(prev => ({ ...prev, [firstLevelNode.id]: true }))}
-                      disabled={isSaving}
-                    />
-                    {openDropdowns[firstLevelNode.id] && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {firstLevelNode.children
-                          ?.filter(child => 
-                            child.name.toLowerCase().includes((searchTerms[firstLevelNode.id] || "").toLowerCase()) &&
-                            !selectedRelatedNodes.includes(child.id)
-                          )
-                          .map((child) => (
-                            <div
-                              key={child.id}
-                              className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                              onClick={() => {
-                                setSelectedRelatedNodes([...selectedRelatedNodes, child.id]);
-                                setSearchTerms(prev => ({ ...prev, [firstLevelNode.id]: "" }));
-                                setOpenDropdowns(prev => ({ ...prev, [firstLevelNode.id]: false }));
-                              }}
-                            >
-                              {child.name}
-                            </div>
-                          ))}
-                        {(!firstLevelNode.children || firstLevelNode.children.filter(child => 
-                          child.name.toLowerCase().includes((searchTerms[firstLevelNode.id] || "").toLowerCase()) &&
-                          !selectedRelatedNodes.includes(child.id)
-                        ).length === 0) && (
-                          <div className="px-3 py-2 text-muted-foreground text-sm">
-                            No items found
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              
-              {/* Show selected nodes */}
-              {selectedRelatedNodes.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Selected Items:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedRelatedNodes.map((nodeId) => {
-                      // Find the node in all children of first level nodes
-                      const node = firstLevelNodes
-                        .flatMap(n => n.children || [])
-                        .find(n => n.id === nodeId);
-                      return node ? (
-                        <div
-                          key={nodeId}
-                          className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
-                        >
-                          <span>{node.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedRelatedNodes(selectedRelatedNodes.filter(id => id !== nodeId))}
-                            className="text-blue-600 hover:text-blue-800"
-                            disabled={isSaving}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <p className="text-xs text-muted-foreground">
-                Select items from each category that are related to this task.
+                Only root items (items without parents) can be selected as
+                parents.
               </p>
             </div>
           )}
+          {/* )} */}
+
+          {/* Show related nodes selection only in leaf mode (not structural mode) */}
+          {!isStructuralMode &&
+            firstLevelNodes &&
+            firstLevelNodes.length > 0 && (
+              <div className="space-y-4">
+                <Label className="text-base font-medium">
+                  Related Items by Category
+                </Label>
+
+                {firstLevelNodes.map((firstLevelNode) => (
+                  <div key={firstLevelNode.id} className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      {firstLevelNode.name}
+                    </Label>
+                    <div
+                      className="relative"
+                      ref={(el) => (searchRefs.current[firstLevelNode.id] = el)}
+                    >
+                      <Input
+                        placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
+                        value={searchTerms[firstLevelNode.id] || ""}
+                        onChange={(e) =>
+                          setSearchTerms((prev) => ({
+                            ...prev,
+                            [firstLevelNode.id]: e.target.value,
+                          }))
+                        }
+                        onFocus={() =>
+                          setOpenDropdowns((prev) => ({
+                            ...prev,
+                            [firstLevelNode.id]: true,
+                          }))
+                        }
+                        disabled={isSaving}
+                      />
+                      {openDropdowns[firstLevelNode.id] && (
+                        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                          {firstLevelNode.children
+                            ?.filter(
+                              (child) =>
+                                child.name
+                                  .toLowerCase()
+                                  .includes(
+                                    (
+                                      searchTerms[firstLevelNode.id] || ""
+                                    ).toLowerCase()
+                                  ) && !selectedRelatedNodes.includes(child.id)
+                            )
+                            .map((child) => (
+                              <div
+                                key={child.id}
+                                className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
+                                onClick={() => {
+                                  setSelectedRelatedNodes([
+                                    ...selectedRelatedNodes,
+                                    child.id,
+                                  ]);
+                                  setSearchTerms((prev) => ({
+                                    ...prev,
+                                    [firstLevelNode.id]: "",
+                                  }));
+                                  setOpenDropdowns((prev) => ({
+                                    ...prev,
+                                    [firstLevelNode.id]: false,
+                                  }));
+                                }}
+                              >
+                                {child.name}
+                              </div>
+                            ))}
+                          {(!firstLevelNode.children ||
+                            firstLevelNode.children.filter(
+                              (child) =>
+                                child.name
+                                  .toLowerCase()
+                                  .includes(
+                                    (
+                                      searchTerms[firstLevelNode.id] || ""
+                                    ).toLowerCase()
+                                  ) && !selectedRelatedNodes.includes(child.id)
+                            ).length === 0) && (
+                            <div className="px-3 py-2 text-muted-foreground text-sm">
+                              No items found
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Show selected nodes */}
+                {selectedRelatedNodes.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Selected Items:
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedRelatedNodes.map((nodeId) => {
+                        // Find the node in all children of first level nodes
+                        const node = firstLevelNodes
+                          .flatMap((n) => n.children || [])
+                          .find((n) => n.id === nodeId);
+                        return node ? (
+                          <div
+                            key={nodeId}
+                            className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
+                          >
+                            <span>{node.name}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedRelatedNodes(
+                                  selectedRelatedNodes.filter(
+                                    (id) => id !== nodeId
+                                  )
+                                )
+                              }
+                              className="text-blue-600 hover:text-blue-800"
+                              disabled={isSaving}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Select items from each category that are related to this task.
+                </p>
+              </div>
+            )}
         </div>
 
         <SheetFooter>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!name.trim() || isSaving}
-          >
-            {isSaving ? (mode === 'create' ? 'Creating...' : 'Saving...') : (mode === 'create' ? 'Create item' : 'Save changes')}
+          <Button onClick={handleSave} disabled={!name.trim() || isSaving}>
+            {isSaving
+              ? mode === "create"
+                ? "Creating..."
+                : "Saving..."
+              : mode === "create"
+              ? "Create item"
+              : "Save changes"}
           </Button>
         </SheetFooter>
       </SheetContent>

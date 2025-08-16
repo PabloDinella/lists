@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Node } from "./createNode";
+import { metadataSchema, Node } from "./createNode";
 
 type ViewNodesParams = {
   user_id: string;
@@ -52,7 +52,7 @@ export async function viewNodes(
       user_id: node.user_id!,
       created_at: node.created_at,
       order: node.order,
-      metadata: node.metadata,
+      metadata: metadataSchema.safeParse(node.metadata).data || null,
     })),
   };
 }

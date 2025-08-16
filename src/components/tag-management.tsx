@@ -8,56 +8,86 @@ import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./tag-management/hierarchical-movable-list";
 import { EditNodeSheet } from "./tag-management/edit-node-sheet";
-import { useListData } from "./tag-management/use-list-data";
+import { TreeNode, useListData } from "./tag-management/use-list-data";
 import { Button } from "./ui/button";
 import { Edit } from "lucide-react";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 
+const findNodeById = (
+  nodeTree: TreeNode[],
+  nodeId: number
+): TreeNode | null => {
+  return nodeTree.reduce<TreeNode | null>((found, node) => {
+    if (found) return found;
+    if (node.id === nodeId) return node;
+    return findNodeById(node.children, nodeId);
+  }, null);
+};
+
+const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
+  if (node.children.length > 0) {
+    return [
+      ...all,
+      node,
+      ...node.children.reduce<TreeNode[]>(flattenNodesTree, []),
+    ];
+  }
+  return [...all, node];
+};
+
 export function TagManagement() {
-  const { listId } = useParams<{ listId: string }>();
+  const { listId: listIdString } = useParams<{ listId: string }>();
+  const listId = listIdString ? parseInt(listIdString, 10) : 0;
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
 
-
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !listId;
+
+  const filter = (node: TreeNode) =>
+    node.metadata?.type === "list" ||
+    node.metadata?.type === "structure" ||
+    node.metadata?.type === "tagging";
 
   const createNodeMutation = useCreateNode();
   const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
-  // Get data using custom hook
-  const { hierarchicalTree, parentNode, isLoading, isError } = useListData({
-    userId,
-    parentNodeId: listId ? parseInt(listId, 10) : null,
-    // maxDepth: isManagingLists ? 2 : undefined, // Limit to 2 levels when managing lists
-  });
-
   // Get all nodes to find second-level items for available parents
-  const { hierarchicalTree: allNodesTree } = useListData({
+  const {
+    hierarchicalTree: allNodesTree,
+    isLoading,
+    isError,
+  } = useListData({
     userId,
     parentNodeId: null,
   });
 
-  const flattenedAllItems = allNodesTree.flatMap(node => [node, ...node.children]);
-
-  console.log({allNodesTree, flattenedAllItems});
-
-  // Get all first level nodes (nodes without parents) for the relationship fields
-  const { hierarchicalTree: allFirstLevelNodes } = useListData({
-    userId,
-    parentNodeId: null,
-  });
+  const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
+    flattenNodesTree,
+    []
+  );
 
   // Calculate available parents (second level items - nodes with parent_node that is not null)
   const availableParents = isManagingLists
     ? allNodesTree
-        // .flatMap((rootNode) => rootNode.children)
-        // .filter((node) => node.parent_node !== null)
-    : allNodesTree.filter((node) => node.parent_node === null);
+    : editingNode?.metadata?.type === "loop"
+    ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
+    : undefined;
 
-    console.log({availableParents});
+  const currentNode =
+    findNodeById(allNodesTree, listId) ||
+    allNodesTree.find((item) => item.parent_node === null);
+
+  console.log({
+    isManagingLists,
+    availableParents,
+    allNodesTree,
+    flattenedAllItems,
+    currentNode,
+    editingNode,
+  });
 
   useEffect(() => {
     supabase.auth
@@ -138,6 +168,28 @@ export function TagManagement() {
     );
   }
 
+  const reduce = (final: TreeNode[], node: TreeNode) => {
+    const isManageable = filter(node);
+
+    if (isManageable) {
+      return [
+        ...final,
+        {
+          ...node,
+          children: node.children.reduce<TreeNode[]>(reduce, []),
+        },
+      ];
+    }
+
+    return final;
+  };
+
+  const tree = isManagingLists
+    ? currentNode?.children.reduce(reduce, [])
+    : currentNode?.children;
+
+  console.log({ tree });
+
   return (
     <AppLayout
       title={isManagingLists ? "Manage Lists" : "List Items"}
@@ -156,19 +208,21 @@ export function TagManagement() {
             )}
 
             {/* Show current list name and description when viewing a specific list */}
-            {!isManagingLists && parentNode && (
+            {!isManagingLists && currentNode && (
               <div className="space-y-2 group">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold">{parentNode.name}</h1>
-                    {parentNode.content && (
-                      <p className="text-muted-foreground">{parentNode.content}</p>
+                    <h1 className="text-2xl font-bold">{currentNode.name}</h1>
+                    {currentNode.content && (
+                      <p className="text-muted-foreground">
+                        {currentNode.content}
+                      </p>
                     )}
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleEditStart(parentNode)}
+                    onClick={() => handleEditStart(currentNode)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   >
                     <Edit className="h-4 w-4" />
@@ -177,9 +231,9 @@ export function TagManagement() {
               </div>
             )}
 
-            {hierarchicalTree.length > 0 ? (
+            {currentNode && currentNode.children.length > 0 ? (
               <HierarchicalMovableList
-                hierarchicalTree={hierarchicalTree}
+                hierarchicalTree={tree}
                 onEditStart={handleEditStart}
                 onDelete={handleDelete}
               />
@@ -197,33 +251,25 @@ export function TagManagement() {
       <EditNodeSheet
         node={editingNode}
         availableParents={availableParents}
-        firstLevelNodes={allFirstLevelNodes.filter(node => {
-          const targetNode = editingNode || parentNode;
-          // Filter out the root node that contains the current editing item
-          if (!targetNode) return true;
-          
-          // Find which root level node contains the editing item by traversing up the hierarchy
-          const findContainingRoot = (nodeId: number): number | null => {
-            const node = flattenedAllItems.find(n => n.id === nodeId);
-            if (!node) return null;
-            
-            // If this node has no parent, it's a root
-            if (node.parent_node === null) {
-              return node.id;
-            }
-            
-            // Otherwise, traverse up to find the root
-            return findContainingRoot(node.parent_node);
-          };
-          
-          const containingRootId = findContainingRoot(targetNode.id);
+        firstLevelNodes={
+          editingNode?.metadata?.type === "loop"
+            ? currentNode?.children.filter((node) => {
+                const targetNode = editingNode || currentNode;
+                // Filter out the root node that contains the current editing item
+                if (!targetNode) return true;
 
-          console.log({containingRootId, nodeId: node.id, editingNodeId: targetNode.id});
-          
-          // Filter out the root node that contains the editing item
-          return containingRootId !== node.id;
-        })}
-        defaultParentId={isManagingLists ? undefined : parseInt(listId!, 10)}
+                const nodeContainsTargetNode = findNodeById(
+                  node.children,
+                  targetNode.id
+                );
+
+                return !nodeContainsTargetNode;
+              })
+            : undefined
+        }
+        defaultParentId={
+          isManagingLists ? undefined : parseInt(listIdString!, 10)
+        }
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
         onSave={handleSave}

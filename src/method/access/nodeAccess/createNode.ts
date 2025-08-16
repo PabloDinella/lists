@@ -1,5 +1,20 @@
 import { supabase } from "@/lib/supabase";
 import type { Json } from "@/database.types";
+import { z } from "zod";
+
+export const metadataSchema = z.object({
+  type: z
+    .union([
+      z.literal("structure"),
+      z.literal("list"),
+      z.literal("tagging"),
+      z.literal("loop"),
+    ])
+    .optional(),
+  renderDepth: z.number().optional(),
+});
+
+export type Metadata = z.infer<typeof metadataSchema>;
 
 export type Node = {
   id: number;
@@ -9,7 +24,7 @@ export type Node = {
   user_id: string;
   created_at: string;
   order: number | null;
-  metadata: Json | null;
+  metadata: Metadata | null;
 };
 
 type CreateNodeParams = {

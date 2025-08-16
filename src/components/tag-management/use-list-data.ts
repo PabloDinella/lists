@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { useNodes } from "@/hooks/use-nodes";
 import { useOrdering } from "@/hooks/use-ordering";
-import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
-import type { Json } from "@/database.types";
+import type {
+  Node as DBNode,
+  Metadata,
+} from "@/method/access/nodeAccess/createNode";
 
-type TreeNode = {
+export type TreeNode = {
   id: number;
   name: string;
   content: string | null;
@@ -12,7 +14,7 @@ type TreeNode = {
   user_id: string;
   created_at: string;
   order: number | null;
-  metadata: Json | null;
+  metadata: Metadata | null;
   children: TreeNode[];
 };
 
@@ -40,34 +42,6 @@ interface UseListDataReturn {
   isError: boolean;
 }
 
-// Helper functions to work with node metadata
-const isStructuralNode = (node: DBNode): boolean => {
-  return node.metadata && 
-         typeof node.metadata === 'object' && 
-         node.metadata !== null && 
-         !Array.isArray(node.metadata) &&
-         'type' in node.metadata && 
-         typeof node.metadata.type === 'string' &&
-         node.metadata.type === 'structural';
-};
-
-const getNodeRenderDepth = (node: DBNode): number => {
-  if (node.metadata && 
-      typeof node.metadata === 'object' && 
-      node.metadata !== null && 
-      !Array.isArray(node.metadata) &&
-      'renderDepth' in node.metadata && 
-      typeof node.metadata.renderDepth === 'number') {
-    return node.metadata.renderDepth;
-  }
-  return 0;
-};
-
-const shouldRenderChildren = (node: DBNode, currentDepth: number): boolean => {
-  const maxDepth = getNodeRenderDepth(node);
-  return maxDepth === 0 || currentDepth < maxDepth;
-};
-
 export function useListData({
   userId,
   parentNodeId,
@@ -91,7 +65,7 @@ export function useListData({
   // Fetch the parent node when viewing a specific list
   const parentNode = useMemo(() => {
     if (!parentNodeId || !allNodes) return undefined;
-    return allNodes.find(node => node.id === parentNodeId);
+    return allNodes.find((node) => node.id === parentNodeId);
   }, [parentNodeId, allNodes]);
 
   // Create hierarchical tree structure
@@ -109,14 +83,16 @@ export function useListData({
       : lists;
 
     // Build tree structure with metadata-based depth limitation
-    const buildTree = (nodes: DBNode[], parentId: number | null, currentDepth: number = 0): TreeNode[] => {
+    const buildTree = (
+      nodes: DBNode[],
+      parentId: number | null,
+      currentDepth: number = 0
+    ): TreeNode[] => {
       return nodes
-        .filter(node => node.parent_node === parentId)
-        .map(node => ({
+        .filter((node) => node.parent_node === parentId)
+        .map((node) => ({
           ...node,
-          children: shouldRenderChildren(node, currentDepth) 
-            ? buildTree(allNodes, node.id, currentDepth + 1)
-            : []
+          children: buildTree(allNodes, node.id, currentDepth + 1),
         }));
     };
 
@@ -179,8 +155,6 @@ export function useListData({
       childrenByParent: childrenMap,
     };
   }, [lists, allNodes, ordering]);
-
-
 
   return {
     lists,
