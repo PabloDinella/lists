@@ -1,7 +1,6 @@
 import { Search, Settings, FolderArchive, Trash2, Tag } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useNodes } from "@/hooks/use-nodes";
 import { supabase } from "@/lib/supabase";
 import { useOrdering } from "@/hooks/use-ordering";
 
@@ -16,6 +15,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Separator } from "./ui/separator";
+import { TreeNode, useListData } from "./node-view/use-list-data";
 
 // Other sections
 const otherItems = [
@@ -51,26 +51,22 @@ function ListSection({
   listId,
   listName,
   userId,
+  children,
 }: {
   listId: number;
   listName: string;
   userId: string;
+  children: TreeNode[];
 }) {
   const navigate = useNavigate();
 
-  // Fetch children nodes for this list
-  const { data: childrenNodes, isLoading: childrenLoading } = useNodes({
-    user_id: userId,
-    parent_node: listId,
-  });
-  const { data: childrenOrdering } = useOrdering({
+  const { data: childrenOrdering, isLoading } = useOrdering({
     user_id: userId,
     root_node: listId,
   });
 
   // derive ordered children per ordering table
   const orderedChildren = useMemo(() => {
-    const children = childrenNodes;
     if (!children) return [];
     if (!childrenOrdering?.order?.length) return children;
     const byId = new Map(children.map((c) => [c.id, c] as const));
@@ -81,7 +77,7 @@ function ListSection({
       (c) => !childrenOrdering.order.includes(c.id)
     );
     return [...inOrder, ...missing];
-  }, [childrenNodes, childrenOrdering]);
+  }, [children, childrenOrdering]);
 
   return (
     <SidebarGroup key={listId}>
@@ -93,7 +89,7 @@ function ListSection({
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {childrenLoading ? (
+          {isLoading ? (
             <SidebarMenuItem>
               <SidebarMenuButton disabled>
                 <span className="text-muted-foreground text-sm">
@@ -148,11 +144,15 @@ export function AppSidebar() {
     };
   }, []);
 
-  // Use the lists hook: treat top-level nodes as lists
-  const { data: topLevelNodes, isLoading: listsLoading } = useNodes({
-    user_id: user?.id,
-    parent_node: null,
+  // Get all nodes to find second-level items for available parents
+  const { hierarchicalTree, isLoading: listsLoading } = useListData({
+    userId: user?.id || null,
   });
+
+  const topLevelNodes = hierarchicalTree
+    .filter((node) => node.metadata?.type === "root")
+    .flatMap((node) => node.children);
+
   const { data: ordering } = useOrdering({
     user_id: user?.id,
     root_node: null,
@@ -198,6 +198,7 @@ export function AppSidebar() {
               listId={list.id}
               listName={list.name}
               userId={user!.id}
+              children={list.children}
             />
           ))
         ) : (

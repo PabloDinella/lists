@@ -23,7 +23,6 @@ interface UseListDataProps {
 }
 
 interface UseListDataReturn {
-  lists: DBNode[] | undefined;
   ordering: { order: number[] } | null | undefined;
   hierarchicalTree: TreeNode[];
   isLoading: boolean;
@@ -46,8 +45,6 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
   const lists = allNodes?.filter((node) => {
     return node.metadata?.type === "root";
   });
-
-  console.log({ lists, ordering, allNodes });
 
   // Create hierarchical tree structure
   const hierarchicalTree = useMemo(() => {
@@ -80,8 +77,9 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
     return buildTree(orderedLists, null);
   }, [lists, allNodes, ordering]);
 
+  console.log({ lists, ordering, allNodes });
+
   return {
-    lists,
     ordering,
     hierarchicalTree,
     isLoading,
