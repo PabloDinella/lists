@@ -12,6 +12,7 @@ export const metadataSchema = z.object({
     ])
     .optional(),
   renderDepth: z.number().optional(),
+  children_order: z.array(z.number()).optional(),
 });
 
 export type Metadata = z.infer<typeof metadataSchema>;

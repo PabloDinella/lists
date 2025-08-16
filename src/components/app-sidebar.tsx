@@ -1,8 +1,7 @@
 import { Search, Settings, FolderArchive, Trash2, Tag, LogOut } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { useOrdering } from "@/hooks/use-ordering";
 
 import {
   Sidebar,
@@ -50,34 +49,13 @@ const otherItems = [
 function ListSection({
   listId,
   listName,
-  userId,
   children,
 }: {
   listId: number;
   listName: string;
-  userId: string;
   children: TreeNode[];
 }) {
   const navigate = useNavigate();
-
-  const { data: childrenOrdering, isLoading } = useOrdering({
-    user_id: userId,
-    root_node: listId,
-  });
-
-  // derive ordered children per ordering table
-  const orderedChildren = useMemo(() => {
-    if (!children) return [];
-    if (!childrenOrdering?.order?.length) return children;
-    const byId = new Map(children.map((c) => [c.id, c] as const));
-    const inOrder = childrenOrdering.order
-      .map((id) => byId.get(id))
-      .filter(Boolean) as typeof children;
-    const missing = children.filter(
-      (c) => !childrenOrdering.order.includes(c.id)
-    );
-    return [...inOrder, ...missing];
-  }, [children, childrenOrdering]);
 
   return (
     <SidebarGroup key={listId}>
@@ -89,16 +67,8 @@ function ListSection({
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {isLoading ? (
-            <SidebarMenuItem>
-              <SidebarMenuButton disabled>
-                <span className="text-muted-foreground text-sm">
-                  Loading...
-                </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : orderedChildren.length > 0 ? (
-            orderedChildren.map((child) => (
+          {children.length > 0 ? (
+            children.map((child) => (
               <SidebarMenuItem key={child.id}>
                 <SidebarMenuButton
                   className="cursor-pointer pl-6"
@@ -159,24 +129,6 @@ export function AppSidebar() {
     .filter((node) => node.metadata?.type === "root")
     .flatMap((node) => node.children);
 
-  const { data: ordering } = useOrdering({
-    user_id: user?.id,
-    root_node: null,
-  });
-
-  // derive ordered lists per ordering table
-  const orderedLists = useMemo(() => {
-    const lists = topLevelNodes;
-    if (!lists) return [];
-    if (!ordering?.order?.length) return lists;
-    const byId = new Map(lists.map((l) => [l.id, l] as const));
-    const inOrder = ordering.order
-      .map((id) => byId.get(id))
-      .filter(Boolean) as typeof lists;
-    const missing = lists.filter((l) => !ordering.order.includes(l.id));
-    return [...inOrder, ...missing];
-  }, [topLevelNodes, ordering]);
-
   return (
     <Sidebar>
       <SidebarContent>
@@ -198,12 +150,11 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ) : topLevelNodes && topLevelNodes.length > 0 ? (
-          orderedLists.map((list) => (
+          topLevelNodes.map((list) => (
             <ListSection
               key={list.id}
               listId={list.id}
               listName={list.name}
-              userId={user!.id}
               children={list.children}
             />
           ))

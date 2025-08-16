@@ -57,7 +57,6 @@ export function BaseNodeItem({
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
-              {/* drag handle with optional hierarchy indicator; supports react-movable via data-movable-handle and @hello-pangea/dnd via dragHandleProps */}
               <button
                 // react-movable handle
                 data-movable-handle
@@ -66,7 +65,6 @@ export function BaseNodeItem({
                 className="p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
                 aria-label="Drag to reorder"
                 title="Drag to reorder"
-                {...(dragHandleProps ?? {})}
               >
                 {isChild ? (
                   <div className="relative">

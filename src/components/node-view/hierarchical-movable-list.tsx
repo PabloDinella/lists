@@ -71,14 +71,14 @@ export function HierarchicalMovableList({
     const reorderedItems = arrayMove(items, oldIndex, newIndex);
     setItems(reorderedItems);
 
-    // Persist the new order
+    // Persist the new order in the parent node's metadata
     const newOrder = reorderedItems.map((item) => item.node.id);
     if (user?.id) {
       try {
         await upsertOrdering.mutateAsync({
           user_id: user.id,
-          root_node: rootNode.id,
-          order: newOrder,
+          parent_node_id: rootNode.id,
+          children_order: newOrder,
         });
       } catch (error) {
         console.error("Failed to persist ordering:", error);
