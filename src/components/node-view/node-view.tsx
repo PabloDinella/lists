@@ -75,9 +75,9 @@ export function NodeView() {
     ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
     : undefined;
 
-  const currentNode =
-    findNodeById(allNodesTree, listId) ||
-    allNodesTree.find((item) => item.parent_node === null);
+  const rootNode = allNodesTree.find((item) => item.parent_node === null);
+
+  const currentNode = findNodeById(allNodesTree, listId) || rootNode;
 
   console.log({
     isManagingLists,
@@ -115,7 +115,8 @@ export function NodeView() {
   const handleSave = async (
     name: string,
     description: string,
-    parentId: number | null
+    parentId: number | null,
+    metadata?: { type: string }
   ) => {
     if (!userId) return;
 
@@ -126,6 +127,7 @@ export function NodeView() {
           content: description || undefined,
           parent_node: parentId || undefined,
           user_id: userId,
+          metadata: metadata || undefined,
         });
       } else if (sheetMode === "edit" && editingNode) {
         await updateNodeMutation.mutateAsync({
@@ -134,6 +136,7 @@ export function NodeView() {
           content: description || undefined,
           parent_node: parentId,
           user_id: userId,
+          metadata: metadata || undefined,
         });
       }
       handleSheetClose(); // Close the sheet after successful save
@@ -250,6 +253,7 @@ export function NodeView() {
 
       <EditNodeSheet
         node={editingNode}
+        rootNode={rootNode}
         availableParents={availableParents}
         firstLevelNodes={
           editingNode?.metadata?.type === "loop"
@@ -267,14 +271,13 @@ export function NodeView() {
               })
             : undefined
         }
-        defaultParentId={
-          isManagingLists ? undefined : parseInt(listIdString!, 10)
-        }
+        defaultParentId={isManagingLists ? rootNode?.id : listId}
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
         onSave={handleSave}
         isSaving={createNodeMutation.isPending || updateNodeMutation.isPending}
         mode={sheetMode}
+        isManagingLists={isManagingLists}
       />
     </AppLayout>
   );

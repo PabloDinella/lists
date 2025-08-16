@@ -12,6 +12,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
+import { List, Tag } from "lucide-react";
 import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 import type { Json } from "@/database.types";
 
@@ -29,18 +30,21 @@ type TreeNode = {
 
 interface EditNodeSheetProps {
   node: DBNode | null; // null when creating a new item
+  rootNode?: TreeNode;
   availableParents?: TreeNode[];
   firstLevelNodes?: TreeNode[]; // All first level (root) nodes for relationship selection
   defaultParentId?: number; // Default parent ID when creating new items
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, description: string, parentId: number | null) => void;
+  onSave: (name: string, description: string, parentId: number | null, metadata?: { type: string }) => void;
   isSaving?: boolean;
   mode: "edit" | "create";
+  isManagingLists?: boolean; // Whether we're managing lists (shows node type selection)
 }
 
 export function EditNodeSheet({
   node,
+  rootNode,
   availableParents,
   firstLevelNodes,
   defaultParentId,
@@ -49,10 +53,12 @@ export function EditNodeSheet({
   onSave,
   isSaving = false,
   mode,
+  isManagingLists = false,
 }: EditNodeSheetProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
+  const [nodeType, setNodeType] = useState<"list" | "tagging">("list");
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
     []
   );
@@ -70,7 +76,7 @@ export function EditNodeSheet({
     !Array.isArray(node.metadata) &&
     "type" in node.metadata &&
     typeof node.metadata.type === "string" &&
-    node.metadata.type === "structural";
+    node.metadata.type === "structure";
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
@@ -79,10 +85,24 @@ export function EditNodeSheet({
         setName(node.name);
         setDescription(node.content || "");
         setParentId(node.parent_node);
+        // Set node type based on existing metadata
+        if (
+          node.metadata &&
+          typeof node.metadata === "object" &&
+          node.metadata !== null &&
+          !Array.isArray(node.metadata) &&
+          "type" in node.metadata &&
+          (node.metadata.type === "list" || node.metadata.type === "tagging")
+        ) {
+          setNodeType(node.metadata.type);
+        } else {
+          setNodeType("list");
+        }
       } else if (mode === "create") {
         setName("");
         setDescription("");
         setParentId(defaultParentId || null);
+        setNodeType("list");
       }
     }
   }, [node, isOpen, mode, defaultParentId]);
@@ -113,7 +133,8 @@ export function EditNodeSheet({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave(name.trim(), description.trim(), parentId);
+    const metadata = isManagingLists ? { type: nodeType } : undefined;
+    onSave(name.trim(), description.trim(), parentId, metadata);
   };
 
   const handleClose = () => {
@@ -123,6 +144,7 @@ export function EditNodeSheet({
       setName("");
       setDescription("");
       setParentId(null);
+      setNodeType("list");
     }, 300);
   };
 
@@ -186,6 +208,82 @@ export function EditNodeSheet({
             />
           </div>
 
+          {/* Node type selection when managing lists */}
+          {isManagingLists && mode === "create" && (
+            <div className="grid gap-3">
+              <Label>Type</Label>
+              <div className="grid gap-3">
+                <div
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    nodeType === "list"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setNodeType("list")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-md ${
+                      nodeType === "list"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}>
+                      <List className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm mb-1">List</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Create a traditional list to organize items in a structured way. Perfect for to-do lists, shopping lists, or any ordered collection.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      nodeType === "list"
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground"
+                    }`}>
+                      {nodeType === "list" && (
+                        <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                    nodeType === "tagging"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setNodeType("tagging")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-md ${
+                      nodeType === "tagging"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}>
+                      <Tag className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm mb-1">Tagging</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Create a tagging system to categorize and label items. Ideal for organizing content by themes, categories, or properties.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      nodeType === "tagging"
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground"
+                    }`}>
+                      {nodeType === "tagging" && (
+                        <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Show parent selection for create mode or edit mode with existing parent */}
           {/* {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && ( */}
           {availableParents && availableParents.length > 0 && (
@@ -199,7 +297,9 @@ export function EditNodeSheet({
                 }
                 disabled={isSaving}
               >
-                <option value="">No parent (make it a root item)</option>
+                <option value={rootNode?.id.toString() ?? ""}>
+                  No parent (make it a root item)
+                </option>
                 {availableParents.map((parent) => (
                   <option key={parent.id} value={parent.id.toString()}>
                     {parent.name}

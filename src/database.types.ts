@@ -21,7 +21,6 @@ export type Database = {
           id: number
           metadata: Json | null
           name: string
-          order: number | null
           parent_node: number | null
           user_id: string | null
         }
@@ -31,7 +30,6 @@ export type Database = {
           id?: number
           metadata?: Json | null
           name: string
-          order?: number | null
           parent_node?: number | null
           user_id?: string | null
         }
@@ -41,7 +39,6 @@ export type Database = {
           id?: number
           metadata?: Json | null
           name?: string
-          order?: number | null
           parent_node?: number | null
           user_id?: string | null
         }
@@ -54,30 +51,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      ordering: {
-        Row: {
-          created_at: string
-          id: number
-          order: number[]
-          root_node: number | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          order: number[]
-          root_node?: number | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          order?: number[]
-          root_node?: number | null
-          user_id?: string
-        }
-        Relationships: []
       }
       settings: {
         Row: {
