@@ -44,6 +44,12 @@ interface EditNodeSheetProps {
     parentId: number | null,
     metadata?: Metadata
   ) => void;
+  onSaveAndOpen?: (
+    name: string,
+    description: string,
+    parentId: number | null,
+    metadata?: Metadata
+  ) => Promise<void>;
   isSaving?: boolean;
   mode: "edit" | "create";
   isManagingLists?: boolean; // Whether we're managing lists (shows node type selection)
@@ -58,6 +64,7 @@ export function EditNodeSheet({
   isOpen,
   onClose,
   onSave,
+  onSaveAndOpen,
   isSaving = false,
   mode,
   isManagingLists = false,
@@ -153,6 +160,25 @@ export function EditNodeSheet({
     }
     
     onSave(name.trim(), description.trim(), parentId, metadata);
+  };
+
+  const handleSaveAndOpen = async () => {
+    if (!name.trim()) return;
+    
+    let metadata: Metadata | undefined = undefined;
+    
+    if (isManagingLists) {
+      metadata = { type: nodeType };
+      
+      // Add default children metadata for lists
+      if (nodeType === "list") {
+        metadata.defaultChildrenMetadata = { type: "loop" };
+      }
+    }
+    
+    if (onSaveAndOpen) {
+      await onSaveAndOpen(name.trim(), description.trim(), parentId, metadata);
+    }
   };
 
   const handleClose = () => {
@@ -482,13 +508,22 @@ export function EditNodeSheet({
           <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
+          {mode === "create" && onSaveAndOpen && (
+            <Button 
+              onClick={handleSaveAndOpen} 
+              disabled={!name.trim() || isSaving}
+              variant="outline"
+            >
+              {isSaving ? "Creating..." : "Create and open"}
+            </Button>
+          )}
           <Button onClick={handleSave} disabled={!name.trim() || isSaving}>
             {isSaving
               ? mode === "create"
                 ? "Creating..."
                 : "Saving..."
               : mode === "create"
-              ? "Create item"
+              ? "Create"
               : "Save changes"}
           </Button>
         </SheetFooter>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "../app-layout";
 import { Container } from "../ui/container";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +41,7 @@ const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
 export function NodeView() {
   const { listId: listIdString } = useParams<{ listId: string }>();
   const listId = listIdString ? parseInt(listIdString, 10) : 0;
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<DBNode | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
@@ -143,6 +144,36 @@ export function NodeView() {
         });
       }
       handleSheetClose(); // Close the sheet after successful save
+    } catch (error) {
+      console.error(`Failed to ${sheetMode} node:`, error);
+    }
+  };
+
+  const handleSaveAndOpen = async (
+    name: string,
+    description: string,
+    parentId: number | null,
+    metadata?: Metadata
+  ) => {
+    if (!userId) return;
+
+    try {
+      if (sheetMode === "create") {
+        const result = await createNodeMutation.mutateAsync({
+          name: name,
+          content: description || undefined,
+          parent_node: parentId || undefined,
+          user_id: userId,
+          metadata: metadata || undefined,
+        });
+        
+        handleSheetClose(); // Close the sheet after successful save
+        
+        // Navigate to the created item
+        if ('result' in result) {
+          navigate(`/lists/${result.result.id}`);
+        }
+      }
     } catch (error) {
       console.error(`Failed to ${sheetMode} node:`, error);
     }
@@ -283,6 +314,7 @@ export function NodeView() {
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
         onSave={handleSave}
+        onSaveAndOpen={handleSaveAndOpen}
         isSaving={createNodeMutation.isPending || updateNodeMutation.isPending}
         mode={sheetMode}
         isManagingLists={isManagingLists}

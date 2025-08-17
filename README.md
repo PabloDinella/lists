@@ -39,6 +39,7 @@ Ideas and thoughts that could turn into new features:
 - Ask confirmation to delete anything
 - When deleting projects, delete its children too
 - Importer for nirvana
+- Add the checkbox to the heading as well (node-view)
 
 ## Tech Stack
 
