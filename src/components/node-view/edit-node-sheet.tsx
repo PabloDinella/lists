@@ -19,6 +19,8 @@ import type {
 } from "@/method/access/nodeAccess/createNode";
 import type { Json } from "@/database.types";
 import { CategoryMultiSelect } from "./category-multi-select";
+import { useCreateNode } from "@/hooks/use-create-node";
+import { useAuth } from "@/hooks/use-auth";
 
 type TreeNode = {
   id: number;
@@ -77,6 +79,30 @@ export function EditNodeSheet({
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
     []
   );
+
+  const createNodeMutation = useCreateNode();
+  const { user } = useAuth();
+
+  // Function to create new items in categories
+  const handleCreateNewItem = async (categoryId: number, itemName: string): Promise<number> => {
+    if (!user?.id) {
+      throw new Error("User not authenticated");
+    }
+
+    const result = await createNodeMutation.mutateAsync({
+      name: itemName,
+      parent_node: categoryId,
+      user_id: user.id,
+      // Give the new item the same metadata type as the category (tagging)
+      metadata: { type: "tagging" },
+    });
+
+    if ('result' in result) {
+      return result.result.id;
+    } else {
+      throw new Error("Failed to create new item");
+    }
+  };
 
   // Determine if the current node is structural based on metadata
   const isStructuralMode =
@@ -355,6 +381,7 @@ export function EditNodeSheet({
                 selectedRelatedNodes={selectedRelatedNodes}
                 onSelectionChange={setSelectedRelatedNodes}
                 disabled={isSaving}
+                onCreateNewItem={handleCreateNewItem}
               />
             </div>
           )}
