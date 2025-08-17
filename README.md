@@ -35,13 +35,14 @@ Ideas and thoughts that could turn into new features:
 - Customizable shortcuts
 - Weekly and daily review flows
 - Processing aid (maybe AI could help)
-- Add ability to add items in combobox (or free multiselect autocomplete component), by typing and pressing enter (useful for adding new context, area of focus, or contacts to an item)
+- [x] Add ability to add items in combobox (or free multiselect autocomplete component), by typing and pressing enter (useful for adding new context, area of focus, or contacts to an item)
 - Ask confirmation to delete anything
 - When deleting projects, delete its children too
 - Importer for nirvana
 - Add the checkbox to the heading as well (node-view)
 - [x] Breadcrumbs
 - [ ] Add a loading state UI
+- [ ] Allow sections in side menu to be collapsible
 
 ## Tech Stack
 
