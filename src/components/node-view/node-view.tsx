@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "../app-layout";
 import { Container } from "../ui/container";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "../ui/breadcrumb";
 import { supabase } from "@/lib/supabase";
 import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
@@ -36,6 +44,27 @@ const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
     ];
   }
   return [...all, node];
+};
+
+// Function to build breadcrumb path from root to current node
+const buildBreadcrumbPath = (
+  allNodes: TreeNode[],
+  targetNodeId: number | null
+): TreeNode[] => {
+  if (!targetNodeId) return [];
+
+  const findPath = (nodeId: number): TreeNode[] => {
+    const node = allNodes.find((n) => n.id === nodeId);
+    if (!node) return [];
+
+    if (node.parent_node === null) {
+      return [];
+    }
+
+    return [...findPath(node.parent_node), node];
+  };
+
+  return findPath(targetNodeId);
 };
 
 export function NodeView() {
@@ -83,6 +112,9 @@ export function NodeView() {
 
   const currentNode = findNodeById(allNodesTree, listId) || rootNode;
 
+  // Build breadcrumb path
+  const breadcrumbPath = buildBreadcrumbPath(flattenedAllItems, listId);
+
   console.log({
     isManagingLists,
     availableParents,
@@ -90,6 +122,7 @@ export function NodeView() {
     flattenedAllItems,
     currentNode,
     editingNode,
+    breadcrumbPath,
   });
 
   useEffect(() => {
@@ -166,11 +199,11 @@ export function NodeView() {
           user_id: userId,
           metadata: metadata || undefined,
         });
-        
+
         handleSheetClose(); // Close the sheet after successful save
-        
+
         // Navigate to the created item
-        if ('result' in result) {
+        if ("result" in result) {
           navigate(`/lists/${result.result.id}`);
         }
       }
@@ -233,6 +266,39 @@ export function NodeView() {
       newItemLabel={isManagingLists ? "New List" : "New Item"}
     >
       <Container size="md">
+        {/* Breadcrumb navigation */}
+        {!isManagingLists && breadcrumbPath.length > 0 && (
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink 
+                  className="cursor-pointer"
+                  onClick={() => navigate('/')}
+                >
+                  Home
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              {breadcrumbPath.map((node, index) => (
+                <React.Fragment key={node.id}>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    {index === breadcrumbPath.length - 1 ? (
+                      <BreadcrumbPage>{node.name}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink
+                        className="cursor-pointer"
+                        onClick={() => navigate(`/lists/${node.id}`)}
+                      >
+                        {node.name}
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
+
         {isLoading && <p>Loading lists…</p>}
         {isError && (
           <p className="text-red-500 text-sm">Failed to load lists.</p>
