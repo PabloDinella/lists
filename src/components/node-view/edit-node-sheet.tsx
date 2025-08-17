@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +18,7 @@ import type {
   Metadata,
 } from "@/method/access/nodeAccess/createNode";
 import type { Json } from "@/database.types";
+import { CategoryMultiSelect } from "./category-multi-select";
 
 type TreeNode = {
   id: number;
@@ -76,11 +77,6 @@ export function EditNodeSheet({
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
     []
   );
-  const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
-  const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>(
-    {}
-  );
-  const searchRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Determine if the current node is structural based on metadata
   const isStructuralMode =
@@ -120,30 +116,6 @@ export function EditNodeSheet({
       }
     }
   }, [node, isOpen, mode, defaultParentId]);
-
-  // Handle click outside to close search dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      let shouldCloseAll = true;
-
-      // Check if click is inside any of the search dropdowns
-      Object.values(searchRefs.current).forEach((ref) => {
-        if (ref && ref.contains(target)) {
-          shouldCloseAll = false;
-        }
-      });
-
-      if (shouldCloseAll) {
-        setOpenDropdowns({});
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -378,128 +350,12 @@ export function EditNodeSheet({
                 Related Items by Category
               </Label>
 
-              {firstLevelNodes.map((firstLevelNode) => (
-                <div key={firstLevelNode.id} className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    {firstLevelNode.name}
-                  </Label>
-                  <div
-                    className="relative"
-                    ref={(el) => (searchRefs.current[firstLevelNode.id] = el)}
-                  >
-                    <Input
-                      placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
-                      value={searchTerms[firstLevelNode.id] || ""}
-                      onChange={(e) =>
-                        setSearchTerms((prev) => ({
-                          ...prev,
-                          [firstLevelNode.id]: e.target.value,
-                        }))
-                      }
-                      onFocus={() =>
-                        setOpenDropdowns((prev) => ({
-                          ...prev,
-                          [firstLevelNode.id]: true,
-                        }))
-                      }
-                      disabled={isSaving}
-                    />
-                    {openDropdowns[firstLevelNode.id] && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {firstLevelNode.children
-                          ?.filter(
-                            (child) =>
-                              child.name
-                                .toLowerCase()
-                                .includes(
-                                  (
-                                    searchTerms[firstLevelNode.id] || ""
-                                  ).toLowerCase()
-                                ) && !selectedRelatedNodes.includes(child.id)
-                          )
-                          .map((child) => (
-                            <div
-                              key={child.id}
-                              className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                              onClick={() => {
-                                setSelectedRelatedNodes([
-                                  ...selectedRelatedNodes,
-                                  child.id,
-                                ]);
-                                setSearchTerms((prev) => ({
-                                  ...prev,
-                                  [firstLevelNode.id]: "",
-                                }));
-                                setOpenDropdowns((prev) => ({
-                                  ...prev,
-                                  [firstLevelNode.id]: false,
-                                }));
-                              }}
-                            >
-                              {child.name}
-                            </div>
-                          ))}
-                        {(!firstLevelNode.children ||
-                          firstLevelNode.children.filter(
-                            (child) =>
-                              child.name
-                                .toLowerCase()
-                                .includes(
-                                  (
-                                    searchTerms[firstLevelNode.id] || ""
-                                  ).toLowerCase()
-                                ) && !selectedRelatedNodes.includes(child.id)
-                          ).length === 0) && (
-                          <div className="px-3 py-2 text-muted-foreground text-sm">
-                            No items found
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Show selected nodes */}
-              {selectedRelatedNodes.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Selected Items:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedRelatedNodes.map((nodeId) => {
-                      // Find the node in all children of first level nodes
-                      const node = firstLevelNodes
-                        .flatMap((n) => n.children || [])
-                        .find((n) => n.id === nodeId);
-                      return node ? (
-                        <div
-                          key={nodeId}
-                          className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
-                        >
-                          <span>{node.name}</span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedRelatedNodes(
-                                selectedRelatedNodes.filter(
-                                  (id) => id !== nodeId
-                                )
-                              )
-                            }
-                            className="text-blue-600 hover:text-blue-800"
-                            disabled={isSaving}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground">
-                Select items from each category that are related to this task.
-              </p>
+              <CategoryMultiSelect
+                firstLevelNodes={firstLevelNodes}
+                selectedRelatedNodes={selectedRelatedNodes}
+                onSelectionChange={setSelectedRelatedNodes}
+                disabled={isSaving}
+              />
             </div>
           )}
         </div>

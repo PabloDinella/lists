@@ -25,7 +25,7 @@ The app follows the core principles of the GTD methodology:
 ## Roadmap
 
 - [x] Flexible lists (add, remove and modify any list)
-- [ ] Drag and drop reordering
+- [x] Drag and drop reordering
 
 
 ## Braindump
@@ -40,6 +40,8 @@ Ideas and thoughts that could turn into new features:
 - When deleting projects, delete its children too
 - Importer for nirvana
 - Add the checkbox to the heading as well (node-view)
+- [x] Breadcrumbs
+- [ ] Add a loading state UI
 
 ## Tech Stack
 
