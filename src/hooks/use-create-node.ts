@@ -1,14 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNodeManager } from "@/method/manager/productivityManager/createNode";
-import type { Json } from "@/database.types";
+import type { Metadata } from "@/method/access/nodeAccess";
 
 type CreateNodeParams = {
   name: string;
   content?: string;
   parent_node?: number;
   user_id: string;
-  order?: number;
-  metadata?: Json;
+  metadata?: Metadata;
 };
 
 export function useCreateNode() {

@@ -23,7 +23,6 @@ type TreeNode = {
   parent_node: number | null;
   user_id: string;
   created_at: string;
-  order: number | null;
   metadata: Json | null;
   children: TreeNode[];
 };
@@ -36,7 +35,12 @@ interface EditNodeSheetProps {
   defaultParentId?: number; // Default parent ID when creating new items
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, description: string, parentId: number | null, metadata?: { type: string }) => void;
+  onSave: (
+    name: string,
+    description: string,
+    parentId: number | null,
+    metadata?: { type: string }
+  ) => void;
   isSaving?: boolean;
   mode: "edit" | "create";
   isManagingLists?: boolean; // Whether we're managing lists (shows node type selection)
@@ -212,6 +216,7 @@ export function EditNodeSheet({
           {isManagingLists && mode === "create" && (
             <div className="grid gap-3">
               <Label>Type</Label>
+              <p className="text-sm text-muted-foreground">What's the purpose of this item</p>
               <div className="grid gap-3">
                 <div
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
@@ -222,31 +227,36 @@ export function EditNodeSheet({
                   onClick={() => setNodeType("list")}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-md ${
-                      nodeType === "list"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}>
+                    <div
+                      className={`p-2 rounded-md ${
+                        nodeType === "list"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
                       <List className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-sm mb-1">List</h4>
                       <p className="text-xs text-muted-foreground">
-                        Create a traditional list to organize items in a structured way. Perfect for to-do lists, shopping lists, or any ordered collection.
+                        Lists are intended to be used for organizing your items,
+                        tasks, projects, etc.
                       </p>
                     </div>
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      nodeType === "list"
-                        ? "border-primary bg-primary"
-                        : "border-muted-foreground"
-                    }`}>
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        nodeType === "list"
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground"
+                      }`}
+                    >
                       {nodeType === "list" && (
                         <div className="w-2 h-2 rounded-full bg-primary-foreground" />
                       )}
                     </div>
                   </div>
                 </div>
-                
+
                 <div
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                     nodeType === "tagging"
@@ -256,24 +266,29 @@ export function EditNodeSheet({
                   onClick={() => setNodeType("tagging")}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-md ${
-                      nodeType === "tagging"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}>
+                    <div
+                      className={`p-2 rounded-md ${
+                        nodeType === "tagging"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
                       <Tag className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-sm mb-1">Tagging</h4>
                       <p className="text-xs text-muted-foreground">
-                        Create a tagging system to categorize and label items. Ideal for organizing content by themes, categories, or properties.
+                        Tagging is for items that can be attached to List's
+                        items, like Context and Area of Focus.
                       </p>
                     </div>
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      nodeType === "tagging"
-                        ? "border-primary bg-primary"
-                        : "border-muted-foreground"
-                    }`}>
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        nodeType === "tagging"
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground"
+                      }`}
+                    >
                       {nodeType === "tagging" && (
                         <div className="w-2 h-2 rounded-full bg-primary-foreground" />
                       )}

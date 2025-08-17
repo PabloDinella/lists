@@ -7,7 +7,6 @@ type UpdateNodeParams = {
   content?: string;
   parent_node?: number | null;
   user_id: string;
-  order?: number | null;
   metadata?: Json;
 };
 

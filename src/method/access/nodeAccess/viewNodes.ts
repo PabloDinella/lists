@@ -51,7 +51,6 @@ export async function viewNodes(
       parent_node: node.parent_node,
       user_id: node.user_id!,
       created_at: node.created_at,
-      order: node.order,
       metadata: metadataSchema.safeParse(node.metadata).data || null,
     })),
   };

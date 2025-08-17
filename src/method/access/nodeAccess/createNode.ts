@@ -25,7 +25,6 @@ export type Node = {
   parent_node: number | null;
   user_id: string;
   created_at: string;
-  order: number | null;
   metadata: Metadata | null;
 };
 
@@ -34,7 +33,6 @@ type CreateNodeParams = {
   content?: string;
   parent_node?: number;
   user_id: string;
-  order?: number;
   metadata?: Metadata;
 };
 
@@ -54,7 +52,6 @@ export async function createNode(
     content: params.content || null,
     parent_node: params.parent_node || null,
     user_id: params.user_id,
-    order: params.order ?? null,
     metadata: params.metadata || null,
   };
 
@@ -82,7 +79,6 @@ export async function createNode(
       parent_node: data.parent_node,
       user_id: data.user_id!,
       created_at: data.created_at,
-      order: data.order,
       metadata: metadataSchema.safeParse(data.metadata).data || null,
     },
   };

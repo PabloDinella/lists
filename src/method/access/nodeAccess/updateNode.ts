@@ -8,7 +8,6 @@ type UpdateNodeParams = {
   content?: string;
   parent_node?: number | null;
   user_id: string;
-  order?: number | null;
   metadata?: Json;
 };
 
@@ -50,14 +49,12 @@ export async function updateNode(
     name?: string;
     content?: string | null;
     parent_node?: number | null;
-    order?: number | null;
     metadata?: Json;
   } = {};
   
   if (params.name !== undefined) updateData.name = params.name;
   if (params.content !== undefined) updateData.content = params.content;
   if (params.parent_node !== undefined) updateData.parent_node = params.parent_node;
-  if (params.order !== undefined) updateData.order = params.order;
   if (finalMetadata !== undefined) updateData.metadata = finalMetadata;
 
   const { data, error } = await supabase
@@ -86,7 +83,6 @@ export async function updateNode(
       parent_node: data.parent_node,
       user_id: data.user_id!,
       created_at: data.created_at,
-      order: data.order,
       metadata: metadataSchema.safeParse(data.metadata).data || null,
     },
   };

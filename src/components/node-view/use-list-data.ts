@@ -12,7 +12,6 @@ export type TreeNode = {
   parent_node: number | null;
   user_id: string;
   created_at: string;
-  order: number | null;
   metadata: Metadata | null;
   children: TreeNode[];
 };
