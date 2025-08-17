@@ -11,7 +11,10 @@ import { EditNodeSheet } from "./edit-node-sheet";
 import { TreeNode, useListData } from "./use-list-data";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import type {
+  Node as DBNode,
+  Metadata,
+} from "@/method/access/nodeAccess/createNode";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -116,7 +119,7 @@ export function NodeView() {
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: { type: string }
+    metadata?: Metadata
   ) => {
     if (!userId) return;
 
@@ -269,6 +272,11 @@ export function NodeView() {
 
                 return !nodeContainsTargetNode;
               })
+            : // Show related items when creating a new node in a list
+            sheetMode === "create" && currentNode?.metadata?.type === "list"
+            ? rootNode?.children.filter(
+                (node) => node.metadata?.type === "tagging"
+              )
             : undefined
         }
         defaultParentId={isManagingLists ? rootNode?.id : listId}

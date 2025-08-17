@@ -13,7 +13,10 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import { List, Tag } from "lucide-react";
-import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
+import type {
+  Node as DBNode,
+  Metadata,
+} from "@/method/access/nodeAccess/createNode";
 import type { Json } from "@/database.types";
 
 type TreeNode = {
@@ -39,7 +42,7 @@ interface EditNodeSheetProps {
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: { type: string }
+    metadata?: Metadata
   ) => void;
   isSaving?: boolean;
   mode: "edit" | "create";
@@ -137,7 +140,18 @@ export function EditNodeSheet({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    const metadata = isManagingLists ? { type: nodeType } : undefined;
+    
+    let metadata: Metadata | undefined = undefined;
+    
+    if (isManagingLists) {
+      metadata = { type: nodeType };
+      
+      // Add default children metadata for lists
+      if (nodeType === "list") {
+        metadata.defaultChildrenMetadata = { type: "loop" };
+      }
+    }
+    
     onSave(name.trim(), description.trim(), parentId, metadata);
   };
 
@@ -216,7 +230,9 @@ export function EditNodeSheet({
           {isManagingLists && mode === "create" && (
             <div className="grid gap-3">
               <Label>Type</Label>
-              <p className="text-sm text-muted-foreground">What's the purpose of this item</p>
+              <p className="text-sm text-muted-foreground">
+                What's the purpose of this item
+              </p>
               <div className="grid gap-3">
                 <div
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
@@ -329,141 +345,137 @@ export function EditNodeSheet({
           )}
           {/* )} */}
 
-          {/* Show related nodes selection only in leaf mode (not structural mode) */}
-          {!isStructuralMode &&
-            firstLevelNodes &&
-            firstLevelNodes.length > 0 && (
-              <div className="space-y-4">
-                <Label className="text-base font-medium">
-                  Related Items by Category
-                </Label>
+          {/* Show related nodes selection when not in structural mode or when creating items in a list */}
+          {firstLevelNodes && firstLevelNodes.length > 0 && (
+            <div className="space-y-4">
+              <Label className="text-base font-medium">
+                Related Items by Category
+              </Label>
 
-                {firstLevelNodes.map((firstLevelNode) => (
-                  <div key={firstLevelNode.id} className="space-y-2">
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      {firstLevelNode.name}
-                    </Label>
-                    <div
-                      className="relative"
-                      ref={(el) => (searchRefs.current[firstLevelNode.id] = el)}
-                    >
-                      <Input
-                        placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
-                        value={searchTerms[firstLevelNode.id] || ""}
-                        onChange={(e) =>
-                          setSearchTerms((prev) => ({
-                            ...prev,
-                            [firstLevelNode.id]: e.target.value,
-                          }))
-                        }
-                        onFocus={() =>
-                          setOpenDropdowns((prev) => ({
-                            ...prev,
-                            [firstLevelNode.id]: true,
-                          }))
-                        }
-                        disabled={isSaving}
-                      />
-                      {openDropdowns[firstLevelNode.id] && (
-                        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-                          {firstLevelNode.children
-                            ?.filter(
-                              (child) =>
-                                child.name
-                                  .toLowerCase()
-                                  .includes(
-                                    (
-                                      searchTerms[firstLevelNode.id] || ""
-                                    ).toLowerCase()
-                                  ) && !selectedRelatedNodes.includes(child.id)
-                            )
-                            .map((child) => (
-                              <div
-                                key={child.id}
-                                className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
-                                onClick={() => {
-                                  setSelectedRelatedNodes([
-                                    ...selectedRelatedNodes,
-                                    child.id,
-                                  ]);
-                                  setSearchTerms((prev) => ({
-                                    ...prev,
-                                    [firstLevelNode.id]: "",
-                                  }));
-                                  setOpenDropdowns((prev) => ({
-                                    ...prev,
-                                    [firstLevelNode.id]: false,
-                                  }));
-                                }}
-                              >
-                                {child.name}
-                              </div>
-                            ))}
-                          {(!firstLevelNode.children ||
-                            firstLevelNode.children.filter(
-                              (child) =>
-                                child.name
-                                  .toLowerCase()
-                                  .includes(
-                                    (
-                                      searchTerms[firstLevelNode.id] || ""
-                                    ).toLowerCase()
-                                  ) && !selectedRelatedNodes.includes(child.id)
-                            ).length === 0) && (
-                            <div className="px-3 py-2 text-muted-foreground text-sm">
-                              No items found
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Show selected nodes */}
-                {selectedRelatedNodes.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Selected Items:
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedRelatedNodes.map((nodeId) => {
-                        // Find the node in all children of first level nodes
-                        const node = firstLevelNodes
-                          .flatMap((n) => n.children || [])
-                          .find((n) => n.id === nodeId);
-                        return node ? (
-                          <div
-                            key={nodeId}
-                            className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
-                          >
-                            <span>{node.name}</span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSelectedRelatedNodes(
-                                  selectedRelatedNodes.filter(
-                                    (id) => id !== nodeId
-                                  )
-                                )
-                              }
-                              className="text-blue-600 hover:text-blue-800"
-                              disabled={isSaving}
+              {firstLevelNodes.map((firstLevelNode) => (
+                <div key={firstLevelNode.id} className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    {firstLevelNode.name}
+                  </Label>
+                  <div
+                    className="relative"
+                    ref={(el) => (searchRefs.current[firstLevelNode.id] = el)}
+                  >
+                    <Input
+                      placeholder={`Search ${firstLevelNode.name.toLowerCase()}...`}
+                      value={searchTerms[firstLevelNode.id] || ""}
+                      onChange={(e) =>
+                        setSearchTerms((prev) => ({
+                          ...prev,
+                          [firstLevelNode.id]: e.target.value,
+                        }))
+                      }
+                      onFocus={() =>
+                        setOpenDropdowns((prev) => ({
+                          ...prev,
+                          [firstLevelNode.id]: true,
+                        }))
+                      }
+                      disabled={isSaving}
+                    />
+                    {openDropdowns[firstLevelNode.id] && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {firstLevelNode.children
+                          ?.filter(
+                            (child) =>
+                              child.name
+                                .toLowerCase()
+                                .includes(
+                                  (
+                                    searchTerms[firstLevelNode.id] || ""
+                                  ).toLowerCase()
+                                ) && !selectedRelatedNodes.includes(child.id)
+                          )
+                          .map((child) => (
+                            <div
+                              key={child.id}
+                              className="px-3 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm"
+                              onClick={() => {
+                                setSelectedRelatedNodes([
+                                  ...selectedRelatedNodes,
+                                  child.id,
+                                ]);
+                                setSearchTerms((prev) => ({
+                                  ...prev,
+                                  [firstLevelNode.id]: "",
+                                }));
+                                setOpenDropdowns((prev) => ({
+                                  ...prev,
+                                  [firstLevelNode.id]: false,
+                                }));
+                              }}
                             >
-                              ×
-                            </button>
+                              {child.name}
+                            </div>
+                          ))}
+                        {(!firstLevelNode.children ||
+                          firstLevelNode.children.filter(
+                            (child) =>
+                              child.name
+                                .toLowerCase()
+                                .includes(
+                                  (
+                                    searchTerms[firstLevelNode.id] || ""
+                                  ).toLowerCase()
+                                ) && !selectedRelatedNodes.includes(child.id)
+                          ).length === 0) && (
+                          <div className="px-3 py-2 text-muted-foreground text-sm">
+                            No items found
                           </div>
-                        ) : null;
-                      })}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              ))}
 
-                <p className="text-xs text-muted-foreground">
-                  Select items from each category that are related to this task.
-                </p>
-              </div>
-            )}
+              {/* Show selected nodes */}
+              {selectedRelatedNodes.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Selected Items:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRelatedNodes.map((nodeId) => {
+                      // Find the node in all children of first level nodes
+                      const node = firstLevelNodes
+                        .flatMap((n) => n.children || [])
+                        .find((n) => n.id === nodeId);
+                      return node ? (
+                        <div
+                          key={nodeId}
+                          className="flex items-center gap-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
+                        >
+                          <span>{node.name}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedRelatedNodes(
+                                selectedRelatedNodes.filter(
+                                  (id) => id !== nodeId
+                                )
+                              )
+                            }
+                            className="text-blue-600 hover:text-blue-800"
+                            disabled={isSaving}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Select items from each category that are related to this task.
+              </p>
+            </div>
+          )}
         </div>
 
         <SheetFooter>

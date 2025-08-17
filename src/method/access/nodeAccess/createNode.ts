@@ -14,6 +14,22 @@ export const metadataSchema = z.object({
   renderDepth: z.number().optional(),
   children_order: z.array(z.number()).optional(),
   completed: z.boolean().optional(),
+  defaultChildrenMetadata: z
+    .object({
+      type: z
+        .union([
+          z.literal("root"),
+          z.literal("structure"),
+          z.literal("list"),
+          z.literal("tagging"),
+          z.literal("loop"),
+        ])
+        .optional(),
+      renderDepth: z.number().optional(),
+      children_order: z.array(z.number()).optional(),
+      completed: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export type Metadata = z.infer<typeof metadataSchema>;
@@ -47,12 +63,35 @@ type CreateNodeResult =
 export async function createNode(
   params: CreateNodeParams
 ): Promise<CreateNodeResult> {
+  let finalMetadata = params.metadata;
+
+  // If no metadata is provided and there's a parent node, check for defaultChildrenMetadata
+  if (!params.metadata && params.parent_node) {
+    const { data: parentNode, error: parentError } = await supabase
+      .from("node")
+      .select("metadata")
+      .eq("id", params.parent_node)
+      .eq("user_id", params.user_id)
+      .single();
+
+    if (!parentError && parentNode && parentNode.metadata) {
+      const parentMetadata = metadataSchema.safeParse(parentNode.metadata).data;
+      if (parentMetadata?.defaultChildrenMetadata) {
+        finalMetadata = {
+          ...parentMetadata.defaultChildrenMetadata,
+          // Inherit the same defaultChildrenMetadata so this node can pass it to its children
+          defaultChildrenMetadata: parentMetadata.defaultChildrenMetadata,
+        };
+      }
+    }
+  }
+
   const newNode = {
     name: params.name,
     content: params.content || null,
     parent_node: params.parent_node || null,
     user_id: params.user_id,
-    metadata: params.metadata || null,
+    metadata: finalMetadata || null,
   };
 
   const { data, error } = await supabase
