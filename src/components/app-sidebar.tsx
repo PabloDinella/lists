@@ -1,4 +1,4 @@
-import { Search, Settings, FolderArchive, Trash2, Tag, LogOut } from "lucide-react";
+import { Search, Settings, FolderArchive, Trash2, Tag, LogOut, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -39,8 +39,13 @@ const otherItems = [
     icon: Tag,
   },
   {
+    title: "Import",
+    url: "/import",
+    icon: Upload,
+  },
+  {
     title: "Settings",
-    url: "#settings",
+    url: "/settings",
     icon: Settings,
   },
 ];

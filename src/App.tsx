@@ -5,6 +5,8 @@ import { SidebarProvider } from "./components/ui/sidebar";
 import { NodeView } from "./components/node-view/node-view";
 import { SignIn } from "./components/sign-in";
 import { ProtectedRoute } from "./components/protected-route";
+import { SettingsView } from "./components/settings-view";
+import { ImportView } from "./components/import-view";
 
 function App() {
   return (
@@ -38,6 +40,26 @@ function App() {
               <ProtectedRoute>
                 <SidebarProvider>
                   <NodeView />
+                </SidebarProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <SettingsView />
+                </SidebarProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/import"
+            element={
+              <ProtectedRoute>
+                <SidebarProvider>
+                  <ImportView />
                 </SidebarProvider>
               </ProtectedRoute>
             }
