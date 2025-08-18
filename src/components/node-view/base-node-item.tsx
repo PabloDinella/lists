@@ -5,14 +5,14 @@ import { useDeleteNode } from "@/hooks/use-delete-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
-import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 import clsx from "clsx";
 import { TreeNode } from "./use-list-data";
+import { Node } from "@/method/access/nodeAccess/models";
 
 interface BaseNodeItemProps {
   node: TreeNode;
   isChild?: boolean;
-  onEditStart: (node: DBNode) => void;
+  onEditStart: (node: Node) => void;
   onDelete: (nodeId: number) => void;
   children: React.ReactNode;
   isDragging?: boolean;
@@ -49,8 +49,8 @@ export function BaseNodeItem({
     if (!user?.id) return;
     
     updateNodeMutation.mutate({
-      node_id: node.id,
-      user_id: user.id,
+      nodeId: node.id,
+      userId: user.id,
       metadata: {
         completed: checked,
       },

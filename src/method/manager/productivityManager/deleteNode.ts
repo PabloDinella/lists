@@ -1,8 +1,8 @@
 import { deleteNode } from "../../access/nodeAccess";
 
 type DeleteNodeParams = {
-  node_id: number;
-  user_id: string;
+  nodeId: number;
+  userId: string;
 };
 
 export async function deleteNodeManager(params: DeleteNodeParams) {

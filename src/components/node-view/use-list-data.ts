@@ -1,9 +1,6 @@
 import { useMemo } from "react";
 import { useNodes } from "@/hooks/use-nodes";
-import type {
-  Node as DBNode,
-  Metadata,
-} from "@/method/access/nodeAccess/createNode";
+import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
 export type TreeNode = {
   id: number;
@@ -32,7 +29,7 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
     isLoading,
     isError,
   } = useNodes({
-    user_id: userId ?? undefined,
+    userId: userId ?? undefined,
   });
 
   const lists = allNodes?.filter((node) => {
@@ -45,25 +42,25 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
 
     // Build tree structure with metadata-based ordering
     const buildTree = (
-      nodes: DBNode[],
+      nodes: Node[],
       parentId: number | null,
       currentDepth: number = 0
     ): TreeNode[] => {
       const childNodes = nodes.filter((node) => node.parent_node === parentId);
-      
-      // If there's a parent node, check if it has children_order in its metadata
+
+      // If there's a parent node, check if it has childrenOrder in its metadata
       let orderedChildNodes = childNodes;
       if (parentId !== null) {
         const parentNode = nodes.find((node) => node.id === parentId);
-        const childrenOrder = parentNode?.metadata?.children_order;
-        
+        const childrenOrder = parentNode?.metadata?.childrenOrder;
+
         if (childrenOrder && childrenOrder.length > 0) {
           // Apply the ordering specified in parent's metadata
           orderedChildNodes = [
             // First add nodes in the specified order
-            ...childrenOrder
+            ...(childrenOrder
               .map((id) => childNodes.find((node) => node.id === id))
-              .filter(Boolean) as DBNode[],
+              .filter(Boolean) as Node[]),
             // Then add any nodes not in the order list
             ...childNodes.filter((node) => !childrenOrder.includes(node.id)),
           ];
@@ -76,7 +73,7 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
       }));
     };
 
-    // For root level, we don't have a parent with children_order, so just use the lists as-is
+    // For root level, we don't have a parent with childrenOrder, so just use the lists as-is
     return buildTree(allNodes, null);
   }, [lists, allNodes]);
 

@@ -1,54 +1,11 @@
 import { supabase } from "@/lib/supabase";
-import { z } from "zod";
-
-export const metadataSchema = z.object({
-  type: z
-    .union([
-      z.literal("root"),
-      z.literal("structure"),
-      z.literal("list"),
-      z.literal("tagging"),
-      z.literal("loop"),
-    ])
-    .optional(),
-  renderDepth: z.number().optional(),
-  children_order: z.array(z.number()).optional(),
-  completed: z.boolean().optional(),
-  defaultChildrenMetadata: z
-    .object({
-      type: z
-        .union([
-          z.literal("root"),
-          z.literal("structure"),
-          z.literal("list"),
-          z.literal("tagging"),
-          z.literal("loop"),
-        ])
-        .optional(),
-      renderDepth: z.number().optional(),
-      children_order: z.array(z.number()).optional(),
-      completed: z.boolean().optional(),
-    })
-    .optional(),
-});
-
-export type Metadata = z.infer<typeof metadataSchema>;
-
-export type Node = {
-  id: number;
-  name: string;
-  content: string | null;
-  parent_node: number | null;
-  user_id: string;
-  created_at: string;
-  metadata: Metadata | null;
-};
+import { Metadata, metadataSchema, Node } from "./models";
 
 type CreateNodeParams = {
   name: string;
   content?: string;
-  parent_node?: number;
-  user_id: string;
+  parentNode?: number;
+  userId: string;
   metadata?: Metadata;
 };
 
@@ -66,12 +23,12 @@ export async function createNode(
   let finalMetadata = params.metadata;
 
   // If no metadata is provided and there's a parent node, check for defaultChildrenMetadata
-  if (!params.metadata && params.parent_node) {
+  if (!params.metadata && params.parentNode) {
     const { data: parentNode, error: parentError } = await supabase
       .from("node")
       .select("metadata")
-      .eq("id", params.parent_node)
-      .eq("user_id", params.user_id)
+      .eq("id", params.parentNode)
+      .eq("user_id", params.userId)
       .single();
 
     if (!parentError && parentNode && parentNode.metadata) {
@@ -89,8 +46,8 @@ export async function createNode(
   const newNode = {
     name: params.name,
     content: params.content || null,
-    parent_node: params.parent_node || null,
-    user_id: params.user_id,
+    parent_node: params.parentNode || null,
+    user_id: params.userId,
     metadata: finalMetadata || null,
   };
 

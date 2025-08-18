@@ -2,23 +2,23 @@ import { useQuery } from "@tanstack/react-query";
 import { viewNodesManager } from "@/method/manager/productivityManager/viewNodes";
 
 type UseNodesParams = {
-  user_id?: string;
-  parent_node?: number | null;
+  userId?: string;
+  parentNode?: number | null;
 };
 
 export function useNodes(params: UseNodesParams) {
   return useQuery({
-    queryKey: ["nodes", params.user_id, String(params.parent_node)],
+    queryKey: ["nodes", params.userId, String(params.parentNode)],
     queryFn: async () => {
-      if (!params.user_id) {
+      if (!params.userId) {
         return { result: [] };
       }
       return viewNodesManager({
-        user_id: params.user_id,
-        parent_node: params.parent_node,
+        userId: params.userId,
+        parentNodeId: params.parentNode,
       });
     },
-    enabled: !!params.user_id,
+    enabled: !!params.userId,
     select: (data) => {
       if ('result' in data) {
         return data.result;

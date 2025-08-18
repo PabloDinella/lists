@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteNodeManager } from "@/method/manager/productivityManager/deleteNode";
 
 type DeleteNodeParams = {
-  node_id: number;
-  user_id: string;
+  nodeId: number;
+  userId: string;
 };
 
 export function useDeleteNode() {
@@ -14,7 +14,7 @@ export function useDeleteNode() {
     onSuccess: (_, variables) => {
       // Invalidate all nodes queries for this user
       queryClient.invalidateQueries({ 
-        queryKey: ["nodes", variables.user_id] 
+        queryKey: ["nodes", variables.userId] 
       });
     },
     onError: (error) => {

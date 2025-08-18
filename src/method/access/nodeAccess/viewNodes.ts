@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import { metadataSchema, Node } from "./createNode";
+import { metadataSchema, Node } from "./models";
 
 type ViewNodesParams = {
-  user_id: string;
-  parent_node?: number | null;
+  userId: string;
+  parentNodeId?: number | null;
 };
 
 type ViewNodesResult =
@@ -20,14 +20,14 @@ export async function viewNodes(
   let query = supabase
     .from("node")
     .select("*")
-    .eq("user_id", params.user_id)
+    .eq("user_id", params.userId)
     .order("created_at", { ascending: true });
 
-  if (params.parent_node !== undefined) {
-    if (params.parent_node === null) {
+  if (params.parentNodeId !== undefined) {
+    if (params.parentNodeId === null) {
       query = query.is("parent_node", null);
     } else {
-      query = query.eq("parent_node", params.parent_node);
+      query = query.eq("parent_node", params.parentNodeId);
     }
   }
 

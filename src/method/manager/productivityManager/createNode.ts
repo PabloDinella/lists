@@ -1,10 +1,11 @@
-import { createNode, type Metadata } from "../../access/nodeAccess";
+import { Metadata } from "@/method/access/nodeAccess/models";
+import { createNode } from "../../access/nodeAccess";
 
 type CreateNodeParams = {
   name: string;
   content?: string;
-  parent_node?: number;
-  user_id: string;
+  parentNode?: number;
+  userId: string;
   metadata?: Metadata;
 };
 

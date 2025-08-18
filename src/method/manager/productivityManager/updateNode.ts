@@ -1,13 +1,13 @@
+import { Metadata } from "@/method/access/nodeAccess/models";
 import { updateNode } from "../../access/nodeAccess";
-import type { Json } from "@/database.types";
 
 type UpdateNodeParams = {
-  node_id: number;
+  nodeId: number;
   name?: string;
   content?: string;
-  parent_node?: number | null;
-  user_id: string;
-  metadata?: Json;
+  parentNode?: number | null;
+  userId: string;
+  metadata?: Metadata;
 };
 
 export async function updateNodeManager(params: UpdateNodeParams) {

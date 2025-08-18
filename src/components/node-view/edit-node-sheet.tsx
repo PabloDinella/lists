@@ -13,14 +13,12 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import { List, Tag } from "lucide-react";
-import type {
-  Node as DBNode,
-  Metadata,
-} from "@/method/access/nodeAccess/createNode";
+
 import type { Json } from "@/database.types";
 import { CategoryMultiSelect } from "./category-multi-select";
 import { useCreateNode } from "@/hooks/use-create-node";
 import { useAuth } from "@/hooks/use-auth";
+import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
 type TreeNode = {
   id: number;
@@ -34,7 +32,7 @@ type TreeNode = {
 };
 
 interface EditNodeSheetProps {
-  node: DBNode | null; // null when creating a new item
+  node: Node | null; // null when creating a new item
   rootNode?: TreeNode;
   availableParents?: TreeNode[];
   firstLevelNodes?: TreeNode[]; // All first level (root) nodes for relationship selection
@@ -84,20 +82,23 @@ export function EditNodeSheet({
   const { user } = useAuth();
 
   // Function to create new items in categories
-  const handleCreateNewItem = async (categoryId: number, itemName: string): Promise<number> => {
+  const handleCreateNewItem = async (
+    categoryId: number,
+    itemName: string
+  ): Promise<number> => {
     if (!user?.id) {
       throw new Error("User not authenticated");
     }
 
     const result = await createNodeMutation.mutateAsync({
       name: itemName,
-      parent_node: categoryId,
-      user_id: user.id,
+      parentNode: categoryId,
+      userId: user.id,
       // Give the new item the same metadata type as the category (tagging)
       metadata: { type: "tagging" },
     });
 
-    if ('result' in result) {
+    if ("result" in result) {
       return result.result.id;
     } else {
       throw new Error("Failed to create new item");
@@ -145,35 +146,35 @@ export function EditNodeSheet({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    
+
     let metadata: Metadata | undefined = undefined;
-    
+
     if (isManagingLists) {
       metadata = { type: nodeType };
-      
+
       // Add default children metadata for lists
       if (nodeType === "list") {
         metadata.defaultChildrenMetadata = { type: "loop" };
       }
     }
-    
+
     onSave(name.trim(), description.trim(), parentId, metadata);
   };
 
   const handleSaveAndOpen = async () => {
     if (!name.trim()) return;
-    
+
     let metadata: Metadata | undefined = undefined;
-    
+
     if (isManagingLists) {
       metadata = { type: nodeType };
-      
+
       // Add default children metadata for lists
       if (nodeType === "list") {
         metadata.defaultChildrenMetadata = { type: "loop" };
       }
     }
-    
+
     if (onSaveAndOpen) {
       await onSaveAndOpen(name.trim(), description.trim(), parentId, metadata);
     }
@@ -392,8 +393,8 @@ export function EditNodeSheet({
             Cancel
           </Button>
           {mode === "create" && onSaveAndOpen && (
-            <Button 
-              onClick={handleSaveAndOpen} 
+            <Button
+              onClick={handleSaveAndOpen}
               disabled={!name.trim() || isSaving}
               variant="outline"
             >

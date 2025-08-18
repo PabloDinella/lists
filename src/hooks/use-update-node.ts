@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateNodeManager } from "@/method/manager/productivityManager/updateNode";
-import type { Json } from "@/database.types";
+import { Metadata } from "@/method/access/nodeAccess/models";
 
 type UpdateNodeParams = {
-  node_id: number;
+  nodeId: number;
   name?: string;
   content?: string;
-  parent_node?: number | null;
-  user_id: string;
-  metadata?: Json;
+  parentNode?: number | null;
+  userId: string;
+  metadata?: Metadata;
 };
 
 export function useUpdateNode() {
@@ -18,8 +18,8 @@ export function useUpdateNode() {
     mutationFn: (params: UpdateNodeParams) => updateNodeManager(params),
     onSuccess: (_, variables) => {
       // Invalidate all nodes queries for this user
-      queryClient.invalidateQueries({ 
-        queryKey: ["nodes", variables.user_id] 
+      queryClient.invalidateQueries({
+        queryKey: ["nodes", variables.userId],
       });
     },
     onError: (error) => {

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
-import type { Node as DBNode } from "@/method/access/nodeAccess/createNode";
 import { TreeNode } from "./use-list-data";
 import { useUpsertOrdering } from "@/hooks/use-ordering";
 import { supabase } from "@/lib/supabase";
+import { Node } from "@/method/access/nodeAccess/models";
 
 type HierarchicalItem = {
   node: TreeNode;
@@ -16,7 +16,7 @@ interface HierarchicalMovableListProps {
   hierarchicalTree: TreeNode[];
   rootNode: TreeNode;
   depth?: number;
-  onEditStart: (node: DBNode) => void;
+  onEditStart: (node: Node) => void;
   onDelete: (nodeId: number) => void;
 }
 
@@ -76,9 +76,9 @@ export function HierarchicalMovableList({
     if (user?.id) {
       try {
         await upsertOrdering.mutateAsync({
-          user_id: user.id,
-          parent_node_id: rootNode.id,
-          children_order: newOrder,
+          userId: user.id,
+          parentNodeId: rootNode.id,
+          childrenOrder: newOrder,
         });
       } catch (error) {
         console.error("Failed to persist ordering:", error);

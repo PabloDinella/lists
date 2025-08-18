@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNodeManager } from "@/method/manager/productivityManager/createNode";
-import type { Metadata } from "@/method/access/nodeAccess";
+import { Metadata } from "@/method/access/nodeAccess/models";
 
 type CreateNodeParams = {
   name: string;
   content?: string;
-  parent_node?: number;
-  user_id: string;
+  parentNode?: number;
+  userId: string;
   metadata?: Metadata;
 };
 
@@ -17,13 +17,13 @@ export function useCreateNode() {
     mutationFn: (params: CreateNodeParams) => createNodeManager(params),
     onSuccess: (_, variables) => {
       // Invalidate nodes queries for this user
-      queryClient.invalidateQueries({ 
-        queryKey: ["nodes", variables.user_id] 
+      queryClient.invalidateQueries({
+        queryKey: ["nodes", variables.userId],
       });
       // If this is a child node, invalidate the parent's children
-      if (variables.parent_node) {
-        queryClient.invalidateQueries({ 
-          queryKey: ["nodes", variables.user_id, variables.parent_node] 
+      if (variables.parentNode) {
+        queryClient.invalidateQueries({
+          queryKey: ["nodes", variables.userId, variables.parentNode],
         });
       }
     },

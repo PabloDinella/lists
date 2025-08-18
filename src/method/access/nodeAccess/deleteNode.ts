@@ -1,8 +1,8 @@
 import { supabase } from "@/lib/supabase";
 
 type DeleteNodeParams = {
-  node_id: number;
-  user_id: string;
+  nodeId: number;
+  userId: string;
 };
 
 type DeleteNodeResult =
@@ -19,8 +19,8 @@ export async function deleteNode(
   const { error } = await supabase
     .from("node")
     .delete()
-    .eq("id", params.node_id)
-    .eq("user_id", params.user_id);
+    .eq("id", params.nodeId)
+    .eq("user_id", params.userId);
 
   if (error) {
     return { error };

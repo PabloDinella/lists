@@ -1,14 +1,13 @@
 import { supabase } from "@/lib/supabase";
-import { Node, metadataSchema } from "./createNode";
-import type { Json } from "@/database.types";
+import { Metadata, metadataSchema, Node } from "./models";
 
 type UpdateNodeParams = {
-  node_id: number;
+  nodeId: number;
   name?: string;
   content?: string;
-  parent_node?: number | null;
-  user_id: string;
-  metadata?: Json;
+  parentNode?: number | null;
+  userId: string;
+  metadata?: Metadata;
 };
 
 type UpdateNodeResult =
@@ -29,19 +28,22 @@ export async function updateNode(
     const { data: currentNode } = await supabase
       .from("node")
       .select("metadata")
-      .eq("id", params.node_id)
-      .eq("user_id", params.user_id)
+      .eq("id", params.nodeId)
+      .eq("user_id", params.userId)
       .single();
 
     if (currentNode && currentNode.metadata) {
       // Merge existing metadata with new metadata - ensure both are objects
-      const existingMetadata = typeof currentNode.metadata === 'object' && currentNode.metadata !== null 
-        ? currentNode.metadata as Record<string, unknown>
-        : {};
-      const newMetadata = typeof params.metadata === 'object' && params.metadata !== null
-        ? params.metadata as Record<string, unknown>
-        : {};
-      finalMetadata = { ...existingMetadata, ...newMetadata } as Json;
+      const existingMetadata =
+        typeof currentNode.metadata === "object" &&
+        currentNode.metadata !== null
+          ? (currentNode.metadata as Record<string, unknown>)
+          : {};
+      const newMetadata =
+        typeof params.metadata === "object" && params.metadata !== null
+          ? (params.metadata as Record<string, unknown>)
+          : {};
+      finalMetadata = { ...existingMetadata, ...newMetadata };
     }
   }
 
@@ -49,19 +51,21 @@ export async function updateNode(
     name?: string;
     content?: string | null;
     parent_node?: number | null;
-    metadata?: Json;
+    metadata?: Metadata;
   } = {};
-  
+
   if (params.name !== undefined) updateData.name = params.name;
   if (params.content !== undefined) updateData.content = params.content;
-  if (params.parent_node !== undefined) updateData.parent_node = params.parent_node;
-  if (finalMetadata !== undefined) updateData.metadata = finalMetadata;
+  if (params.parentNode !== undefined)
+    updateData.parent_node = params.parentNode;
+  if (finalMetadata !== undefined)
+    updateData.metadata = metadataSchema.parse(finalMetadata);
 
   const { data, error } = await supabase
     .from("node")
     .update(updateData)
-    .eq("id", params.node_id)
-    .eq("user_id", params.user_id)
+    .eq("id", params.nodeId)
+    .eq("user_id", params.userId)
     .select()
     .single();
 

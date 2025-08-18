@@ -19,10 +19,7 @@ import { EditNodeSheet } from "./edit-node-sheet";
 import { TreeNode, useListData } from "./use-list-data";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import type {
-  Node as DBNode,
-  Metadata,
-} from "@/method/access/nodeAccess/createNode";
+import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -72,7 +69,7 @@ export function NodeView() {
   const listId = listIdString ? parseInt(listIdString, 10) : 0;
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState<DBNode | null>(null);
+  const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
 
   // Determine if we're managing lists (root level) or viewing a specific list
@@ -139,7 +136,7 @@ export function NodeView() {
     };
   }, []);
 
-  const handleEditStart = (node: DBNode) => {
+  const handleEditStart = (node: Node) => {
     setEditingNode(node);
     setSheetMode("edit");
   };
@@ -162,17 +159,17 @@ export function NodeView() {
         await createNodeMutation.mutateAsync({
           name: name,
           content: description || undefined,
-          parent_node: parentId || undefined,
-          user_id: userId,
+          parentNode: parentId || undefined,
+          userId: userId,
           metadata: metadata || undefined,
         });
       } else if (sheetMode === "edit" && editingNode) {
         await updateNodeMutation.mutateAsync({
-          node_id: editingNode.id,
+          nodeId: editingNode.id,
           name: name,
           content: description || undefined,
-          parent_node: parentId,
-          user_id: userId,
+          parentNode: parentId,
+          userId: userId,
           metadata: metadata || undefined,
         });
       }
@@ -195,8 +192,8 @@ export function NodeView() {
         const result = await createNodeMutation.mutateAsync({
           name: name,
           content: description || undefined,
-          parent_node: parentId || undefined,
-          user_id: userId,
+          parentNode: parentId || undefined,
+          userId: userId,
           metadata: metadata || undefined,
         });
 
@@ -221,8 +218,8 @@ export function NodeView() {
     if (!userId) return;
     try {
       await deleteNodeMutation.mutateAsync({
-        node_id: nodeId,
-        user_id: userId,
+        nodeId: nodeId,
+        userId: userId,
       });
     } catch (error) {
       console.error("Failed to delete list:", error);
@@ -271,9 +268,9 @@ export function NodeView() {
           <Breadcrumb className="mb-4">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink 
+                <BreadcrumbLink
                   className="cursor-pointer"
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate("/")}
                 >
                   Home
                 </BreadcrumbLink>
