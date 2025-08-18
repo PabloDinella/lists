@@ -1,6 +1,6 @@
-import { Search, Settings, FolderArchive, Trash2, Tag, LogOut, Upload } from "lucide-react";
+import { Search, Settings, FolderArchive, Trash2, Tag, LogOut, Upload, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
 import {
@@ -61,39 +61,72 @@ function ListSection({
   children: TreeNode[];
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleCollapsed = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const handleListNameClick = () => {
+    // Check if we're already on this list page
+    const isCurrentPage = location.pathname === `/lists/${listId}`;
+    
+    if (isCurrentPage) {
+      // If already on this page, toggle collapse/expand
+      toggleCollapsed();
+    } else {
+      // If not on this page, navigate to it
+      navigate(`/lists/${listId}`);
+    }
+  };
 
   return (
     <SidebarGroup key={listId}>
-      <SidebarGroupLabel
-        className="cursor-pointer"
-        onClick={() => navigate(`/lists/${listId}`)}
-      >
-        {listName}
+      <SidebarGroupLabel className="flex items-center cursor-pointer group select-none">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapsed();
+          }}
+          className="opacity-80 hover:opacity-100 transition-opacity p-1 -m-1 mr-1"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+        <span onClick={handleListNameClick} className="flex-1 cursor-pointer select-none">
+          {listName}
+        </span>
       </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {children.length > 0 ? (
-            children.map((child) => (
-              <SidebarMenuItem key={child.id}>
-                <SidebarMenuButton
-                  className="cursor-pointer pl-6"
-                  onClick={() => navigate(`/lists/${child.id}`)}
-                >
-                  <span>{child.name}</span>
+      {!isCollapsed && (
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {children.length > 0 ? (
+              children.map((child) => (
+                <SidebarMenuItem key={child.id}>
+                  <SidebarMenuButton
+                    className="cursor-pointer pl-6 select-none"
+                    onClick={() => navigate(`/lists/${child.id}`)}
+                  >
+                    <span>{child.name}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            ) : (
+              <SidebarMenuItem>
+                <SidebarMenuButton disabled>
+                  <span className="text-muted-foreground text-sm pl-6">
+                    No items
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            ))
-          ) : (
-            <SidebarMenuItem>
-              <SidebarMenuButton disabled>
-                <span className="text-muted-foreground text-sm pl-6">
-                  No items
-                </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-        </SidebarMenu>
-      </SidebarGroupContent>
+            )}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      )}
     </SidebarGroup>
   );
 }
@@ -190,13 +223,13 @@ export function AppSidebar() {
                     {item.url.startsWith("/") ? (
                       <button
                         onClick={() => navigate(item.url)}
-                        className="w-full text-left"
+                        className="w-full text-left select-none"
                       >
                         <item.icon className="mr-2 h-4 w-4" />
                         <span>{item.title}</span>
                       </button>
                     ) : (
-                      <a href={item.url}>
+                      <a href={item.url} className="select-none">
                         <item.icon className="mr-2 h-4 w-4" />
                         <span>{item.title}</span>
                       </a>
@@ -208,7 +241,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <button
                     onClick={handleSignOut}
-                    className="w-full text-left"
+                    className="w-full text-left select-none"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
