@@ -91,7 +91,7 @@ export function useImportNirvana() {
                 parentId = mapping.somedayMaybe;
                 break;
               case "Logbook":
-                parentId = mapping.reference; // Completed items go to reference
+                parentId = mapping.nextActions;
                 break;
               default:
                 parentId = mapping.inbox; // Default to inbox
