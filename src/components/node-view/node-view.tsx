@@ -23,7 +23,7 @@ import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
 const findNodeById = (
   nodeTree: TreeNode[],
-  nodeId: number
+  nodeId: number,
 ): TreeNode | null => {
   return nodeTree.reduce<TreeNode | null>((found, node) => {
     if (found) return found;
@@ -46,7 +46,7 @@ const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
 // Function to build breadcrumb path from root to current node
 const buildBreadcrumbPath = (
   allNodes: TreeNode[],
-  targetNodeId: number | null
+  targetNodeId: number | null,
 ): TreeNode[] => {
   if (!targetNodeId) return [];
 
@@ -95,15 +95,15 @@ export function NodeView() {
 
   const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
     flattenNodesTree,
-    []
+    [],
   );
 
   // Calculate available parents (second level items - nodes with parent_node that is not null)
   const availableParents = isManagingLists
     ? flattenedAllItems.filter(filter)
     : editingNode?.metadata?.type === "loop"
-    ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
-    : undefined;
+      ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
+      : undefined;
 
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
 
@@ -129,7 +129,7 @@ export function NodeView() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUserId(session?.user?.id ?? null);
-      }
+      },
     );
     return () => {
       listener.subscription.unsubscribe();
@@ -150,7 +150,7 @@ export function NodeView() {
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: Metadata
+    metadata?: Metadata,
   ) => {
     if (!userId) return;
 
@@ -183,7 +183,7 @@ export function NodeView() {
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: Metadata
+    metadata?: Metadata,
   ) => {
     if (!userId) return;
 
@@ -298,7 +298,7 @@ export function NodeView() {
 
         {isLoading && <p>Loading lists…</p>}
         {isError && (
-          <p className="text-red-500 text-sm">Failed to load lists.</p>
+          <p className="text-sm text-red-500">Failed to load lists.</p>
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
@@ -308,7 +308,7 @@ export function NodeView() {
 
             {/* Show current list name and description when viewing a specific list */}
             {!isManagingLists && currentNode && (
-              <div className="space-y-2 group">
+              <div className="group space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
@@ -322,7 +322,7 @@ export function NodeView() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleEditStart(currentNode)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -338,7 +338,7 @@ export function NodeView() {
                 onDelete={handleDelete}
               />
             ) : (
-              <p className="text-center text-muted-foreground py-8">
+              <p className="py-8 text-center text-muted-foreground">
                 {isManagingLists
                   ? "No lists found."
                   : "No items found in this list."}
@@ -352,27 +352,9 @@ export function NodeView() {
         node={editingNode}
         rootNode={rootNode}
         availableParents={availableParents}
-        firstLevelNodes={
-          editingNode?.metadata?.type === "loop"
-            ? currentNode?.children.filter((node) => {
-                const targetNode = editingNode || currentNode;
-                // Filter out the root node that contains the current editing item
-                if (!targetNode) return true;
-
-                const nodeContainsTargetNode = findNodeById(
-                  node.children,
-                  targetNode.id
-                );
-
-                return !nodeContainsTargetNode;
-              })
-            : // Show related items when creating a new node in a list
-            sheetMode === "create" && currentNode?.metadata?.type === "list"
-            ? rootNode?.children.filter(
-                (node) => node.metadata?.type === "tagging"
-              )
-            : undefined
-        }
+        firstLevelNodes={rootNode?.children.filter(
+          (node) => node.metadata?.type === "tagging",
+        )}
         defaultParentId={isManagingLists ? rootNode?.id : listId}
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
