@@ -61,7 +61,7 @@ export function useImportNirvana() {
                 parent_node: parentId,
                 user_id: userId,
                 metadata: {
-                  type: "list",
+                  type: "loop",
                   completed: !!row.COMPLETED,
                 }
               })
@@ -112,7 +112,7 @@ export function useImportNirvana() {
                 parent_node: parentId,
                 user_id: userId,
                 metadata: {
-                  type: "list",
+                  type: "loop",
                   completed: !!row.COMPLETED,
                   tags: tags.length > 0 ? tags : undefined,
                   energy: row.ENERGY || undefined,

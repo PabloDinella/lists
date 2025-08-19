@@ -51,6 +51,99 @@ export function ImportView() {
     );
   }, [hierarchicalTree]);
 
+  // Function to find the best matching node for a category
+  const findBestMatch = useCallback((category: keyof ImportMapping): TreeNode | null => {
+    if (allNodes.length === 0) return null;
+
+    const searchTerms: Record<keyof ImportMapping, string[]> = {
+      inbox: ["inbox", "in", "input"],
+      nextActions: ["next actions", "next", "actions", "todo", "tasks"],
+      projects: ["projects", "project"],
+      somedayMaybe: ["someday maybe", "someday", "maybe", "later"],
+      contexts: ["contexts", "context", "tags", "categories"],
+      areasOfFocus: ["areas of focus", "areas", "focus", "area"],
+      reference: ["reference", "references", "archive", "logbook", "completed", "done"],
+    };
+
+    const terms = searchTerms[category];
+    if (!terms) return null;
+
+    // First try exact matches (case insensitive)
+    for (const term of terms) {
+      const exactMatch = allNodes.find(node => 
+        node.name.toLowerCase() === term.toLowerCase()
+      );
+      if (exactMatch) return exactMatch;
+    }
+
+    // Then try partial matches (case insensitive)
+    for (const term of terms) {
+      const partialMatch = allNodes.find(node => 
+        node.name.toLowerCase().includes(term.toLowerCase()) ||
+        term.toLowerCase().includes(node.name.toLowerCase())
+      );
+      if (partialMatch) return partialMatch;
+    }
+
+    return null;
+  }, [allNodes]);
+
+  // Auto-map categories when nodes are loaded
+  const autoMapCategories = useCallback(() => {
+    if (allNodes.length === 0) return;
+
+    setMapping(prevMapping => {
+      const newMapping: ImportMapping = { ...prevMapping };
+      let hasChanges = false;
+
+      GTD_CATEGORIES.forEach(({ key }) => {
+        // Only auto-map if not already mapped
+        if (newMapping[key] === null) {
+          const bestMatch = findBestMatch(key);
+          if (bestMatch) {
+            newMapping[key] = bestMatch.id;
+            hasChanges = true;
+          }
+        }
+      });
+
+      return hasChanges ? newMapping : prevMapping;
+    });
+  }, [allNodes, findBestMatch]);
+
+  // Manual auto-map function that overwrites all mappings
+  const manualAutoMap = useCallback(() => {
+    if (allNodes.length === 0) return;
+
+    const newMapping: ImportMapping = {
+      inbox: null,
+      nextActions: null,
+      projects: null,
+      somedayMaybe: null,
+      contexts: null,
+      areasOfFocus: null,
+      reference: null,
+    };
+
+    GTD_CATEGORIES.forEach(({ key }) => {
+      const bestMatch = findBestMatch(key);
+      if (bestMatch) {
+        newMapping[key] = bestMatch.id;
+      }
+    });
+
+    setMapping(newMapping);
+  }, [allNodes, findBestMatch]);
+
+  // Trigger auto-mapping when nodes are loaded (only once)
+  const [hasAutoMapped, setHasAutoMapped] = useState(false);
+  useEffect(() => {
+    if (!nodesLoading && allNodes.length > 0 && !hasAutoMapped) {
+      autoMapCategories();
+      setHasAutoMapped(true);
+    }
+  }, [nodesLoading, allNodes, hasAutoMapped, autoMapCategories]);
+
   useEffect(() => {
     supabase.auth
       .getUser()
@@ -187,6 +280,7 @@ export function ImportView() {
             <p className="text-muted-foreground">
               Import your tasks and projects from a Nirvana CSV export. 
               First upload your CSV file, then map the categories to your existing nodes.
+              The system will automatically try to match categories to nodes with similar names.
             </p>
           </div>
 
@@ -257,7 +351,17 @@ export function ImportView() {
 
               {/* Mapping Configuration */}
               <div>
-                <h3 className="text-lg font-medium mb-4">Map Categories to Your Nodes</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Map Categories to Your Nodes</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={manualAutoMap}
+                    disabled={nodesLoading || allNodes.length === 0}
+                  >
+                    Auto-Map
+                  </Button>
+                </div>
                 {nodesLoading ? (
                   <p>Loading nodes...</p>
                 ) : (
