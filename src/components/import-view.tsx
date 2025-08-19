@@ -4,6 +4,7 @@ import { Container } from "./ui/container";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Select } from "./ui/select";
+import { Checkbox } from "./ui/checkbox";
 import { useListData, TreeNode } from "./node-view/use-list-data";
 import { useImportNirvana, parseCsvData, NirvanaRow, ImportMapping } from "@/hooks/use-import";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +22,7 @@ const GTD_CATEGORIES = [
 export function ImportView() {
   const [userId, setUserId] = useState<string | null>(null);
   const [csvData, setCsvData] = useState<NirvanaRow[] | null>(null);
+  const [ignoreCompleted, setIgnoreCompleted] = useState(false);
   const [mapping, setMapping] = useState<ImportMapping>({
     inbox: null,
     nextActions: null,
@@ -226,10 +228,12 @@ export function ImportView() {
         userId,
         data: csvData,
         mapping,
+        ignoreCompleted,
       });
       
       alert("Import completed successfully!");
       setCsvData(null);
+      setIgnoreCompleted(false);
       setMapping({
         inbox: null,
         nextActions: null,
@@ -248,12 +252,18 @@ export function ImportView() {
   const getPreviewStats = () => {
     if (!csvData) return null;
     
+    // Filter data based on ignoreCompleted setting
+    const dataToAnalyze = ignoreCompleted 
+      ? csvData.filter(row => !row.COMPLETED || row.COMPLETED.toLowerCase() !== 'true')
+      : csvData;
+    
     const stats = {
-      tasks: csvData.filter(row => row.TYPE === "Task").length,
-      projects: csvData.filter(row => row.TYPE === "Project").length,
-      nextActions: csvData.filter(row => row.TYPE === "Task" && row.STATE === "Next").length,
-      someday: csvData.filter(row => row.TYPE === "Task" && row.STATE === "Someday").length,
-      completed: csvData.filter(row => row.TYPE === "Task" && row.COMPLETED).length,
+      tasks: dataToAnalyze.filter(row => row.TYPE === "Task").length,
+      projects: dataToAnalyze.filter(row => row.TYPE === "Project").length,
+      nextActions: dataToAnalyze.filter(row => row.TYPE === "Task" && row.STATE === "Next").length,
+      someday: dataToAnalyze.filter(row => row.TYPE === "Task" && row.STATE === "Someday").length,
+      completed: csvData.filter(row => row.COMPLETED && row.COMPLETED.toLowerCase() === 'true').length,
+      total: csvData.length,
     };
     
     return stats;
@@ -324,7 +334,7 @@ export function ImportView() {
               {stats && (
                 <div className="bg-muted/50 rounded-lg p-4">
                   <h3 className="font-medium mb-2">Import Preview</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
                     <div>
                       <div className="font-medium text-lg">{stats.tasks}</div>
                       <div className="text-muted-foreground">Tasks</div>
@@ -345,9 +355,34 @@ export function ImportView() {
                       <div className="font-medium text-lg">{stats.completed}</div>
                       <div className="text-muted-foreground">Completed</div>
                     </div>
+                    <div>
+                      <div className="font-medium text-lg">{stats.total}</div>
+                      <div className="text-muted-foreground">Total Items</div>
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* Import Options */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Import Options</h3>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ignore-completed"
+                    checked={ignoreCompleted}
+                    onCheckedChange={(checked) => setIgnoreCompleted(!!checked)}
+                  />
+                  <Label htmlFor="ignore-completed" className="text-sm font-medium">
+                    Ignore completed items
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  When enabled, completed tasks and projects will be excluded from the import. 
+                  {stats && stats.completed > 0 && (
+                    <> Currently {stats.completed} completed items would be excluded.</>
+                  )}
+                </p>
+              </div>
 
               {/* Mapping Configuration */}
               <div>
@@ -406,6 +441,7 @@ export function ImportView() {
                   variant="outline"
                   onClick={() => {
                     setCsvData(null);
+                    setIgnoreCompleted(false);
                     setMapping({
                       inbox: null,
                       nextActions: null,

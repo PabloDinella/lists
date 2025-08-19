@@ -34,19 +34,26 @@ export function useImportNirvana() {
     mutationFn: async ({ 
       userId, 
       data, 
-      mapping 
+      mapping,
+      ignoreCompleted = false
     }: { 
       userId: string; 
       data: NirvanaRow[]; 
       mapping: ImportMapping;
+      ignoreCompleted?: boolean;
     }) => {
       const results = [];
+      
+      // Filter out completed items if ignoreCompleted is true
+      const filteredData = ignoreCompleted 
+        ? data.filter(row => !row.COMPLETED || row.COMPLETED.toLowerCase() !== 'true')
+        : data;
       
       // Create a map to track created projects by name
       const projectIdMap = new Map<string, number>();
       
       // First pass: Create projects
-      for (const row of data) {
+      for (const row of filteredData) {
         if (row.TYPE === "Project" && row.PARENT === "Standalone") {
           const parentId = row.STATE === "Active" ? mapping.projects : 
                           row.STATE === "Someday" ? mapping.somedayMaybe : 
@@ -76,7 +83,7 @@ export function useImportNirvana() {
       }
       
       // Second pass: Create tasks
-      for (const row of data) {
+      for (const row of filteredData) {
         if (row.TYPE === "Task") {
           let parentId: number | null = null;
           
