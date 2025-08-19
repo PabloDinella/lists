@@ -4,10 +4,10 @@ export const metadataSchema = z.object({
   type: z
     .union([
       z.literal("root"),
-      z.literal("structure"),
       z.literal("list"),
-      z.literal("tagging"),
       z.literal("loop"),
+      z.literal("tagging"),
+      z.literal("tag"),
     ])
     .optional(),
   renderDepth: z.number().optional(),
@@ -18,10 +18,10 @@ export const metadataSchema = z.object({
       type: z
         .union([
           z.literal("root"),
-          z.literal("structure"),
           z.literal("list"),
-          z.literal("tagging"),
           z.literal("loop"),
+          z.literal("tagging"),
+          z.literal("tag"),
         ])
         .optional(),
       renderDepth: z.number().optional(),

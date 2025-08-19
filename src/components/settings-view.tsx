@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { Select } from "./ui/select";
 import { useSettings, useUpdateSettings, GTDSettings } from "@/hooks/use-settings";
 import { useListData, TreeNode } from "./node-view/use-list-data";
+import { useResetSystem } from "@/hooks/use-reset-system";
 import { supabase } from "@/lib/supabase";
 
 const GTD_CATEGORIES = [
@@ -20,6 +21,7 @@ const GTD_CATEGORIES = [
 
 export function SettingsView() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [localSettings, setLocalSettings] = useState<GTDSettings>({
     inbox: null,
     nextActions: null,
@@ -32,6 +34,7 @@ export function SettingsView() {
 
   const { data: settings, isLoading: settingsLoading } = useSettings(userId);
   const updateSettingsMutation = useUpdateSettings();
+  const resetSystemMutation = useResetSystem();
   
   const { hierarchicalTree, isLoading: nodesLoading } = useListData({
     userId,
@@ -95,6 +98,27 @@ export function SettingsView() {
   const handleReset = () => {
     if (settings) {
       setLocalSettings(settings);
+    }
+  };
+
+  const handleResetSystem = async () => {
+    if (!userId) return;
+    
+    try {
+      await resetSystemMutation.mutateAsync({ userId });
+      setShowResetConfirmation(false);
+      // Reset local settings as well
+      setLocalSettings({
+        inbox: null,
+        nextActions: null,
+        projects: null,
+        somedayMaybe: null,
+        contexts: null,
+        areasOfFocus: null,
+        reference: null,
+      });
+    } catch (error) {
+      console.error("Failed to reset system:", error);
     }
   };
 
@@ -178,6 +202,68 @@ export function SettingsView() {
                   Failed to save settings. Please try again.
                 </p>
               )}
+            </div>
+          )}
+          
+          {/* Reset System Section */}
+          {!settingsLoading && !nodesLoading && (
+            <div className="border-t pt-6 mt-8">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-red-600">Reset System</h2>
+                  <p className="text-sm text-muted-foreground">
+                    This will permanently delete all your data and restore the default GTD structure.
+                    This action cannot be undone.
+                  </p>
+                </div>
+                
+                {!showResetConfirmation ? (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowResetConfirmation(true)}
+                    disabled={resetSystemMutation.isPending}
+                  >
+                    Reset System
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-red-600">
+                      Are you sure you want to reset your entire system? This will:
+                    </p>
+                    <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                      <li>Delete all your lists, tasks, and projects</li>
+                      <li>Reset all GTD settings</li>
+                      <li>Restore the default GTD structure</li>
+                    </ul>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="destructive"
+                        onClick={handleResetSystem}
+                        disabled={resetSystemMutation.isPending}
+                      >
+                        {resetSystemMutation.isPending ? "Resetting..." : "Yes, Reset Everything"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowResetConfirmation(false)}
+                        disabled={resetSystemMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {resetSystemMutation.isSuccess && (
+                  <p className="text-sm text-green-600">System reset successfully!</p>
+                )}
+
+                {resetSystemMutation.isError && (
+                  <p className="text-sm text-red-600">
+                    Failed to reset system. Please try again.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
