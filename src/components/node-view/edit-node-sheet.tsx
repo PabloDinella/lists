@@ -16,8 +16,7 @@ import { Select } from "../ui/select";
 import { List, Tag } from "lucide-react";
 
 import { CategoryMultiSelect } from "./category-multi-select";
-import { useCreateNode } from "@/hooks/use-create-node";
-import { useUpdateNode } from "@/hooks/use-update-node";
+import { useAddUpdateNode } from "@/hooks/use-add-update-node";
 import { useAuth } from "@/hooks/use-auth";
 import { useNodeId } from "@/hooks/use-node-id";
 import { TreeNode, useListData } from "./use-list-data";
@@ -46,8 +45,7 @@ export function EditNodeSheet({
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>([]);
 
   const { user } = useAuth();
-  const createNodeMutation = useCreateNode();
-  const updateNodeMutation = useUpdateNode();
+  const addUpdateNodeMutation = useAddUpdateNode();
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -94,7 +92,7 @@ export function EditNodeSheet({
   const defaultParentId = isManagingLists ? rootNode?.id : nodeId;
 
   // Check if saving
-  const isSaving = createNodeMutation.isPending || updateNodeMutation.isPending;
+  const isSaving = addUpdateNodeMutation.isPending;
 
   // Function to create new items in categories
   const handleCreateNewItem = async (
@@ -105,7 +103,7 @@ export function EditNodeSheet({
       throw new Error("User not authenticated");
     }
 
-    const result = await createNodeMutation.mutateAsync({
+    const result = await addUpdateNodeMutation.mutateAsync({
       name: itemName,
       parentNode: categoryId,
       userId: user.id,
@@ -160,28 +158,16 @@ export function EditNodeSheet({
     }
 
     try {
-      if (mode === "create") {
-        await createNodeMutation.mutateAsync({
-          name: name.trim(),
-          content: description.trim() || undefined,
-          parentNode: parentId || undefined,
-          userId: user.id,
-          metadata: metadata || undefined,
-          relatedNodeIds: selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-      } else if (mode === "edit" && node) {
-        await updateNodeMutation.mutateAsync({
-          nodeId: node.id,
-          name: name.trim(),
-          content: description.trim() || undefined,
-          parentNode: parentId,
-          userId: user.id,
-          metadata: metadata || undefined,
-          relatedNodeIds: selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-      }
+      await addUpdateNodeMutation.mutateAsync({
+        nodeId: mode === "edit" && node ? node.id : undefined,
+        name: name.trim(),
+        content: description.trim() || undefined,
+        parentNode: parentId || undefined,
+        userId: user.id,
+        metadata: metadata || undefined,
+        relatedNodeIds: selectedRelatedNodes,
+        relationType: "tagged_with",
+      });
 
       handleClose(); // Close the sheet after successful save
     } catch (error) {
@@ -205,7 +191,7 @@ export function EditNodeSheet({
 
     try {
       if (mode === "create") {
-        const result = await createNodeMutation.mutateAsync({
+        const result = await addUpdateNodeMutation.mutateAsync({
           name: name.trim(),
           content: description.trim() || undefined,
           parentNode: parentId || undefined,
