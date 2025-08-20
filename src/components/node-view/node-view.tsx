@@ -16,6 +16,7 @@ import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
 import { TreeNode, useListData } from "./use-list-data";
+import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
@@ -69,6 +70,7 @@ export function NodeView() {
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
+  const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -167,6 +169,44 @@ export function NodeView() {
     ? currentNode?.children.reduce(reduce, [])
     : currentNode?.children;
 
+  // Get tag nodes for filtering (only when viewing a specific list, not when managing lists)
+  const tagNodes = !isManagingLists && rootNode ? 
+    rootNode.children.filter(node => node.metadata?.type === "tagging") : [];
+
+  // Filter tree based on selected filters
+  const filteredTree = tree && selectedFilters.length > 0 ? 
+    filterTreeByTags(tree, selectedFilters) : tree;
+
+  // Helper function to filter tree based on selected tag filters
+  function filterTreeByTags(nodes: TreeNode[], filterTagIds: number[]): TreeNode[] {
+    return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
+      // Check if this node has ALL of the selected tags in its related_nodes (AND logic)
+      const hasAllSelectedTags = filterTagIds.every(tagId => 
+        node.related_nodes.some(relatedNode => relatedNode.id === tagId)
+      );
+
+      // If it has all selected tags or if no filters are applied, include it
+      if (hasAllSelectedTags || filterTagIds.length === 0) {
+        const filteredChildren = filterTreeByTags(node.children, filterTagIds);
+        filteredNodes.push({
+          ...node,
+          children: filteredChildren
+        });
+      } else {
+        // Even if the node doesn't match, check if any children match
+        const filteredChildren = filterTreeByTags(node.children, filterTagIds);
+        if (filteredChildren.length > 0) {
+          filteredNodes.push({
+            ...node,
+            children: filteredChildren
+          });
+        }
+      }
+
+      return filteredNodes;
+    }, []);
+  }
+
   return (
     <AppLayout
       title={isManagingLists ? "Manage Lists" : "List Items"}
@@ -213,6 +253,15 @@ export function NodeView() {
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
+            {/* Tag filters - only show when viewing a specific list */}
+            {!isManagingLists && tagNodes.length > 0 && (
+              <TagFilters
+                tagNodes={tagNodes}
+                selectedFilters={selectedFilters}
+                onFiltersChange={setSelectedFilters}
+              />
+            )}
+
             {isManagingLists && (
               <h2 className="text-xl font-semibold">Your lists</h2>
             )}
@@ -241,9 +290,9 @@ export function NodeView() {
               </div>
             )}
 
-            {tree ? (
+            {filteredTree ? (
               <HierarchicalMovableList
-                hierarchicalTree={tree}
+                hierarchicalTree={filteredTree}
                 rootNode={currentNode!}
                 onEditStart={handleEditStart}
                 onDelete={handleDelete}
@@ -252,6 +301,8 @@ export function NodeView() {
               <p className="py-8 text-center text-muted-foreground">
                 {isManagingLists
                   ? "No lists found."
+                  : selectedFilters.length > 0
+                  ? "No items match the selected filters."
                   : "No items found in this list."}
               </p>
             )}
