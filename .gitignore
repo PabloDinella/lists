@@ -30,3 +30,7 @@ dist-ssr
 .temp/
 
 data_import/
+
+# https://developers.cloudflare.com/workers/vite-plugin/tutorial/#update-the-gitignore-file
+.wrangler
+.dev.vars*
