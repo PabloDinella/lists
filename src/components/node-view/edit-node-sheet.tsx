@@ -13,9 +13,9 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
-import { List, Tag } from "lucide-react";
 
-import { CategoryMultiSelect } from "./category-multi-select";
+import { NodeTypeSelector } from "./node-type-selector";
+import { TagsSelector } from "./tags-selector";
 import { useAddUpdateNode } from "@/hooks/use-add-update-node";
 import { useAuth } from "@/hooks/use-auth";
 import { useNodeId } from "@/hooks/use-node-id";
@@ -41,7 +41,7 @@ export function EditNodeSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
-  const [nodeType, setNodeType] = useState<"list" | "tagging">("list");
+  const [nodeType, setNodeType] = useState<"list" | "tagging" | "tag" | "loop">("list");
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
     [],
   );
@@ -134,7 +134,9 @@ export function EditNodeSheet({
         // Set node type based on existing metadata
         if (
           node?.metadata?.type === "list" ||
-          node?.metadata?.type === "tagging"
+          node?.metadata?.type === "tagging" ||
+          node?.metadata?.type === "tag" ||
+          node?.metadata?.type === "loop"
         ) {
           setNodeType(node.metadata.type);
         } else {
@@ -309,13 +311,15 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
         </SheetHeader>
 
-        <div className="grid gap-4 py-4">
+        <div 
+          className="flex flex-col gap-7 py-4 pr-3 flex-1 overflow-y-auto custom-scrollbar"
+        >
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -340,97 +344,7 @@ export function EditNodeSheet({
             />
           </div>
 
-          {/* Node type selection when managing lists */}
-          {isManagingLists && mode === "create" && (
-            <div className="grid gap-3">
-              <Label>Type</Label>
-              <p className="text-sm text-muted-foreground">
-                What's the purpose of this item
-              </p>
-              <div className="grid gap-3">
-                <div
-                  className={`cursor-pointer rounded-lg border-2 p-4 transition-colors ${
-                    nodeType === "list"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => setNodeType("list")}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`rounded-md p-2 ${
-                        nodeType === "list"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <List className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="mb-1 text-sm font-medium">List</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Lists are intended to be used for organizing your items,
-                        tasks, projects, etc.
-                      </p>
-                    </div>
-                    <div
-                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
-                        nodeType === "list"
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground"
-                      }`}
-                    >
-                      {nodeType === "list" && (
-                        <div className="h-2 w-2 rounded-full bg-primary-foreground" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`cursor-pointer rounded-lg border-2 p-4 transition-colors ${
-                    nodeType === "tagging"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => setNodeType("tagging")}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`rounded-md p-2 ${
-                        nodeType === "tagging"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <Tag className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="mb-1 text-sm font-medium">Tagging</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Tagging is for items that can be attached to List's
-                        items, like Context and Area of Focus.
-                      </p>
-                    </div>
-                    <div
-                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
-                        nodeType === "tagging"
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground"
-                      }`}
-                    >
-                      {nodeType === "tagging" && (
-                        <div className="h-2 w-2 rounded-full bg-primary-foreground" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Show parent selection for create mode or edit mode with existing parent */}
-          {/* {(mode === 'create' || (mode === 'edit' && node && node.parent_node !== null)) && ( */}
           {availableParents && availableParents.length > 0 && (
             <div className="grid gap-2">
               <Label htmlFor="parent">Parent Item</Label>
@@ -451,33 +365,29 @@ export function EditNodeSheet({
                   </option>
                 ))}
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Only root items (items without parents) can be selected as
-                parents.
-              </p>
             </div>
           )}
-          {/* )} */}
 
           {/* Show related nodes selection when not in structural mode or when creating items in a list */}
-          {tagNodes && tagNodes.length > 0 && (
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
-                Related Items by Category
-              </Label>
+          <TagsSelector
+            tagNodes={tagNodes || []}
+            selectedRelatedNodes={selectedRelatedNodes}
+            onSelectionChange={setSelectedRelatedNodes}
+            disabled={isSaving}
+            defaultExpanded={!isManagingLists}
+            onCreateNewItem={handleCreateNewItem}
+          />
 
-              <CategoryMultiSelect
-                firstLevelNodes={tagNodes}
-                selectedRelatedNodes={selectedRelatedNodes}
-                onSelectionChange={setSelectedRelatedNodes}
-                disabled={isSaving}
-                onCreateNewItem={handleCreateNewItem}
-              />
-            </div>
-          )}
+          {/* Node type selection when managing lists */}
+          <NodeTypeSelector
+            nodeType={nodeType}
+            onNodeTypeChange={setNodeType}
+            disabled={isSaving}
+            defaultExpanded={isManagingLists}
+          />
         </div>
 
-        <SheetFooter>
+        <SheetFooter className="flex-shrink-0">
           <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>

@@ -169,7 +169,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="custom-scrollbar">
         <div className="flex items-center justify-between px-4 py-2">
           <h1 className="text-xl font-bold">trylists.app</h1>
         </div>
