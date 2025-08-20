@@ -98,6 +98,7 @@ export async function createNode(
       user_id: data.user_id!,
       created_at: data.created_at,
       metadata: metadataSchema.safeParse(data.metadata).data || null,
+      related_nodes: [],
     },
   };
 }
