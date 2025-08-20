@@ -45,7 +45,7 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
     const buildTree = (
       nodes: Node[],
       parentId: number | null,
-      currentDepth: number = 0
+      currentDepth: number = 0,
     ): TreeNode[] => {
       const childNodes = nodes.filter((node) => node.parent_node === parentId);
 
@@ -77,8 +77,6 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
     // For root level, we don't have a parent with childrenOrder, so just use the lists as-is
     return buildTree(allNodes, null);
   }, [lists, allNodes]);
-
-  console.log({ lists, allNodes });
 
   return {
     hierarchicalTree,

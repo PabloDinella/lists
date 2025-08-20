@@ -259,12 +259,18 @@ export function NodeView() {
         )}
       </Container>
 
-      <EditNodeSheet
-        node={editingNode}
-        isOpen={sheetMode === "create" || editingNode !== null}
-        onClose={handleSheetClose}
-        mode={sheetMode}
-      />
+      {(sheetMode === "create" || editingNode !== null) && (
+        <EditNodeSheet
+          node={editingNode}
+          isOpen={sheetMode === "create" || editingNode !== null}
+          onClose={handleSheetClose}
+          mode={sheetMode}
+          defaultParentId={currentNode?.id ?? 1}
+          defaultMetadata={
+            currentNode?.metadata?.defaultChildrenMetadata ?? undefined
+          }
+        />
+      )}
     </AppLayout>
   );
 }

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import {
   Sheet,
   SheetContent,
@@ -27,6 +27,16 @@ interface EditNodeSheetProps {
   isOpen: boolean;
   onClose: () => void;
   mode: "edit" | "create";
+  defaultParentId: number;
+  defaultMetadata?: Metadata; // Default metadata for create mode
+}
+
+interface FormData {
+  name: string;
+  description: string;
+  parentId: number | null;
+  nodeType: "list" | "tagging" | "tag" | "loop";
+  selectedRelatedNodes: number[];
 }
 
 export function EditNodeSheet({
@@ -34,19 +44,11 @@ export function EditNodeSheet({
   isOpen,
   onClose,
   mode,
+  defaultParentId,
+  defaultMetadata,
 }: EditNodeSheetProps) {
   const nodeId = useNodeId();
   const navigate = useNavigate();
-
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [parentId, setParentId] = useState<number | null>(null);
-  const [nodeType, setNodeType] = useState<"list" | "tagging" | "tag" | "loop">(
-    "list",
-  );
-  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
-    [],
-  );
 
   const { user } = useAuth();
   const addUpdateNodeMutation = useAddUpdateNode();
@@ -73,9 +75,14 @@ export function EditNodeSheet({
 
   // Convert tree structure to hierarchical options for dropdown
   const convertToHierarchicalOptions = (
-    nodes: TreeNode[], 
+    nodes: TreeNode[],
     level: number = 0,
-    result: Array<{ id: number; label: string; value: number; level: number }> = []
+    result: Array<{
+      id: number;
+      label: string;
+      value: number;
+      level: number;
+    }> = [],
   ): Array<{ id: number; label: string; value: number; level: number }> => {
     for (const node of nodes) {
       result.push({
@@ -91,9 +98,6 @@ export function EditNodeSheet({
     return result;
   };
 
-  const filter = (node: TreeNode) =>
-    node.metadata?.type === "list" || node.metadata?.type === "tagging";
-
   // Compute derived data
   const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
     flattenNodesTree,
@@ -102,12 +106,6 @@ export function EditNodeSheet({
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
 
   // Calculate available parents
-  // const availableParents = isManagingLists
-  //   ? flattenedAllItems.filter(filter)
-  //   : node?.metadata?.type === "loop"
-  //     ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
-  //     : undefined;
-
   const availableParents = flattenedAllItems;
 
   // Get tag nodes for relationships
@@ -115,11 +113,37 @@ export function EditNodeSheet({
     (node) => node.metadata?.type === "tagging",
   );
 
-  // Default parent ID
-  const defaultParentId = isManagingLists ? rootNode?.id : nodeId;
+  // Initialize form with react-hook-form
+  const form = useForm<FormData>({
+    defaultValues: {
+      name: "",
+      description: "",
+      parentId: defaultParentId,
+      nodeType:
+        defaultMetadata?.type === "root" || !defaultMetadata?.type
+          ? "loop"
+          : defaultMetadata.type,
+      selectedRelatedNodes: [],
+    },
+  });
+
+  const {
+    watch,
+    setValue,
+    handleSubmit,
+    reset,
+    register,
+    formState: { isSubmitting },
+  } = form;
+
+  // Watch form values
+  const parentId = watch("parentId");
+  const nodeType = watch("nodeType");
+  const selectedRelatedNodes = watch("selectedRelatedNodes");
+  const name = watch("name");
 
   // Check if saving
-  const isSaving = addUpdateNodeMutation.isPending;
+  const isSaving = addUpdateNodeMutation.isPending || isSubmitting;
 
   // Function to create new items in categories
   const handleCreateNewItem = async (
@@ -148,58 +172,28 @@ export function EditNodeSheet({
   // Determine if the current node is structural based on metadata
   const isStructuralMode = node?.metadata?.type === "list";
 
-  // Reset form when node changes or sheet opens
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === "edit" && node) {
-        setName(node.name);
-        setDescription(node.content || "");
-        setParentId(node.parent_node);
-        // Set node type based on existing metadata
-        if (
-          node?.metadata?.type === "list" ||
-          node?.metadata?.type === "tagging" ||
-          node?.metadata?.type === "tag" ||
-          node?.metadata?.type === "loop"
-        ) {
-          setNodeType(node.metadata.type);
-        } else {
-          setNodeType("list");
-        }
-        // Load existing relationships for editing
-        setSelectedRelatedNodes(node.related_nodes?.map((rn) => rn.id) || []);
-      } else if (mode === "create") {
-        setName("");
-        setDescription("");
-        setParentId(defaultParentId || null);
-        setNodeType("list");
-        setSelectedRelatedNodes([]);
-      }
-    }
-  }, [node, isOpen, mode, defaultParentId]);
-
-  const handleSave = async () => {
-    if (!name.trim() || !user?.id) return;
+  const handleSave = handleSubmit(async (data: FormData) => {
+    if (!data.name.trim() || !user?.id) return;
 
     let metadata: Metadata | undefined = undefined;
 
     // Always use the selected node type
-    metadata = { type: nodeType };
+    metadata = { type: data.nodeType };
 
     // Add default children metadata for lists
-    if (nodeType === "list") {
+    if (data.nodeType === "list") {
       metadata.defaultChildrenMetadata = { type: "loop" };
     }
 
     try {
       await addUpdateNodeMutation.mutateAsync({
         nodeId: mode === "edit" && node ? node.id : undefined,
-        name: name.trim(),
-        content: description.trim() || undefined,
-        parentNode: parentId || undefined,
+        name: data.name.trim(),
+        content: data.description.trim() || undefined,
+        parentNode: data.parentId || undefined,
         userId: user.id,
         metadata: metadata, // Always provide metadata
-        relatedNodeIds: selectedRelatedNodes,
+        relatedNodeIds: data.selectedRelatedNodes,
         relationType: "tagged_with",
       });
 
@@ -207,30 +201,30 @@ export function EditNodeSheet({
     } catch (error) {
       console.error(`Failed to ${mode} node:`, error);
     }
-  };
+  });
 
-  const handleSaveAndOpen = async () => {
-    if (!name.trim() || !user?.id) return;
+  const handleSaveAndOpen = handleSubmit(async (data: FormData) => {
+    if (!data.name.trim() || !user?.id) return;
 
     let metadata: Metadata | undefined = undefined;
 
     // Always use the selected node type
-    metadata = { type: nodeType };
+    metadata = { type: data.nodeType };
 
     // Add default children metadata for lists
-    if (nodeType === "list") {
+    if (data.nodeType === "list") {
       metadata.defaultChildrenMetadata = { type: "loop" };
     }
 
     try {
       if (mode === "create") {
         const result = await addUpdateNodeMutation.mutateAsync({
-          name: name.trim(),
-          content: description.trim() || undefined,
-          parentNode: parentId || undefined,
+          name: data.name.trim(),
+          content: data.description.trim() || undefined,
+          parentNode: data.parentId || undefined,
           userId: user.id,
           metadata: metadata, // Always provide metadata
-          relatedNodeIds: selectedRelatedNodes,
+          relatedNodeIds: data.selectedRelatedNodes,
           relationType: "tagged_with",
         });
 
@@ -244,17 +238,19 @@ export function EditNodeSheet({
     } catch (error) {
       console.error(`Failed to ${mode} node:`, error);
     }
-  };
+  });
 
   const handleClose = () => {
     onClose();
     // Reset form after close animation
     setTimeout(() => {
-      setName("");
-      setDescription("");
-      setParentId(null);
-      setNodeType("list");
-      setSelectedRelatedNodes([]);
+      reset({
+        name: "",
+        description: "",
+        parentId: null,
+        nodeType: "list",
+        selectedRelatedNodes: [],
+      });
     }, 300);
   };
 
@@ -298,8 +294,7 @@ export function EditNodeSheet({
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register("name")}
               placeholder={modeContent.namePlaceholder}
               disabled={isSaving}
             />
@@ -308,10 +303,7 @@ export function EditNodeSheet({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setDescription(e.target.value)
-              }
+              {...register("description")}
               placeholder={modeContent.descriptionPlaceholder}
               rows={3}
               disabled={isSaving}
@@ -331,7 +323,7 @@ export function EditNodeSheet({
                   ]}
                   value={parentId}
                   onChange={(selectedId) => {
-                    setParentId(selectedId as number | null);
+                    setValue("parentId", selectedId as number | null);
                   }}
                   placeholder="Select a parent item..."
                   disabled={isSaving}
@@ -346,7 +338,9 @@ export function EditNodeSheet({
           <TagsSelector
             tagNodes={tagNodes || []}
             selectedRelatedNodes={selectedRelatedNodes}
-            onSelectionChange={setSelectedRelatedNodes}
+            onSelectionChange={(newSelection) =>
+              setValue("selectedRelatedNodes", newSelection)
+            }
             disabled={isSaving}
             defaultExpanded={!isManagingLists}
             onCreateNewItem={handleCreateNewItem}
@@ -355,7 +349,9 @@ export function EditNodeSheet({
           {/* Node type selection when managing lists or editing existing nodes */}
           <NodeTypeSelector
             nodeType={nodeType}
-            onNodeTypeChange={setNodeType}
+            onNodeTypeChange={(newType) => {
+              setValue("nodeType", newType);
+            }}
             disabled={isSaving}
             defaultExpanded={isManagingLists}
           />
