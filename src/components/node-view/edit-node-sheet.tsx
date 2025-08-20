@@ -12,7 +12,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Select } from "../ui/select";
+import { SingleSelectAutocomplete } from "../ui/single-select-autocomplete";
 
 import { NodeTypeSelector } from "./node-type-selector";
 import { TagsSelector } from "./tags-selector";
@@ -71,6 +71,26 @@ export function EditNodeSheet({
     return [...all, node];
   };
 
+  // Convert tree structure to hierarchical options for dropdown
+  const convertToHierarchicalOptions = (
+    nodes: TreeNode[], 
+    level: number = 0,
+    result: Array<{ id: number; label: string; value: number; level: number }> = []
+  ): Array<{ id: number; label: string; value: number; level: number }> => {
+    for (const node of nodes) {
+      result.push({
+        id: node.id,
+        label: node.name,
+        value: node.id,
+        level: level,
+      });
+      if (node.children && node.children.length > 0) {
+        convertToHierarchicalOptions(node.children, level + 1, result);
+      }
+    }
+    return result;
+  };
+
   const filter = (node: TreeNode) =>
     node.metadata?.type === "list" || node.metadata?.type === "tagging";
 
@@ -82,11 +102,13 @@ export function EditNodeSheet({
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
 
   // Calculate available parents
-  const availableParents = isManagingLists
-    ? flattenedAllItems.filter(filter)
-    : node?.metadata?.type === "loop"
-      ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
-      : undefined;
+  // const availableParents = isManagingLists
+  //   ? flattenedAllItems.filter(filter)
+  //   : node?.metadata?.type === "loop"
+  //     ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
+  //     : undefined;
+
+  const availableParents = flattenedAllItems;
 
   // Get tag nodes for relationships
   const tagNodes = rootNode?.children.filter(
@@ -298,25 +320,25 @@ export function EditNodeSheet({
 
           {/* Show parent selection for create mode or edit mode with existing parent */}
           {availableParents && availableParents.length > 0 && (
-            <div className="grid gap-2">
-              <Label htmlFor="parent">Parent Item</Label>
-              <Select
-                id="parent"
-                value={parentId?.toString() || ""}
-                onChange={(e) =>
-                  setParentId(e.target.value ? parseInt(e.target.value) : null)
-                }
-                disabled={isSaving}
-              >
-                <option value={rootNode?.id.toString() ?? ""}>
-                  No parent (make it a root item)
-                </option>
-                {availableParents.map((parent) => (
-                  <option key={parent.id} value={parent.id.toString()}>
-                    {parent.name}
-                  </option>
-                ))}
-              </Select>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-base font-medium">Parent Item</Label>
+              </div>
+              <div>
+                <SingleSelectAutocomplete
+                  hierarchicalOptions={[
+                    ...convertToHierarchicalOptions(allNodesTree),
+                  ]}
+                  value={parentId}
+                  onChange={(selectedId) => {
+                    setParentId(selectedId as number | null);
+                  }}
+                  placeholder="Select a parent item..."
+                  disabled={isSaving}
+                  freeSolo={false}
+                  noOptionsText="No parent items found"
+                />
+              </div>
             </div>
           )}
 
