@@ -76,8 +76,7 @@ export function NodeView() {
   const isManagingLists = !listId;
 
   const filter = (node: TreeNode) =>
-    node.metadata?.type === "list" ||
-    node.metadata?.type === "tagging";
+    node.metadata?.type === "list" || node.metadata?.type === "tagging";
 
   const createNodeMutation = useCreateNode();
   const updateNodeMutation = useUpdateNode();
@@ -150,7 +149,7 @@ export function NodeView() {
     description: string,
     parentId: number | null,
     metadata?: Metadata,
-    selectedRelatedNodes?: number[]
+    selectedRelatedNodes?: number[],
   ) => {
     if (!userId) return;
 
@@ -189,7 +188,7 @@ export function NodeView() {
     description: string,
     parentId: number | null,
     metadata?: Metadata,
-    selectedRelatedNodes?: number[]
+    selectedRelatedNodes?: number[],
   ) => {
     if (!userId) return;
 
@@ -261,8 +260,6 @@ export function NodeView() {
   const tree = isManagingLists
     ? currentNode?.children.reduce(reduce, [])
     : currentNode?.children;
-
-  console.log({ tree });
 
   return (
     <AppLayout
