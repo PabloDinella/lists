@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Metadata, metadataSchema, Node } from "./models";
+import { createRelationship } from "./createRelationship";
+import { deleteRelationships } from "./deleteRelationships";
 
 type UpdateNodeParams = {
   nodeId: number;
@@ -8,6 +10,8 @@ type UpdateNodeParams = {
   parentNode?: number | null;
   userId: string;
   metadata?: Metadata;
+  relatedNodeIds?: number[];
+  relationType?: string;
 };
 
 type UpdateNodeResult =
@@ -77,6 +81,39 @@ export async function updateNode(
     return {
       error: "No data returned",
     };
+  }
+
+  // Update relationships if provided
+  if (params.relatedNodeIds !== undefined) {
+    const relationType = params.relationType || "tagged_with";
+    
+    // First, delete existing relationships of this type
+    const deleteResult = await deleteRelationships({
+      nodeId: params.nodeId,
+      userId: params.userId,
+      relationType: relationType,
+    });
+
+    if ("error" in deleteResult) {
+      console.error("Failed to delete existing relationships:", deleteResult.error);
+    }
+
+    // Then, create new relationships
+    if (params.relatedNodeIds.length > 0) {
+      for (const relatedNodeId of params.relatedNodeIds) {
+        const relationshipResult = await createRelationship({
+          nodeId1: params.nodeId,
+          nodeId2: relatedNodeId,
+          relationType: relationType,
+          userId: params.userId,
+        });
+
+        // Log relationship creation errors but don't fail the entire operation
+        if ("error" in relationshipResult) {
+          console.error("Failed to create relationship:", relationshipResult.error);
+        }
+      }
+    }
   }
 
   return {

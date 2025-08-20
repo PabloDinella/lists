@@ -9,6 +9,8 @@ type UpdateNodeParams = {
   parentNode?: number | null;
   userId: string;
   metadata?: Metadata;
+  relatedNodeIds?: number[];
+  relationType?: string;
 };
 
 export function useUpdateNode() {

@@ -77,7 +77,6 @@ export function NodeView() {
 
   const filter = (node: TreeNode) =>
     node.metadata?.type === "list" ||
-    node.metadata?.type === "structure" ||
     node.metadata?.type === "tagging";
 
   const createNodeMutation = useCreateNode();
@@ -151,6 +150,7 @@ export function NodeView() {
     description: string,
     parentId: number | null,
     metadata?: Metadata,
+    selectedRelatedNodes?: number[]
   ) => {
     if (!userId) return;
 
@@ -162,6 +162,8 @@ export function NodeView() {
           parentNode: parentId || undefined,
           userId: userId,
           metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
         });
       } else if (sheetMode === "edit" && editingNode) {
         await updateNodeMutation.mutateAsync({
@@ -171,8 +173,11 @@ export function NodeView() {
           parentNode: parentId,
           userId: userId,
           metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
         });
       }
+
       handleSheetClose(); // Close the sheet after successful save
     } catch (error) {
       console.error(`Failed to ${sheetMode} node:`, error);
@@ -184,6 +189,7 @@ export function NodeView() {
     description: string,
     parentId: number | null,
     metadata?: Metadata,
+    selectedRelatedNodes?: number[]
   ) => {
     if (!userId) return;
 
@@ -195,6 +201,8 @@ export function NodeView() {
           parentNode: parentId || undefined,
           userId: userId,
           metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
         });
 
         handleSheetClose(); // Close the sheet after successful save

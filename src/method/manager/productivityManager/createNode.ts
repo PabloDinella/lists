@@ -7,6 +7,8 @@ type CreateNodeParams = {
   parentNode?: number;
   userId: string;
   metadata?: Metadata;
+  relatedNodeIds?: number[];
+  relationType?: string;
 };
 
 export async function createNodeManager(params: CreateNodeParams) {

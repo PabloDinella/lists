@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { Metadata, metadataSchema, Node } from "./models";
+import { createRelationship } from "./createRelationship";
 
 type CreateNodeParams = {
   name: string;
@@ -7,6 +8,8 @@ type CreateNodeParams = {
   parentNode?: number;
   userId: string;
   metadata?: Metadata;
+  relatedNodeIds?: number[];
+  relationType?: string;
 };
 
 type CreateNodeResult =
@@ -65,6 +68,25 @@ export async function createNode(
     return {
       error: "No data returned",
     };
+  }
+
+  // Create relationships if provided
+  if (params.relatedNodeIds && params.relatedNodeIds.length > 0) {
+    const relationType = params.relationType || "tagged_with";
+    
+    for (const relatedNodeId of params.relatedNodeIds) {
+      const relationshipResult = await createRelationship({
+        nodeId1: data.id,
+        nodeId2: relatedNodeId,
+        relationType: relationType,
+        userId: params.userId,
+      });
+
+      // Log relationship creation errors but don't fail the entire operation
+      if ("error" in relationshipResult) {
+        console.error("Failed to create relationship:", relationshipResult.error);
+      }
+    }
   }
 
   return {

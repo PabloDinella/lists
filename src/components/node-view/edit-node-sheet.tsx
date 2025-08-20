@@ -43,13 +43,15 @@ interface EditNodeSheetProps {
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: Metadata
+    metadata?: Metadata,
+    selectedRelatedNodes?: number[]
   ) => void;
   onSaveAndOpen?: (
     name: string,
     description: string,
     parentId: number | null,
-    metadata?: Metadata
+    metadata?: Metadata,
+    selectedRelatedNodes?: number[]
   ) => Promise<void>;
   isSaving?: boolean;
   mode: "edit" | "create";
@@ -113,7 +115,7 @@ export function EditNodeSheet({
     !Array.isArray(node.metadata) &&
     "type" in node.metadata &&
     typeof node.metadata.type === "string" &&
-    node.metadata.type === "structure";
+    node.metadata.type === "list";
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
@@ -158,7 +160,7 @@ export function EditNodeSheet({
       }
     }
 
-    onSave(name.trim(), description.trim(), parentId, metadata);
+    onSave(name.trim(), description.trim(), parentId, metadata, selectedRelatedNodes);
   };
 
   const handleSaveAndOpen = async () => {
@@ -176,7 +178,7 @@ export function EditNodeSheet({
     }
 
     if (onSaveAndOpen) {
-      await onSaveAndOpen(name.trim(), description.trim(), parentId, metadata);
+      await onSaveAndOpen(name.trim(), description.trim(), parentId, metadata, selectedRelatedNodes);
     }
   };
 

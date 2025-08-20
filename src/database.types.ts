@@ -52,6 +52,48 @@ export type Database = {
           },
         ]
       }
+      relationship: {
+        Row: {
+          created_at: string
+          id: number
+          node_id_1: number | null
+          node_id_2: number | null
+          relation_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          node_id_1?: number | null
+          node_id_2?: number | null
+          relation_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          node_id_1?: number | null
+          node_id_2?: number | null
+          relation_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relationship_node_id_1_fkey"
+            columns: ["node_id_1"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationship_node_id_2_fkey"
+            columns: ["node_id_2"]
+            isOneToOne: false
+            referencedRelation: "node"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string

@@ -8,6 +8,8 @@ type UpdateNodeParams = {
   parentNode?: number | null;
   userId: string;
   metadata?: Metadata;
+  relatedNodeIds?: number[];
+  relationType?: string;
 };
 
 export async function updateNodeManager(params: UpdateNodeParams) {
