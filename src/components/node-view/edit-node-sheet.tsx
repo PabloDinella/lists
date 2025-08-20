@@ -37,12 +37,14 @@ export function EditNodeSheet({
 }: EditNodeSheetProps) {
   const nodeId = useNodeId();
   const navigate = useNavigate();
-  
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
   const [nodeType, setNodeType] = useState<"list" | "tagging">("list");
-  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>([]);
+  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
+    [],
+  );
 
   const { user } = useAuth();
   const addUpdateNodeMutation = useAddUpdateNode();
@@ -51,9 +53,7 @@ export function EditNodeSheet({
   const isManagingLists = !nodeId;
 
   // Get all nodes to compute derived data
-  const {
-    hierarchicalTree: allNodesTree,
-  } = useListData({
+  const { hierarchicalTree: allNodesTree } = useListData({
     userId: user?.id || null,
   });
 
@@ -73,9 +73,12 @@ export function EditNodeSheet({
     node.metadata?.type === "list" || node.metadata?.type === "tagging";
 
   // Compute derived data
-  const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(flattenNodesTree, []);
+  const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
+    flattenNodesTree,
+    [],
+  );
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
-  
+
   // Calculate available parents
   const availableParents = isManagingLists
     ? flattenedAllItems.filter(filter)
@@ -129,16 +132,22 @@ export function EditNodeSheet({
         setDescription(node.content || "");
         setParentId(node.parent_node);
         // Set node type based on existing metadata
-        if (node?.metadata?.type === "list" || node?.metadata?.type === "tagging") {
+        if (
+          node?.metadata?.type === "list" ||
+          node?.metadata?.type === "tagging"
+        ) {
           setNodeType(node.metadata.type);
         } else {
           setNodeType("list");
         }
+        // Reset related nodes - we'll need to load existing relationships if needed
+        setSelectedRelatedNodes([]);
       } else if (mode === "create") {
         setName("");
         setDescription("");
         setParentId(defaultParentId || null);
         setNodeType("list");
+        setSelectedRelatedNodes([]);
       }
     }
   }, [node, isOpen, mode, defaultParentId]);
@@ -149,11 +158,34 @@ export function EditNodeSheet({
     let metadata: Metadata | undefined = undefined;
 
     if (isManagingLists) {
+      // When managing lists, use the selected node type
       metadata = { type: nodeType };
 
       // Add default children metadata for lists
       if (nodeType === "list") {
         metadata.defaultChildrenMetadata = { type: "loop" };
+      }
+    } else {
+      // When not managing lists, determine metadata based on mode and parent
+      if (mode === "create" && parentId) {
+        // For new nodes, get defaultChildrenMetadata from selected parent
+        const parentNode = flattenedAllItems.find(
+          (item) => item.id === parentId,
+        );
+        if (parentNode?.metadata?.defaultChildrenMetadata) {
+          metadata = {
+            ...parentNode.metadata.defaultChildrenMetadata,
+          };
+        } else {
+          // Fallback to default metadata if parent doesn't have defaultChildrenMetadata
+          metadata = { type: "loop" };
+        }
+      } else if (mode === "edit" && node?.metadata) {
+        // For editing, preserve existing metadata
+        metadata = node.metadata;
+      } else {
+        // Fallback for other cases
+        metadata = { type: "loop" };
       }
     }
 
@@ -164,7 +196,7 @@ export function EditNodeSheet({
         content: description.trim() || undefined,
         parentNode: parentId || undefined,
         userId: user.id,
-        metadata: metadata || undefined,
+        metadata: metadata, // Always provide metadata
         relatedNodeIds: selectedRelatedNodes,
         relationType: "tagged_with",
       });
@@ -181,11 +213,34 @@ export function EditNodeSheet({
     let metadata: Metadata | undefined = undefined;
 
     if (isManagingLists) {
+      // When managing lists, use the selected node type
       metadata = { type: nodeType };
 
       // Add default children metadata for lists
       if (nodeType === "list") {
         metadata.defaultChildrenMetadata = { type: "loop" };
+      }
+    } else {
+      // When not managing lists, determine metadata based on mode and parent
+      if (mode === "create" && parentId) {
+        // For new nodes, get defaultChildrenMetadata from selected parent
+        const parentNode = flattenedAllItems.find(
+          (item) => item.id === parentId,
+        );
+        if (parentNode?.metadata?.defaultChildrenMetadata) {
+          metadata = {
+            ...parentNode.metadata.defaultChildrenMetadata,
+          };
+        } else {
+          // Fallback to default metadata if parent doesn't have defaultChildrenMetadata
+          metadata = { type: "loop" };
+        }
+      } else if (mode === "edit" && node?.metadata) {
+        // For editing, preserve existing metadata
+        metadata = node.metadata;
+      } else {
+        // Fallback for other cases
+        metadata = { type: "loop" };
       }
     }
 
@@ -196,7 +251,7 @@ export function EditNodeSheet({
           content: description.trim() || undefined,
           parentNode: parentId || undefined,
           userId: user.id,
-          metadata: metadata || undefined,
+          metadata: metadata, // Always provide metadata
           relatedNodeIds: selectedRelatedNodes,
           relationType: "tagged_with",
         });
@@ -221,6 +276,7 @@ export function EditNodeSheet({
       setDescription("");
       setParentId(null);
       setNodeType("list");
+      setSelectedRelatedNodes([]);
     }, 300);
   };
 
