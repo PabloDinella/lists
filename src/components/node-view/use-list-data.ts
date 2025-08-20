@@ -11,6 +11,7 @@ export type TreeNode = {
   created_at: string;
   metadata: Metadata | null;
   children: TreeNode[];
+  related_nodes: { id: number; name: string }[];
 };
 
 interface UseListDataProps {

@@ -113,6 +113,7 @@ export function HierarchicalMovableList({
                 onDelete={onDelete}
                 isDragging={isDragged}
                 depth={depth}
+                relatedNodes={item.node.related_nodes}
               >
                 <HierarchicalMovableList
                   hierarchicalTree={item.node.children}

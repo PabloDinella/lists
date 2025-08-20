@@ -17,6 +17,7 @@ interface BaseNodeItemProps {
   children: React.ReactNode;
   isDragging?: boolean;
   depth?: number;
+  relatedNodes?: { id: number; name: string }[];
 }
 
 export function BaseNodeItem({
@@ -27,6 +28,7 @@ export function BaseNodeItem({
   isDragging = false,
   depth = 0,
   children,
+  relatedNodes = [],
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeMutation = useUpdateNode();
@@ -130,6 +132,11 @@ export function BaseNodeItem({
                   )}
                 >
                   {node.name}
+                  {relatedNodes.length > 0 && (
+                    <span className="ml-2 text-xs text-muted-foreground font-normal">
+                      · {relatedNodes.map(related => related.name).join(", ")}
+                    </span>
+                  )}
                 </h3>
                 {node.content && (
                   <p 

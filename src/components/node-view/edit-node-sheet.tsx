@@ -142,8 +142,8 @@ export function EditNodeSheet({
         } else {
           setNodeType("list");
         }
-        // Reset related nodes - we'll need to load existing relationships if needed
-        setSelectedRelatedNodes([]);
+        // Load existing relationships for editing
+        setSelectedRelatedNodes(node.related_nodes?.map(rn => rn.id) || []);
       } else if (mode === "create") {
         setName("");
         setDescription("");

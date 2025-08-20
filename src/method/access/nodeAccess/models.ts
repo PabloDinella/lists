@@ -41,4 +41,5 @@ export type Node = {
   user_id: string;
   created_at: string;
   metadata: Metadata | null;
+  related_nodes: { id: number; name: string }[];
 };
