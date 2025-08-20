@@ -41,7 +41,9 @@ export function EditNodeSheet({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
-  const [nodeType, setNodeType] = useState<"list" | "tagging" | "tag" | "loop">("list");
+  const [nodeType, setNodeType] = useState<"list" | "tagging" | "tag" | "loop">(
+    "list",
+  );
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
     [],
   );
@@ -143,7 +145,7 @@ export function EditNodeSheet({
           setNodeType("list");
         }
         // Load existing relationships for editing
-        setSelectedRelatedNodes(node.related_nodes?.map(rn => rn.id) || []);
+        setSelectedRelatedNodes(node.related_nodes?.map((rn) => rn.id) || []);
       } else if (mode === "create") {
         setName("");
         setDescription("");
@@ -263,15 +265,13 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="sm:max-w-md flex flex-col">
+      <SheetContent className="flex flex-col sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
         </SheetHeader>
 
-        <div 
-          className="flex flex-col gap-7 py-4 pr-3 flex-1 overflow-y-auto custom-scrollbar"
-        >
+        <div className="custom-scrollbar flex flex-1 flex-col gap-7 overflow-y-auto py-4 pr-3">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -335,7 +335,7 @@ export function EditNodeSheet({
             nodeType={nodeType}
             onNodeTypeChange={setNodeType}
             disabled={isSaving}
-            defaultExpanded={isManagingLists || (mode === "edit" && !!node?.metadata?.type)}
+            defaultExpanded={isManagingLists}
           />
         </div>
 
