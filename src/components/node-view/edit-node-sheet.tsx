@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -14,79 +15,91 @@ import { Textarea } from "../ui/textarea";
 import { Select } from "../ui/select";
 import { List, Tag } from "lucide-react";
 
-import type { Json } from "@/database.types";
 import { CategoryMultiSelect } from "./category-multi-select";
 import { useCreateNode } from "@/hooks/use-create-node";
+import { useUpdateNode } from "@/hooks/use-update-node";
 import { useAuth } from "@/hooks/use-auth";
+import { TreeNode, useListData } from "./use-list-data";
 import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
-type TreeNode = {
-  id: number;
-  name: string;
-  content: string | null;
-  parent_node: number | null;
-  user_id: string;
-  created_at: string;
-  metadata: Json | null;
-  children: TreeNode[];
-};
-
 interface EditNodeSheetProps {
-  node: Node | null; // null when creating a new item
-  rootNode?: TreeNode;
-  availableParents?: TreeNode[];
-  firstLevelNodes?: TreeNode[]; // All first level (root) nodes for relationship selection
-  defaultParentId?: number; // Default parent ID when creating new items
+  node: Node | null; // The node being edited (null for create)
   isOpen: boolean;
   onClose: () => void;
-  onSave: (
-    name: string,
-    description: string,
-    parentId: number | null,
-    metadata?: Metadata,
-    selectedRelatedNodes?: number[]
-  ) => void;
-  onSaveAndOpen?: (
-    name: string,
-    description: string,
-    parentId: number | null,
-    metadata?: Metadata,
-    selectedRelatedNodes?: number[]
-  ) => Promise<void>;
-  isSaving?: boolean;
   mode: "edit" | "create";
-  isManagingLists?: boolean; // Whether we're managing lists (shows node type selection)
 }
 
 export function EditNodeSheet({
   node,
-  rootNode,
-  availableParents,
-  firstLevelNodes,
-  defaultParentId,
   isOpen,
   onClose,
-  onSave,
-  onSaveAndOpen,
-  isSaving = false,
   mode,
-  isManagingLists = false,
 }: EditNodeSheetProps) {
+  const { listId: listIdString } = useParams<{ listId: string }>();
+  const listId = listIdString ? parseInt(listIdString, 10) : 0;
+  const navigate = useNavigate();
+  
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
   const [nodeType, setNodeType] = useState<"list" | "tagging">("list");
-  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
-    []
+  const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>([]);
+
+  const { user } = useAuth();
+  const createNodeMutation = useCreateNode();
+  const updateNodeMutation = useUpdateNode();
+
+  // Determine if we're managing lists (root level) or viewing a specific list
+  const isManagingLists = !listId;
+
+  // Get all nodes to compute derived data
+  const {
+    hierarchicalTree: allNodesTree,
+  } = useListData({
+    userId: user?.id || null,
+  });
+
+  // Helper functions moved from parent
+  const flattenNodesTree = (all: TreeNode[], node: TreeNode) => {
+    if (node.children.length > 0) {
+      return [
+        ...all,
+        node,
+        ...node.children.reduce<TreeNode[]>(flattenNodesTree, []),
+      ];
+    }
+    return [...all, node];
+  };
+
+  const filter = (node: TreeNode) =>
+    node.metadata?.type === "list" || node.metadata?.type === "tagging";
+
+  // Compute derived data
+  const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(flattenNodesTree, []);
+  const rootNode = allNodesTree.find((item) => item.parent_node === null);
+  
+  // Calculate available parents
+  const availableParents = isManagingLists
+    ? flattenedAllItems.filter(filter)
+    : node?.metadata?.type === "loop"
+      ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
+      : undefined;
+
+  // Get tag nodes for relationships
+  const tagNodes = rootNode?.children.filter(
+    (node) => node.metadata?.type === "tagging",
   );
 
-  const createNodeMutation = useCreateNode();
-  const { user } = useAuth();
+  // Default parent ID
+  const defaultParentId = isManagingLists ? rootNode?.id : listId;
+
+  // Check if saving
+  const isSaving = createNodeMutation.isPending || updateNodeMutation.isPending;
 
   // Function to create new items in categories
   const handleCreateNewItem = async (
     categoryId: number,
-    itemName: string
+    itemName: string,
   ): Promise<number> => {
     if (!user?.id) {
       throw new Error("User not authenticated");
@@ -108,14 +121,7 @@ export function EditNodeSheet({
   };
 
   // Determine if the current node is structural based on metadata
-  const isStructuralMode =
-    node?.metadata &&
-    typeof node.metadata === "object" &&
-    node.metadata !== null &&
-    !Array.isArray(node.metadata) &&
-    "type" in node.metadata &&
-    typeof node.metadata.type === "string" &&
-    node.metadata.type === "list";
+  const isStructuralMode = node?.metadata?.type === "list";
 
   // Reset form when node changes or sheet opens
   useEffect(() => {
@@ -125,14 +131,7 @@ export function EditNodeSheet({
         setDescription(node.content || "");
         setParentId(node.parent_node);
         // Set node type based on existing metadata
-        if (
-          node.metadata &&
-          typeof node.metadata === "object" &&
-          node.metadata !== null &&
-          !Array.isArray(node.metadata) &&
-          "type" in node.metadata &&
-          (node.metadata.type === "list" || node.metadata.type === "tagging")
-        ) {
+        if (node?.metadata?.type === "list" || node?.metadata?.type === "tagging") {
           setNodeType(node.metadata.type);
         } else {
           setNodeType("list");
@@ -146,8 +145,8 @@ export function EditNodeSheet({
     }
   }, [node, isOpen, mode, defaultParentId]);
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+  const handleSave = async () => {
+    if (!name.trim() || !user?.id) return;
 
     let metadata: Metadata | undefined = undefined;
 
@@ -160,11 +159,38 @@ export function EditNodeSheet({
       }
     }
 
-    onSave(name.trim(), description.trim(), parentId, metadata, selectedRelatedNodes);
+    try {
+      if (mode === "create") {
+        await createNodeMutation.mutateAsync({
+          name: name.trim(),
+          content: description.trim() || undefined,
+          parentNode: parentId || undefined,
+          userId: user.id,
+          metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
+        });
+      } else if (mode === "edit" && node) {
+        await updateNodeMutation.mutateAsync({
+          nodeId: node.id,
+          name: name.trim(),
+          content: description.trim() || undefined,
+          parentNode: parentId,
+          userId: user.id,
+          metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
+        });
+      }
+
+      handleClose(); // Close the sheet after successful save
+    } catch (error) {
+      console.error(`Failed to ${mode} node:`, error);
+    }
   };
 
   const handleSaveAndOpen = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !user?.id) return;
 
     let metadata: Metadata | undefined = undefined;
 
@@ -177,8 +203,27 @@ export function EditNodeSheet({
       }
     }
 
-    if (onSaveAndOpen) {
-      await onSaveAndOpen(name.trim(), description.trim(), parentId, metadata, selectedRelatedNodes);
+    try {
+      if (mode === "create") {
+        const result = await createNodeMutation.mutateAsync({
+          name: name.trim(),
+          content: description.trim() || undefined,
+          parentNode: parentId || undefined,
+          userId: user.id,
+          metadata: metadata || undefined,
+          relatedNodeIds: selectedRelatedNodes,
+          relationType: "tagged_with",
+        });
+
+        handleClose(); // Close the sheet after successful save
+
+        // Navigate to the created item
+        if ("result" in result) {
+          navigate(`/lists/${result.result.id}`);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to ${mode} node:`, error);
     }
   };
 
@@ -262,7 +307,7 @@ export function EditNodeSheet({
               </p>
               <div className="grid gap-3">
                 <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                  className={`cursor-pointer rounded-lg border-2 p-4 transition-colors ${
                     nodeType === "list"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
@@ -271,7 +316,7 @@ export function EditNodeSheet({
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-2 rounded-md ${
+                      className={`rounded-md p-2 ${
                         nodeType === "list"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
@@ -280,28 +325,28 @@ export function EditNodeSheet({
                       <List className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-sm mb-1">List</h4>
+                      <h4 className="mb-1 text-sm font-medium">List</h4>
                       <p className="text-xs text-muted-foreground">
                         Lists are intended to be used for organizing your items,
                         tasks, projects, etc.
                       </p>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
                         nodeType === "list"
                           ? "border-primary bg-primary"
                           : "border-muted-foreground"
                       }`}
                     >
                       {nodeType === "list" && (
-                        <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                        <div className="h-2 w-2 rounded-full bg-primary-foreground" />
                       )}
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                  className={`cursor-pointer rounded-lg border-2 p-4 transition-colors ${
                     nodeType === "tagging"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
@@ -310,7 +355,7 @@ export function EditNodeSheet({
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-2 rounded-md ${
+                      className={`rounded-md p-2 ${
                         nodeType === "tagging"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
@@ -319,21 +364,21 @@ export function EditNodeSheet({
                       <Tag className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-sm mb-1">Tagging</h4>
+                      <h4 className="mb-1 text-sm font-medium">Tagging</h4>
                       <p className="text-xs text-muted-foreground">
                         Tagging is for items that can be attached to List's
                         items, like Context and Area of Focus.
                       </p>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
                         nodeType === "tagging"
                           ? "border-primary bg-primary"
                           : "border-muted-foreground"
                       }`}
                     >
                       {nodeType === "tagging" && (
-                        <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                        <div className="h-2 w-2 rounded-full bg-primary-foreground" />
                       )}
                     </div>
                   </div>
@@ -373,14 +418,14 @@ export function EditNodeSheet({
           {/* )} */}
 
           {/* Show related nodes selection when not in structural mode or when creating items in a list */}
-          {firstLevelNodes && firstLevelNodes.length > 0 && (
+          {tagNodes && tagNodes.length > 0 && (
             <div className="space-y-4">
               <Label className="text-base font-medium">
                 Related Items by Category
               </Label>
 
               <CategoryMultiSelect
-                firstLevelNodes={firstLevelNodes}
+                firstLevelNodes={tagNodes}
                 selectedRelatedNodes={selectedRelatedNodes}
                 onSelectionChange={setSelectedRelatedNodes}
                 disabled={isSaving}
@@ -394,7 +439,7 @@ export function EditNodeSheet({
           <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
-          {mode === "create" && onSaveAndOpen && (
+          {mode === "create" && (
             <Button
               onClick={handleSaveAndOpen}
               disabled={!name.trim() || isSaving}
@@ -409,8 +454,8 @@ export function EditNodeSheet({
                 ? "Creating..."
                 : "Saving..."
               : mode === "create"
-              ? "Create"
-              : "Save changes"}
+                ? "Create"
+                : "Save changes"}
           </Button>
         </SheetFooter>
       </SheetContent>

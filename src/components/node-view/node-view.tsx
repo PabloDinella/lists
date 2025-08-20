@@ -11,15 +11,13 @@ import {
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
 import { supabase } from "@/lib/supabase";
-import { useCreateNode } from "@/hooks/use-create-node";
-import { useUpdateNode } from "@/hooks/use-update-node";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
 import { TreeNode, useListData } from "./use-list-data";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
-import { Metadata, Node } from "@/method/access/nodeAccess/models";
+import { Node } from "@/method/access/nodeAccess/models";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -78,11 +76,9 @@ export function NodeView() {
   const filter = (node: TreeNode) =>
     node.metadata?.type === "list" || node.metadata?.type === "tagging";
 
-  const createNodeMutation = useCreateNode();
-  const updateNodeMutation = useUpdateNode();
   const deleteNodeMutation = useDeleteNode();
 
-  // Get all nodes to find second-level items for available parents
+  // Get all nodes to find current node for display
   const {
     hierarchicalTree: allNodesTree,
     isLoading,
@@ -96,29 +92,11 @@ export function NodeView() {
     [],
   );
 
-  // Calculate available parents (second level items - nodes with parent_node that is not null)
-  const availableParents = isManagingLists
-    ? flattenedAllItems.filter(filter)
-    : editingNode?.metadata?.type === "loop"
-      ? flattenedAllItems.filter((item) => item.metadata?.type === "list")
-      : undefined;
-
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
-
   const currentNode = findNodeById(allNodesTree, listId) || rootNode;
 
   // Build breadcrumb path
   const breadcrumbPath = buildBreadcrumbPath(flattenedAllItems, listId);
-
-  console.log({
-    isManagingLists,
-    availableParents,
-    allNodesTree,
-    flattenedAllItems,
-    currentNode,
-    editingNode,
-    breadcrumbPath,
-  });
 
   useEffect(() => {
     supabase.auth
@@ -142,78 +120,6 @@ export function NodeView() {
   const handleCreateStart = () => {
     setEditingNode(null);
     setSheetMode("create");
-  };
-
-  const handleSave = async (
-    name: string,
-    description: string,
-    parentId: number | null,
-    metadata?: Metadata,
-    selectedRelatedNodes?: number[],
-  ) => {
-    if (!userId) return;
-
-    try {
-      if (sheetMode === "create") {
-        await createNodeMutation.mutateAsync({
-          name: name,
-          content: description || undefined,
-          parentNode: parentId || undefined,
-          userId: userId,
-          metadata: metadata || undefined,
-          relatedNodeIds: selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-      } else if (sheetMode === "edit" && editingNode) {
-        await updateNodeMutation.mutateAsync({
-          nodeId: editingNode.id,
-          name: name,
-          content: description || undefined,
-          parentNode: parentId,
-          userId: userId,
-          metadata: metadata || undefined,
-          relatedNodeIds: selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-      }
-
-      handleSheetClose(); // Close the sheet after successful save
-    } catch (error) {
-      console.error(`Failed to ${sheetMode} node:`, error);
-    }
-  };
-
-  const handleSaveAndOpen = async (
-    name: string,
-    description: string,
-    parentId: number | null,
-    metadata?: Metadata,
-    selectedRelatedNodes?: number[],
-  ) => {
-    if (!userId) return;
-
-    try {
-      if (sheetMode === "create") {
-        const result = await createNodeMutation.mutateAsync({
-          name: name,
-          content: description || undefined,
-          parentNode: parentId || undefined,
-          userId: userId,
-          metadata: metadata || undefined,
-          relatedNodeIds: selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-
-        handleSheetClose(); // Close the sheet after successful save
-
-        // Navigate to the created item
-        if ("result" in result) {
-          navigate(`/lists/${result.result.id}`);
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to ${sheetMode} node:`, error);
-    }
   };
 
   const handleSheetClose = () => {
@@ -355,19 +261,9 @@ export function NodeView() {
 
       <EditNodeSheet
         node={editingNode}
-        rootNode={rootNode}
-        availableParents={availableParents}
-        firstLevelNodes={rootNode?.children.filter(
-          (node) => node.metadata?.type === "tagging",
-        )}
-        defaultParentId={isManagingLists ? rootNode?.id : listId}
         isOpen={sheetMode === "create" || editingNode !== null}
         onClose={handleSheetClose}
-        onSave={handleSave}
-        onSaveAndOpen={handleSaveAndOpen}
-        isSaving={createNodeMutation.isPending || updateNodeMutation.isPending}
         mode={sheetMode}
-        isManagingLists={isManagingLists}
       />
     </AppLayout>
   );
