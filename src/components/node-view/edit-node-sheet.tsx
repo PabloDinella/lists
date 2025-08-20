@@ -159,36 +159,12 @@ export function EditNodeSheet({
 
     let metadata: Metadata | undefined = undefined;
 
-    if (isManagingLists) {
-      // When managing lists, use the selected node type
-      metadata = { type: nodeType };
+    // Always use the selected node type
+    metadata = { type: nodeType };
 
-      // Add default children metadata for lists
-      if (nodeType === "list") {
-        metadata.defaultChildrenMetadata = { type: "loop" };
-      }
-    } else {
-      // When not managing lists, determine metadata based on mode and parent
-      if (mode === "create" && parentId) {
-        // For new nodes, get defaultChildrenMetadata from selected parent
-        const parentNode = flattenedAllItems.find(
-          (item) => item.id === parentId,
-        );
-        if (parentNode?.metadata?.defaultChildrenMetadata) {
-          metadata = {
-            ...parentNode.metadata.defaultChildrenMetadata,
-          };
-        } else {
-          // Fallback to default metadata if parent doesn't have defaultChildrenMetadata
-          metadata = { type: "loop" };
-        }
-      } else if (mode === "edit" && node?.metadata) {
-        // For editing, preserve existing metadata
-        metadata = node.metadata;
-      } else {
-        // Fallback for other cases
-        metadata = { type: "loop" };
-      }
+    // Add default children metadata for lists
+    if (nodeType === "list") {
+      metadata.defaultChildrenMetadata = { type: "loop" };
     }
 
     try {
@@ -214,36 +190,12 @@ export function EditNodeSheet({
 
     let metadata: Metadata | undefined = undefined;
 
-    if (isManagingLists) {
-      // When managing lists, use the selected node type
-      metadata = { type: nodeType };
+    // Always use the selected node type
+    metadata = { type: nodeType };
 
-      // Add default children metadata for lists
-      if (nodeType === "list") {
-        metadata.defaultChildrenMetadata = { type: "loop" };
-      }
-    } else {
-      // When not managing lists, determine metadata based on mode and parent
-      if (mode === "create" && parentId) {
-        // For new nodes, get defaultChildrenMetadata from selected parent
-        const parentNode = flattenedAllItems.find(
-          (item) => item.id === parentId,
-        );
-        if (parentNode?.metadata?.defaultChildrenMetadata) {
-          metadata = {
-            ...parentNode.metadata.defaultChildrenMetadata,
-          };
-        } else {
-          // Fallback to default metadata if parent doesn't have defaultChildrenMetadata
-          metadata = { type: "loop" };
-        }
-      } else if (mode === "edit" && node?.metadata) {
-        // For editing, preserve existing metadata
-        metadata = node.metadata;
-      } else {
-        // Fallback for other cases
-        metadata = { type: "loop" };
-      }
+    // Add default children metadata for lists
+    if (nodeType === "list") {
+      metadata.defaultChildrenMetadata = { type: "loop" };
     }
 
     try {
@@ -378,12 +330,12 @@ export function EditNodeSheet({
             onCreateNewItem={handleCreateNewItem}
           />
 
-          {/* Node type selection when managing lists */}
+          {/* Node type selection when managing lists or editing existing nodes */}
           <NodeTypeSelector
             nodeType={nodeType}
             onNodeTypeChange={setNodeType}
             disabled={isSaving}
-            defaultExpanded={isManagingLists}
+            defaultExpanded={isManagingLists || (mode === "edit" && !!node?.metadata?.type)}
           />
         </div>
 
