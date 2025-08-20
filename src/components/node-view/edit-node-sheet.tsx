@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +19,7 @@ import { CategoryMultiSelect } from "./category-multi-select";
 import { useCreateNode } from "@/hooks/use-create-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useAuth } from "@/hooks/use-auth";
+import { useNodeId } from "@/hooks/use-node-id";
 import { TreeNode, useListData } from "./use-list-data";
 import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
@@ -35,8 +36,7 @@ export function EditNodeSheet({
   onClose,
   mode,
 }: EditNodeSheetProps) {
-  const { listId: listIdString } = useParams<{ listId: string }>();
-  const listId = listIdString ? parseInt(listIdString, 10) : 0;
+  const nodeId = useNodeId();
   const navigate = useNavigate();
   
   const [name, setName] = useState("");
@@ -50,7 +50,7 @@ export function EditNodeSheet({
   const updateNodeMutation = useUpdateNode();
 
   // Determine if we're managing lists (root level) or viewing a specific list
-  const isManagingLists = !listId;
+  const isManagingLists = !nodeId;
 
   // Get all nodes to compute derived data
   const {
@@ -91,7 +91,7 @@ export function EditNodeSheet({
   );
 
   // Default parent ID
-  const defaultParentId = isManagingLists ? rootNode?.id : listId;
+  const defaultParentId = isManagingLists ? rootNode?.id : nodeId;
 
   // Check if saving
   const isSaving = createNodeMutation.isPending || updateNodeMutation.isPending;

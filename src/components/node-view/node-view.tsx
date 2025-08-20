@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../app-layout";
 import { Container } from "../ui/container";
 import {
@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
 import { supabase } from "@/lib/supabase";
+import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
@@ -63,15 +64,14 @@ const buildBreadcrumbPath = (
 };
 
 export function NodeView() {
-  const { listId: listIdString } = useParams<{ listId: string }>();
-  const listId = listIdString ? parseInt(listIdString, 10) : 0;
+  const nodeId = useNodeId();
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
 
   // Determine if we're managing lists (root level) or viewing a specific list
-  const isManagingLists = !listId;
+  const isManagingLists = !nodeId;
 
   const filter = (node: TreeNode) =>
     node.metadata?.type === "list" || node.metadata?.type === "tagging";
@@ -93,10 +93,10 @@ export function NodeView() {
   );
 
   const rootNode = allNodesTree.find((item) => item.parent_node === null);
-  const currentNode = findNodeById(allNodesTree, listId) || rootNode;
+  const currentNode = findNodeById(allNodesTree, nodeId) || rootNode;
 
   // Build breadcrumb path
-  const breadcrumbPath = buildBreadcrumbPath(flattenedAllItems, listId);
+  const breadcrumbPath = buildBreadcrumbPath(flattenedAllItems, nodeId);
 
   useEffect(() => {
     supabase.auth
