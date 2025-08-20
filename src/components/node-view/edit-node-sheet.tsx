@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -136,6 +137,30 @@ export function EditNodeSheet({
     formState: { isSubmitting },
   } = form;
 
+  // Populate form when editing an existing node
+  useEffect(() => {
+    if (mode === "edit" && node) {
+      reset({
+        name: node.name || "",
+        description: node.content || "",
+        parentId: node.parent_node || defaultParentId,
+        nodeType: (node.metadata?.type as "list" | "tagging" | "tag" | "loop") || "loop",
+        selectedRelatedNodes: node.related_nodes?.map(rn => rn.id) || [],
+      });
+    } else if (mode === "create") {
+      reset({
+        name: "",
+        description: "",
+        parentId: defaultParentId,
+        nodeType:
+          defaultMetadata?.type === "root" || !defaultMetadata?.type
+            ? "loop"
+            : defaultMetadata.type,
+        selectedRelatedNodes: [],
+      });
+    }
+  }, [mode, node, defaultParentId, defaultMetadata, reset]);
+
   // Watch form values
   const parentId = watch("parentId");
   const nodeType = watch("nodeType");
@@ -244,13 +269,27 @@ export function EditNodeSheet({
     onClose();
     // Reset form after close animation
     setTimeout(() => {
-      reset({
-        name: "",
-        description: "",
-        parentId: null,
-        nodeType: "list",
-        selectedRelatedNodes: [],
-      });
+      if (mode === "create") {
+        reset({
+          name: "",
+          description: "",
+          parentId: defaultParentId,
+          nodeType:
+            defaultMetadata?.type === "root" || !defaultMetadata?.type
+              ? "loop"
+              : defaultMetadata.type,
+          selectedRelatedNodes: [],
+        });
+      } else if (mode === "edit" && node) {
+        // Reset to original node values when canceling edit
+        reset({
+          name: node.name || "",
+          description: node.content || "",
+          parentId: node.parent_node || defaultParentId,
+          nodeType: (node.metadata?.type as "list" | "tagging" | "tag" | "loop") || "loop",
+          selectedRelatedNodes: node.related_nodes?.map(rn => rn.id) || [],
+        });
+      }
     }, 300);
   };
 
