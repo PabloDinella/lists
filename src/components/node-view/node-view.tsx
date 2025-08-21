@@ -248,22 +248,24 @@ export function NodeView() {
       onNewItem={handleCreateStart}
       newItemLabel={isManagingLists ? "New List" : "New Item"}
     >
-      <Container size="md">
+      {/* Tag filters - full width outside container */}
+      {!isLoading && !isError && !isManagingLists && tagNodes.length > 0 && (
+        <Container size="md" className="mb-3">
+          <TagFilters
+            tagNodes={tagNodes}
+            selectedFilters={selectedFilters}
+            onFiltersChange={setSelectedFilters}
+          />
+        </Container>
+      )}
 
+      <Container size="md">
         {isLoading && <p>Loading lists…</p>}
         {isError && (
           <p className="text-sm text-red-500">Failed to load lists.</p>
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
-            {/* Tag filters - only show when viewing a specific list */}
-            {!isManagingLists && tagNodes.length > 0 && (
-              <TagFilters
-                tagNodes={tagNodes}
-                selectedFilters={selectedFilters}
-                onFiltersChange={setSelectedFilters}
-              />
-            )}
 
             {isManagingLists && (
               <h2 className="text-xl font-semibold">Your lists</h2>

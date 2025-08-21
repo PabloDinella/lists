@@ -1,3 +1,4 @@
+import React from "react";
 import { TreeNode } from "./use-list-data";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,60 +54,65 @@ export function TagFilters({
     }
   };
 
-  const handleCategoryAllSelected = (categoryNode: TreeNode) => {
-    // Get all tag IDs from this category
-    const categoryTagIds = categoryNode.children.map(child => child.id);
-    
-    // Remove all tags from this category from the selected filters
-    const filtersWithoutThisCategory = selectedFilters.filter(
-      filterId => !categoryTagIds.includes(filterId)
-    );
-    
-    onFiltersChange(filtersWithoutThisCategory);
-  };
-
-  const isCategoryAllSelected = (categoryNode: TreeNode) => {
-    // Check if no tags from this category are selected
-    const categoryTagIds = categoryNode.children.map(child => child.id);
-    return !categoryTagIds.some(tagId => selectedFilters.includes(tagId));
-  };
-
   return (
-    <div className="space-y-4 mb-6">
-      {tagNodes.map((categoryNode) => (
-        <div key={categoryNode.id} className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground">
-            {categoryNode.name}
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {/* All button for this category */}
-            <Badge
-              variant={isCategoryAllSelected(categoryNode) ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/80 transition-colors"
-              onClick={() => handleCategoryAllSelected(categoryNode)}
-            >
-              All
-            </Badge>
-            
-            {categoryNode.children.map((tagNode) => {
-              const isSelected = selectedFilters.includes(tagNode.id);
-              return (
-                <Badge
-                  key={tagNode.id}
-                  variant={isSelected ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/80 transition-colors"
-                  onClick={() => handleTagToggle(tagNode.id)}
-                >
-                  {tagNode.name}
-                  {isSelected && (
-                    <X className="h-3 w-3 ml-1" />
-                  )}
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+    <div className="py-4">
+      <div className="max-w-4xl mx-auto space-y-3">
+        {tagNodes.map((categoryNode) => {
+          const categoryTagIds = categoryNode.children.map(child => child.id);
+          
+          return (
+            <div key={categoryNode.id} className="flex flex-wrap gap-2 items-center">
+              {/* Category name label */}
+              <span className="text-xs font-medium text-muted-foreground mr-1">
+                {categoryNode.name}:
+              </span>
+              
+              {/* Category "All" button */}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "cursor-pointer transition-colors",
+                  categoryTagIds.every(tagId => !selectedFilters.includes(tagId))
+                    ? "bg-muted border-muted-foreground/20 text-foreground" 
+                    : "hover:bg-accent hover:text-accent-foreground"
+                )}
+                onClick={() => {
+                  // Remove all tags from this category from the selected filters
+                  const filtersWithoutThisCategory = selectedFilters.filter(
+                    filterId => !categoryTagIds.includes(filterId)
+                  );
+                  onFiltersChange(filtersWithoutThisCategory);
+                }}
+              >
+                All
+              </Badge>
+              
+              {/* Individual tag chips */}
+              {categoryNode.children.map((tagNode) => {
+                const isSelected = selectedFilters.includes(tagNode.id);
+                return (
+                  <Badge
+                    key={tagNode.id}
+                    variant="outline"
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      isSelected 
+                        ? "bg-muted border-muted-foreground/20 text-foreground" 
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    )}
+                    onClick={() => handleTagToggle(tagNode.id)}
+                  >
+                    {tagNode.name}
+                    {isSelected && (
+                      <X className="h-3 w-3 ml-1" />
+                    )}
+                  </Badge>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
