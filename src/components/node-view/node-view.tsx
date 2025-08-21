@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../app-layout";
 import { Container } from "../ui/container";
@@ -10,7 +10,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
-import { supabase } from "@/lib/supabase";
 import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
@@ -72,7 +71,7 @@ export function NodeView() {
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
 
-  // const { user } = useAuth();
+  const { user } = useAuth();
 
   const userId = user?.id || null;
 
