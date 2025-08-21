@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
-  title: string;
+  title: ReactNode;
   onNewItem?: () => void;
   newItemLabel?: string;
 }
@@ -20,7 +20,7 @@ export function AppLayout({ children, title, onNewItem, newItemLabel }: AppLayou
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <div className="flex items-center gap-4 flex-1">
-            <h1 className="text-xl font-semibold">{title}</h1>
+            <div className="text-xl font-semibold">{title}</div>
             {onNewItem && (
               <Button onClick={onNewItem}>
                 <Plus className="h-4 w-4 mr-2" />

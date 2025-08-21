@@ -205,45 +205,50 @@ export function NodeView() {
     }, []);
   }
 
+  // Create breadcrumb title component
+  const breadcrumbTitle = isManagingLists ? (
+    <span>Manage Lists</span>
+  ) : breadcrumbPath.length > 0 ? (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink
+            className="cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            Home
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        {breadcrumbPath.map((node, index) => (
+          <React.Fragment key={node.id}>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {index === breadcrumbPath.length - 1 ? (
+                <BreadcrumbPage>{node.name}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/lists/${node.id}`)}
+                >
+                  {node.name}
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
+  ) : (
+    <span>List Items</span>
+  );
+
   return (
     <AppLayout
-      title={isManagingLists ? "Manage Lists" : "List Items"}
+      title={breadcrumbTitle}
       onNewItem={handleCreateStart}
       newItemLabel={isManagingLists ? "New List" : "New Item"}
     >
       <Container size="md">
-        {/* Breadcrumb navigation */}
-        {!isManagingLists && breadcrumbPath.length > 0 && (
-          <Breadcrumb className="mb-4">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  className="cursor-pointer"
-                  onClick={() => navigate("/")}
-                >
-                  Home
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              {breadcrumbPath.map((node, index) => (
-                <React.Fragment key={node.id}>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    {index === breadcrumbPath.length - 1 ? (
-                      <BreadcrumbPage>{node.name}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/lists/${node.id}`)}
-                      >
-                        {node.name}
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-        )}
 
         {isLoading && <p>Loading lists…</p>}
         {isError && (
