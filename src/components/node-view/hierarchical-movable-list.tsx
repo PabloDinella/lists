@@ -3,7 +3,6 @@ import { List, arrayMove } from "react-movable";
 import { BaseNodeItem } from "./base-node-item";
 import { TreeNode } from "./use-list-data";
 import { useUpsertOrdering } from "@/hooks/use-ordering";
-import { supabase } from "@/lib/supabase";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
 
