@@ -9,9 +9,10 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { Logo } from "@/components/ui/logo";
 
 import {
   Sidebar,
@@ -169,7 +170,10 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent className="custom-scrollbar">
         <div className="flex items-center justify-between px-4 py-2">
-          <h1 className="text-xl font-bold">trylists.app</h1>
+          <div className="flex items-center gap-2">
+            <Logo className="w-6 h-6" />
+            <h1 className="text-xl font-bold">trylists.app</h1>
+          </div>
         </div>
 
         {/* Each top-level list as its own section */}
