@@ -1,4 +1,4 @@
-import { GripVertical, Edit, Trash2, Lightbulb } from "lucide-react";
+import { GripVertical, Edit, Trash2, Zap } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { GTDProcessingDialog } from "./gtd-processing-dialog";
@@ -177,7 +177,7 @@ export function BaseNodeItem({
                   }}
                   title="GTD Process this item"
                 >
-                  <Lightbulb className="h-4 w-4" />
+                  <Zap className="h-4 w-4" />
                 </Button>
               )}
               <Button
