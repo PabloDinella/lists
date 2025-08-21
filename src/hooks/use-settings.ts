@@ -50,19 +50,33 @@ export function useUpdateSettings() {
   
   return useMutation({
     mutationFn: async ({ userId, settings }: { userId: string; settings: GTDSettings }) => {
-      const { data, error } = await supabase
+      // First, try to update existing settings
+      const { data: updateData, error: updateError } = await supabase
         .from("settings")
-        .upsert({
+        .update({
+          settings: settings as unknown as Json,
+        })
+        .eq("user_id", userId)
+        .select()
+        .maybeSingle();
+      
+      // If no rows were updated (user doesn't have settings yet), insert new record
+      if (!updateError && updateData) {
+        return updateData;
+      }
+      
+      // Insert new settings record
+      const { data: insertData, error: insertError } = await supabase
+        .from("settings")
+        .insert({
           user_id: userId,
           settings: settings as unknown as Json,
-        }, {
-          onConflict: "user_id"
         })
         .select()
         .single();
       
-      if (error) throw error;
-      return data;
+      if (insertError) throw insertError;
+      return insertData;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["settings", variables.userId] });

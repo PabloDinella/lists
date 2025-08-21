@@ -1,10 +1,13 @@
-import { GripVertical, Edit, Trash2 } from "lucide-react";
+import { GripVertical, Edit, Trash2, Lightbulb } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
+import { GTDProcessingDialog } from "./gtd-processing-dialog";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
+import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import clsx from "clsx";
 import { TreeNode } from "./use-list-data";
 import { Node } from "@/method/access/nodeAccess/models";
@@ -34,6 +37,12 @@ export function BaseNodeItem({
   const updateNodeMutation = useUpdateNode();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isGTDDialogOpen, setIsGTDDialogOpen] = useState(false);
+  
+  const { data: settings } = useSettings(user?.id ?? null);
+
+  // Check if this item is in the inbox
+  const isInInbox = settings?.inbox === node.parent_node;
 
   const handleNodeClick = () => {
     // Navigate to the list view for this node
@@ -57,6 +66,10 @@ export function BaseNodeItem({
         completed: checked,
       },
     });
+  };
+
+  const handleOpenGTDDialog = () => {
+    setIsGTDDialogOpen(true);
   };
 
   return (
@@ -153,6 +166,20 @@ export function BaseNodeItem({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* GTD Processing button - only show for items in inbox */}
+              {isInInbox && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenGTDDialog();
+                  }}
+                  title="GTD Process this item"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -180,6 +207,16 @@ export function BaseNodeItem({
       </div>
 
       {children}
+
+      {/* GTD Processing Dialog */}
+      {user?.id && (
+        <GTDProcessingDialog
+          node={node}
+          userId={user.id}
+          isOpen={isGTDDialogOpen}
+          onClose={() => setIsGTDDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }
