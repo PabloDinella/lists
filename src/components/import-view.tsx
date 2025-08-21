@@ -6,21 +6,57 @@ import { Label } from "./ui/label";
 import { Select } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
 import { useListData, TreeNode } from "./node-view/use-list-data";
-import { useImportNirvana, parseCsvData, NirvanaRow, ImportMapping } from "@/hooks/use-import";
+import {
+  useImportNirvana,
+  parseCsvData,
+  NirvanaRow,
+  ImportMapping,
+} from "@/hooks/use-import";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 
 const GTD_CATEGORIES = [
-  { key: "inbox" as keyof ImportMapping, label: "Inbox", description: "New items from Nirvana's 'Inbox' or unprocessed tasks" },
-  { key: "nextActions" as keyof ImportMapping, label: "Next Actions", description: "Tasks with state 'Next'" },
-  { key: "projects" as keyof ImportMapping, label: "Projects", description: "Nirvana projects and project tasks" },
-  { key: "somedayMaybe" as keyof ImportMapping, label: "Someday/Maybe", description: "Tasks with state 'Someday'" },
-  { key: "contexts" as keyof ImportMapping, label: "Contexts", description: "Tasks organized by tags/contexts" },
-  { key: "areasOfFocus" as keyof ImportMapping, label: "Areas of Focus", description: "Focus areas from Nirvana" },
-  { key: "reference" as keyof ImportMapping, label: "Reference", description: "Completed tasks (Logbook)" },
+  {
+    key: "inbox" as keyof ImportMapping,
+    label: "Inbox",
+    description: "New items from Nirvana's 'Inbox' or unprocessed tasks",
+  },
+  {
+    key: "nextActions" as keyof ImportMapping,
+    label: "Next Actions",
+    description: "Tasks with state 'Next'",
+  },
+  {
+    key: "projects" as keyof ImportMapping,
+    label: "Projects",
+    description: "Nirvana projects and project tasks",
+  },
+  {
+    key: "somedayMaybe" as keyof ImportMapping,
+    label: "Someday/Maybe",
+    description: "Tasks with state 'Someday'",
+  },
+  {
+    key: "contexts" as keyof ImportMapping,
+    label: "Contexts",
+    description: "Tasks organized by tags/contexts",
+  },
+  {
+    key: "areasOfFocus" as keyof ImportMapping,
+    label: "Areas of Focus",
+    description: "Focus areas from Nirvana",
+  },
+  {
+    key: "reference" as keyof ImportMapping,
+    label: "Reference",
+    description: "Completed tasks (Logbook)",
+  },
 ];
 
 export function ImportView() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
   const [csvData, setCsvData] = useState<NirvanaRow[] | null>(null);
   const [ignoreCompleted, setIgnoreCompleted] = useState(false);
   const [mapping, setMapping] = useState<ImportMapping>({
@@ -37,7 +73,7 @@ export function ImportView() {
   const { hierarchicalTree, isLoading: nodesLoading } = useListData({
     userId,
   });
-  
+
   const importMutation = useImportNirvana();
 
   // Get all available nodes (flatten the tree) and filter for list or tagging types only
@@ -48,53 +84,65 @@ export function ImportView() {
       }, []);
     };
     const flattenedNodes = flatten(hierarchicalTree);
-    return flattenedNodes.filter(node => 
-      node.metadata?.type === "list" || node.metadata?.type === "tagging"
+    return flattenedNodes.filter(
+      (node) =>
+        node.metadata?.type === "list" || node.metadata?.type === "tagging",
     );
   }, [hierarchicalTree]);
 
   // Function to find the best matching node for a category
-  const findBestMatch = useCallback((category: keyof ImportMapping): TreeNode | null => {
-    if (allNodes.length === 0) return null;
+  const findBestMatch = useCallback(
+    (category: keyof ImportMapping): TreeNode | null => {
+      if (allNodes.length === 0) return null;
 
-    const searchTerms: Record<keyof ImportMapping, string[]> = {
-      inbox: ["inbox", "in", "input"],
-      nextActions: ["next actions", "next", "actions", "todo", "tasks"],
-      projects: ["projects", "project"],
-      somedayMaybe: ["someday maybe", "someday", "maybe", "later"],
-      contexts: ["contexts", "context", "tags", "categories"],
-      areasOfFocus: ["areas of focus", "areas", "focus", "area"],
-      reference: ["reference", "references", "archive", "logbook", "completed", "done"],
-    };
+      const searchTerms: Record<keyof ImportMapping, string[]> = {
+        inbox: ["inbox", "in", "input"],
+        nextActions: ["next actions", "next", "actions", "todo", "tasks"],
+        projects: ["projects", "project"],
+        somedayMaybe: ["someday maybe", "someday", "maybe", "later"],
+        contexts: ["contexts", "context", "tags", "categories"],
+        areasOfFocus: ["areas of focus", "areas", "focus", "area"],
+        reference: [
+          "reference",
+          "references",
+          "archive",
+          "logbook",
+          "completed",
+          "done",
+        ],
+      };
 
-    const terms = searchTerms[category];
-    if (!terms) return null;
+      const terms = searchTerms[category];
+      if (!terms) return null;
 
-    // First try exact matches (case insensitive)
-    for (const term of terms) {
-      const exactMatch = allNodes.find(node => 
-        node.name.toLowerCase() === term.toLowerCase()
-      );
-      if (exactMatch) return exactMatch;
-    }
+      // First try exact matches (case insensitive)
+      for (const term of terms) {
+        const exactMatch = allNodes.find(
+          (node) => node.name.toLowerCase() === term.toLowerCase(),
+        );
+        if (exactMatch) return exactMatch;
+      }
 
-    // Then try partial matches (case insensitive)
-    for (const term of terms) {
-      const partialMatch = allNodes.find(node => 
-        node.name.toLowerCase().includes(term.toLowerCase()) ||
-        term.toLowerCase().includes(node.name.toLowerCase())
-      );
-      if (partialMatch) return partialMatch;
-    }
+      // Then try partial matches (case insensitive)
+      for (const term of terms) {
+        const partialMatch = allNodes.find(
+          (node) =>
+            node.name.toLowerCase().includes(term.toLowerCase()) ||
+            term.toLowerCase().includes(node.name.toLowerCase()),
+        );
+        if (partialMatch) return partialMatch;
+      }
 
-    return null;
-  }, [allNodes]);
+      return null;
+    },
+    [allNodes],
+  );
 
   // Auto-map categories when nodes are loaded
   const autoMapCategories = useCallback(() => {
     if (allNodes.length === 0) return;
 
-    setMapping(prevMapping => {
+    setMapping((prevMapping) => {
       const newMapping: ImportMapping = { ...prevMapping };
       let hasChanges = false;
 
@@ -146,20 +194,6 @@ export function ImportView() {
     }
   }, [nodesLoading, allNodes, hasAutoMapped, autoMapCategories]);
 
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUserId(session?.user?.id ?? null);
-      }
-    );
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
   const handleFileRead = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -175,19 +209,24 @@ export function ImportView() {
     reader.readAsText(file);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const csvFile = files.find(file => file.name.toLowerCase().endsWith('.csv'));
-    
-    if (csvFile) {
-      handleFileRead(csvFile);
-    } else {
-      alert("Please drop a CSV file.");
-    }
-  }, [handleFileRead]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      const csvFile = files.find((file) =>
+        file.name.toLowerCase().endsWith(".csv"),
+      );
+
+      if (csvFile) {
+        handleFileRead(csvFile);
+      } else {
+        alert("Please drop a CSV file.");
+      }
+    },
+    [handleFileRead],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -199,15 +238,21 @@ export function ImportView() {
     setIsDragOver(false);
   }, []);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileRead(file);
-    }
-  }, [handleFileRead]);
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFileRead(file);
+      }
+    },
+    [handleFileRead],
+  );
 
-  const handleMappingChange = (category: keyof ImportMapping, nodeId: string) => {
-    setMapping(prev => ({
+  const handleMappingChange = (
+    category: keyof ImportMapping,
+    nodeId: string,
+  ) => {
+    setMapping((prev) => ({
       ...prev,
       [category]: nodeId === "" ? null : parseInt(nodeId, 10),
     }));
@@ -215,14 +260,14 @@ export function ImportView() {
 
   const handleImport = async () => {
     if (!userId || !csvData) return;
-    
+
     // Check that at least some mappings are set
-    const hasMapping = Object.values(mapping).some(value => value !== null);
+    const hasMapping = Object.values(mapping).some((value) => value !== null);
     if (!hasMapping) {
       alert("Please map at least one category before importing.");
       return;
     }
-    
+
     try {
       await importMutation.mutateAsync({
         userId,
@@ -230,7 +275,7 @@ export function ImportView() {
         mapping,
         ignoreCompleted,
       });
-      
+
       alert("Import completed successfully!");
       setCsvData(null);
       setIgnoreCompleted(false);
@@ -251,21 +296,29 @@ export function ImportView() {
 
   const getPreviewStats = () => {
     if (!csvData) return null;
-    
+
     // Filter data based on ignoreCompleted setting
-    const dataToAnalyze = ignoreCompleted 
-      ? csvData.filter(row => !row.COMPLETED || row.COMPLETED.toLowerCase() !== 'true')
+    const dataToAnalyze = ignoreCompleted
+      ? csvData.filter(
+          (row) => !row.COMPLETED || row.COMPLETED.toLowerCase() !== "true",
+        )
       : csvData;
-    
+
     const stats = {
-      tasks: dataToAnalyze.filter(row => row.TYPE === "Task").length,
-      projects: dataToAnalyze.filter(row => row.TYPE === "Project").length,
-      nextActions: dataToAnalyze.filter(row => row.TYPE === "Task" && row.STATE === "Next").length,
-      someday: dataToAnalyze.filter(row => row.TYPE === "Task" && row.STATE === "Someday").length,
-      completed: csvData.filter(row => row.COMPLETED && row.COMPLETED.toLowerCase() === 'true').length,
+      tasks: dataToAnalyze.filter((row) => row.TYPE === "Task").length,
+      projects: dataToAnalyze.filter((row) => row.TYPE === "Project").length,
+      nextActions: dataToAnalyze.filter(
+        (row) => row.TYPE === "Task" && row.STATE === "Next",
+      ).length,
+      someday: dataToAnalyze.filter(
+        (row) => row.TYPE === "Task" && row.STATE === "Someday",
+      ).length,
+      completed: csvData.filter(
+        (row) => row.COMPLETED && row.COMPLETED.toLowerCase() === "true",
+      ).length,
       total: csvData.length,
     };
-    
+
     return stats;
   };
 
@@ -288,18 +341,19 @@ export function ImportView() {
           <div>
             <h1 className="text-2xl font-bold">Import from Nirvana</h1>
             <p className="text-muted-foreground">
-              Import your tasks and projects from a Nirvana CSV export. 
-              First upload your CSV file, then map the categories to your existing nodes.
-              The system will automatically try to match categories to nodes with similar names.
+              Import your tasks and projects from a Nirvana CSV export. First
+              upload your CSV file, then map the categories to your existing
+              nodes. The system will automatically try to match categories to
+              nodes with similar names.
             </p>
           </div>
 
           {/* File Upload Area */}
           {!csvData && (
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragOver 
-                  ? "border-primary bg-primary/5" 
+              className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                isDragOver
+                  ? "border-primary bg-primary/5"
                   : "border-muted-foreground/25 hover:border-muted-foreground/50"
               }`}
               onDrop={handleDrop}
@@ -332,31 +386,37 @@ export function ImportView() {
             <div className="space-y-6">
               {/* Stats Preview */}
               {stats && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <h3 className="font-medium mb-2">Import Preview</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <h3 className="mb-2 font-medium">Import Preview</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-6">
                     <div>
-                      <div className="font-medium text-lg">{stats.tasks}</div>
+                      <div className="text-lg font-medium">{stats.tasks}</div>
                       <div className="text-muted-foreground">Tasks</div>
                     </div>
                     <div>
-                      <div className="font-medium text-lg">{stats.projects}</div>
+                      <div className="text-lg font-medium">
+                        {stats.projects}
+                      </div>
                       <div className="text-muted-foreground">Projects</div>
                     </div>
                     <div>
-                      <div className="font-medium text-lg">{stats.nextActions}</div>
+                      <div className="text-lg font-medium">
+                        {stats.nextActions}
+                      </div>
                       <div className="text-muted-foreground">Next Actions</div>
                     </div>
                     <div>
-                      <div className="font-medium text-lg">{stats.someday}</div>
+                      <div className="text-lg font-medium">{stats.someday}</div>
                       <div className="text-muted-foreground">Someday</div>
                     </div>
                     <div>
-                      <div className="font-medium text-lg">{stats.completed}</div>
+                      <div className="text-lg font-medium">
+                        {stats.completed}
+                      </div>
                       <div className="text-muted-foreground">Completed</div>
                     </div>
                     <div>
-                      <div className="font-medium text-lg">{stats.total}</div>
+                      <div className="text-lg font-medium">{stats.total}</div>
                       <div className="text-muted-foreground">Total Items</div>
                     </div>
                   </div>
@@ -372,22 +432,32 @@ export function ImportView() {
                     checked={ignoreCompleted}
                     onCheckedChange={(checked) => setIgnoreCompleted(!!checked)}
                   />
-                  <Label htmlFor="ignore-completed" className="text-sm font-medium">
+                  <Label
+                    htmlFor="ignore-completed"
+                    className="text-sm font-medium"
+                  >
                     Ignore completed items
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  When enabled, completed tasks and projects will be excluded from the import. 
+                  When enabled, completed tasks and projects will be excluded
+                  from the import.
                   {stats && stats.completed > 0 && (
-                    <> Currently {stats.completed} completed items would be excluded.</>
+                    <>
+                      {" "}
+                      Currently {stats.completed} completed items would be
+                      excluded.
+                    </>
                   )}
                 </p>
               </div>
 
               {/* Mapping Configuration */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium">Map Categories to Your Nodes</h3>
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-lg font-medium">
+                    Map Categories to Your Nodes
+                  </h3>
                   <Button
                     variant="outline"
                     size="sm"
@@ -403,7 +473,10 @@ export function ImportView() {
                   <div className="grid gap-4 md:grid-cols-2">
                     {GTD_CATEGORIES.map((category) => (
                       <div key={category.key} className="space-y-2">
-                        <Label htmlFor={category.key} className="text-sm font-medium">
+                        <Label
+                          htmlFor={category.key}
+                          className="text-sm font-medium"
+                        >
                           {category.label}
                         </Label>
                         <p className="text-xs text-muted-foreground">
@@ -412,7 +485,7 @@ export function ImportView() {
                         <Select
                           id={category.key}
                           value={mapping[category.key]?.toString() || ""}
-                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                             handleMappingChange(category.key, e.target.value)
                           }
                         >
@@ -433,7 +506,10 @@ export function ImportView() {
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={handleImport}
-                  disabled={importMutation.isPending || Object.values(mapping).every(v => v === null)}
+                  disabled={
+                    importMutation.isPending ||
+                    Object.values(mapping).every((v) => v === null)
+                  }
                 >
                   {importMutation.isPending ? "Importing..." : "Import Data"}
                 </Button>

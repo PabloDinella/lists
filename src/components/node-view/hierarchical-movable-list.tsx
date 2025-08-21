@@ -5,6 +5,7 @@ import { TreeNode } from "./use-list-data";
 import { useUpsertOrdering } from "@/hooks/use-ordering";
 import { supabase } from "@/lib/supabase";
 import { Node } from "@/method/access/nodeAccess/models";
+import { useAuth } from "@/hooks/use-auth";
 
 type HierarchicalItem = {
   node: TreeNode;
@@ -28,24 +29,7 @@ export function HierarchicalMovableList({
 }: HierarchicalMovableListProps) {
   const [items, setItems] = useState<HierarchicalItem[]>([]);
 
-  const [user, setUser] = useState<{ id: string } | null>(null);
-
-  // Get current user
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }: { data: { user: { id: string } | null } }) =>
-        setUser(data.user),
-      );
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event: unknown, session: { user: { id: string } | null } | null) => {
-        setUser(session?.user ?? null);
-      },
-    );
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  const { user } = useAuth();
 
   useEffect(() => {
     setItems(

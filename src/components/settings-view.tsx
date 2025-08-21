@@ -4,23 +4,56 @@ import { Container } from "./ui/container";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Select } from "./ui/select";
-import { useSettings, useUpdateSettings, GTDSettings } from "@/hooks/use-settings";
+import {
+  useSettings,
+  useUpdateSettings,
+  GTDSettings,
+} from "@/hooks/use-settings";
 import { useListData, TreeNode } from "./node-view/use-list-data";
 import { useResetSystem } from "@/hooks/use-reset-system";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 
 const GTD_CATEGORIES = [
-  { key: "inbox" as keyof GTDSettings, label: "Inbox", description: "Capture all items that need to be processed" },
-  { key: "nextActions" as keyof GTDSettings, label: "Next Actions", description: "Tasks that can be done immediately" },
-  { key: "projects" as keyof GTDSettings, label: "Projects", description: "Multi-step outcomes requiring more than one action" },
-  { key: "somedayMaybe" as keyof GTDSettings, label: "Someday/Maybe", description: "Items you might want to do in the future" },
-  { key: "contexts" as keyof GTDSettings, label: "Contexts", description: "Where or with what resources tasks can be done" },
-  { key: "areasOfFocus" as keyof GTDSettings, label: "Areas of Focus", description: "Ongoing responsibilities and interests" },
-  { key: "reference" as keyof GTDSettings, label: "Reference", description: "Information you might need to refer to later" },
+  {
+    key: "inbox" as keyof GTDSettings,
+    label: "Inbox",
+    description: "Capture all items that need to be processed",
+  },
+  {
+    key: "nextActions" as keyof GTDSettings,
+    label: "Next Actions",
+    description: "Tasks that can be done immediately",
+  },
+  {
+    key: "projects" as keyof GTDSettings,
+    label: "Projects",
+    description: "Multi-step outcomes requiring more than one action",
+  },
+  {
+    key: "somedayMaybe" as keyof GTDSettings,
+    label: "Someday/Maybe",
+    description: "Items you might want to do in the future",
+  },
+  {
+    key: "contexts" as keyof GTDSettings,
+    label: "Contexts",
+    description: "Where or with what resources tasks can be done",
+  },
+  {
+    key: "areasOfFocus" as keyof GTDSettings,
+    label: "Areas of Focus",
+    description: "Ongoing responsibilities and interests",
+  },
+  {
+    key: "reference" as keyof GTDSettings,
+    label: "Reference",
+    description: "Information you might need to refer to later",
+  },
 ];
 
 export function SettingsView() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [localSettings, setLocalSettings] = useState<GTDSettings>({
     inbox: null,
@@ -35,7 +68,7 @@ export function SettingsView() {
   const { data: settings, isLoading: settingsLoading } = useSettings(userId);
   const updateSettingsMutation = useUpdateSettings();
   const resetSystemMutation = useResetSystem();
-  
+
   const { hierarchicalTree, isLoading: nodesLoading } = useListData({
     userId,
   });
@@ -49,8 +82,9 @@ export function SettingsView() {
     };
     const flattenedNodes = flatten(hierarchicalTree);
     // Only show nodes with metadata.type of "list" or "tagging"
-    return flattenedNodes.filter(node => 
-      node.metadata?.type === "list" || node.metadata?.type === "tagging"
+    return flattenedNodes.filter(
+      (node) =>
+        node.metadata?.type === "list" || node.metadata?.type === "tagging",
     );
   }, [hierarchicalTree]);
 
@@ -61,22 +95,8 @@ export function SettingsView() {
     }
   }, [settings]);
 
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUserId(session?.user?.id ?? null);
-      }
-    );
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
   const handleSettingChange = (category: keyof GTDSettings, nodeId: string) => {
-    setLocalSettings(prev => ({
+    setLocalSettings((prev) => ({
       ...prev,
       [category]: nodeId === "" ? null : parseInt(nodeId, 10),
     }));
@@ -84,7 +104,7 @@ export function SettingsView() {
 
   const handleSave = async () => {
     if (!userId) return;
-    
+
     try {
       await updateSettingsMutation.mutateAsync({
         userId,
@@ -103,7 +123,7 @@ export function SettingsView() {
 
   const handleResetSystem = async () => {
     if (!userId) return;
-    
+
     try {
       await resetSystemMutation.mutateAsync({ userId });
       setShowResetConfirmation(false);
@@ -132,7 +152,8 @@ export function SettingsView() {
     );
   }
 
-  const hasChanges = settings && JSON.stringify(settings) !== JSON.stringify(localSettings);
+  const hasChanges =
+    settings && JSON.stringify(settings) !== JSON.stringify(localSettings);
 
   return (
     <AppLayout title="GTD Settings">
@@ -141,20 +162,22 @@ export function SettingsView() {
           <div>
             <h1 className="text-2xl font-bold">GTD Configuration</h1>
             <p className="text-muted-foreground">
-              Configure which nodes in your lists correspond to each GTD category.
-              This helps organize your workflow according to the Getting Things Done methodology.
+              Configure which nodes in your lists correspond to each GTD
+              category. This helps organize your workflow according to the
+              Getting Things Done methodology.
             </p>
           </div>
 
-          {(settingsLoading || nodesLoading) && (
-            <p>Loading settings...</p>
-          )}
+          {(settingsLoading || nodesLoading) && <p>Loading settings...</p>}
 
           {!settingsLoading && !nodesLoading && (
             <div className="space-y-6">
               {GTD_CATEGORIES.map((category) => (
                 <div key={category.key} className="space-y-2">
-                  <Label htmlFor={category.key} className="text-base font-medium">
+                  <Label
+                    htmlFor={category.key}
+                    className="text-base font-medium"
+                  >
                     {category.label}
                   </Label>
                   <p className="text-sm text-muted-foreground">
@@ -163,7 +186,9 @@ export function SettingsView() {
                   <Select
                     id={category.key}
                     value={localSettings[category.key]?.toString() || ""}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleSettingChange(category.key, e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      handleSettingChange(category.key, e.target.value)
+                    }
                   >
                     <option value="">Select a node...</option>
                     {allNodes.map((node) => (
@@ -180,7 +205,9 @@ export function SettingsView() {
                   onClick={handleSave}
                   disabled={!hasChanges || updateSettingsMutation.isPending}
                 >
-                  {updateSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+                  {updateSettingsMutation.isPending
+                    ? "Saving..."
+                    : "Save Settings"}
                 </Button>
                 {hasChanges && (
                   <Button
@@ -194,7 +221,9 @@ export function SettingsView() {
               </div>
 
               {updateSettingsMutation.isSuccess && (
-                <p className="text-sm text-green-600">Settings saved successfully!</p>
+                <p className="text-sm text-green-600">
+                  Settings saved successfully!
+                </p>
               )}
 
               {updateSettingsMutation.isError && (
@@ -204,19 +233,21 @@ export function SettingsView() {
               )}
             </div>
           )}
-          
+
           {/* Reset System Section */}
           {!settingsLoading && !nodesLoading && (
-            <div className="border-t pt-6 mt-8">
+            <div className="mt-8 border-t pt-6">
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-red-600">Reset System</h2>
+                  <h2 className="text-xl font-semibold text-red-600">
+                    Reset System
+                  </h2>
                   <p className="text-sm text-muted-foreground">
-                    This will permanently delete all your data and restore the default GTD structure.
-                    This action cannot be undone.
+                    This will permanently delete all your data and restore the
+                    default GTD structure. This action cannot be undone.
                   </p>
                 </div>
-                
+
                 {!showResetConfirmation ? (
                   <Button
                     variant="destructive"
@@ -228,9 +259,10 @@ export function SettingsView() {
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm font-medium text-red-600">
-                      Are you sure you want to reset your entire system? This will:
+                      Are you sure you want to reset your entire system? This
+                      will:
                     </p>
-                    <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
                       <li>Delete all your lists, tasks, and projects</li>
                       <li>Reset all GTD settings</li>
                       <li>Restore the default GTD structure</li>
@@ -241,7 +273,9 @@ export function SettingsView() {
                         onClick={handleResetSystem}
                         disabled={resetSystemMutation.isPending}
                       >
-                        {resetSystemMutation.isPending ? "Resetting..." : "Yes, Reset Everything"}
+                        {resetSystemMutation.isPending
+                          ? "Resetting..."
+                          : "Yes, Reset Everything"}
                       </Button>
                       <Button
                         variant="outline"
@@ -253,9 +287,11 @@ export function SettingsView() {
                     </div>
                   </div>
                 )}
-                
+
                 {resetSystemMutation.isSuccess && (
-                  <p className="text-sm text-green-600">System reset successfully!</p>
+                  <p className="text-sm text-green-600">
+                    System reset successfully!
+                  </p>
                 )}
 
                 {resetSystemMutation.isError && (

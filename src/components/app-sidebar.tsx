@@ -1,4 +1,14 @@
-import { Search, Settings, FolderArchive, Trash2, Tag, LogOut, Upload, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Settings,
+  FolderArchive,
+  Trash2,
+  Tag,
+  LogOut,
+  Upload,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "./ui/separator";
 import { TreeNode, useListData } from "./node-view/use-list-data";
+import { useAuth } from "@/hooks/use-auth";
 
 // Other sections
 const otherItems = [
@@ -71,7 +82,7 @@ function ListSection({
   const handleListNameClick = () => {
     // Check if we're already on this list page
     const isCurrentPage = location.pathname === `/lists/${listId}`;
-    
+
     if (isCurrentPage) {
       // If already on this page, toggle collapse/expand
       toggleCollapsed();
@@ -83,13 +94,13 @@ function ListSection({
 
   return (
     <SidebarGroup key={listId}>
-      <SidebarGroupLabel className="flex items-center cursor-pointer group select-none">
+      <SidebarGroupLabel className="group flex cursor-pointer select-none items-center">
         <button
           onClick={(e) => {
             e.stopPropagation();
             toggleCollapsed();
           }}
-          className="opacity-80 hover:opacity-100 transition-opacity p-1 -m-1 mr-1"
+          className="-m-1 mr-1 p-1 opacity-80 transition-opacity hover:opacity-100"
         >
           {isCollapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -97,7 +108,10 @@ function ListSection({
             <ChevronDown className="h-4 w-4" />
           )}
         </button>
-        <span onClick={handleListNameClick} className="flex-1 cursor-pointer select-none">
+        <span
+          onClick={handleListNameClick}
+          className="flex-1 cursor-pointer select-none"
+        >
           {listName}
         </span>
       </SidebarGroupLabel>
@@ -108,7 +122,7 @@ function ListSection({
               children.map((child) => (
                 <SidebarMenuItem key={child.id}>
                   <SidebarMenuButton
-                    className="cursor-pointer pl-6 select-none"
+                    className="cursor-pointer select-none pl-6"
                     onClick={() => navigate(`/lists/${child.id}`)}
                   >
                     <span>{child.name}</span>
@@ -118,7 +132,7 @@ function ListSection({
             ) : (
               <SidebarMenuItem>
                 <SidebarMenuButton disabled>
-                  <span className="text-muted-foreground text-sm pl-6">
+                  <span className="pl-6 text-sm text-muted-foreground">
                     No items
                   </span>
                 </SidebarMenuButton>
@@ -132,31 +146,15 @@ function ListSection({
 }
 
 export function AppSidebar() {
-  const [user, setUser] = useState<{ id: string } | null>(null);
+  const { user } = useAuth();
+
   const navigate = useNavigate();
 
   // Sign out function
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/sign-in');
+    navigate("/sign-in");
   };
-
-  // Get current user
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }: { data: { user: { id: string } | null } }) =>
-        setUser(data.user)
-      );
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event: unknown, session: { user: { id: string } | null } | null) => {
-        setUser(session?.user ?? null);
-      }
-    );
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
   // Get all nodes to find second-level items for available parents
   const { hierarchicalTree, isLoading: listsLoading } = useListData({
@@ -202,7 +200,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton disabled>
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-sm text-muted-foreground">
                       No lists yet
                     </span>
                   </SidebarMenuButton>
@@ -223,7 +221,7 @@ export function AppSidebar() {
                     {item.url.startsWith("/") ? (
                       <button
                         onClick={() => navigate(item.url)}
-                        className="w-full text-left select-none"
+                        className="w-full select-none text-left"
                       >
                         <item.icon className="mr-2 h-4 w-4" />
                         <span>{item.title}</span>
@@ -241,7 +239,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <button
                     onClick={handleSignOut}
-                    className="w-full text-left select-none"
+                    className="w-full select-none text-left"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>

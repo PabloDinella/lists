@@ -20,6 +20,7 @@ import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
+import { useAuth } from "@/hooks/use-auth";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -67,10 +68,13 @@ const buildBreadcrumbPath = (
 export function NodeView() {
   const nodeId = useNodeId();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
+
+  // const { user } = useAuth();
+
+  const userId = user?.id || null;
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -89,6 +93,8 @@ export function NodeView() {
     userId,
   });
 
+  console.log("All nodes:", { allNodesTree, isLoading, isError, userId });
+
   const flattenedAllItems = allNodesTree.reduce<TreeNode[]>(
     flattenNodesTree,
     [],
@@ -99,20 +105,6 @@ export function NodeView() {
 
   // Build breadcrumb path
   const breadcrumbPath = buildBreadcrumbPath(flattenedAllItems, nodeId);
-
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUserId(session?.user?.id ?? null);
-      },
-    );
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
   const handleEditStart = (node: Node) => {
     setEditingNode(node);
@@ -170,19 +162,26 @@ export function NodeView() {
     : currentNode?.children;
 
   // Get tag nodes for filtering (only when viewing a specific list, not when managing lists)
-  const tagNodes = !isManagingLists && rootNode ? 
-    rootNode.children.filter(node => node.metadata?.type === "tagging") : [];
+  const tagNodes =
+    !isManagingLists && rootNode
+      ? rootNode.children.filter((node) => node.metadata?.type === "tagging")
+      : [];
 
   // Filter tree based on selected filters
-  const filteredTree = tree && selectedFilters.length > 0 ? 
-    filterTreeByTags(tree, selectedFilters) : tree;
+  const filteredTree =
+    tree && selectedFilters.length > 0
+      ? filterTreeByTags(tree, selectedFilters)
+      : tree;
 
   // Helper function to filter tree based on selected tag filters
-  function filterTreeByTags(nodes: TreeNode[], filterTagIds: number[]): TreeNode[] {
+  function filterTreeByTags(
+    nodes: TreeNode[],
+    filterTagIds: number[],
+  ): TreeNode[] {
     return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
       // Check if this node has ALL of the selected tags in its related_nodes (AND logic)
-      const hasAllSelectedTags = filterTagIds.every(tagId => 
-        node.related_nodes.some(relatedNode => relatedNode.id === tagId)
+      const hasAllSelectedTags = filterTagIds.every((tagId) =>
+        node.related_nodes.some((relatedNode) => relatedNode.id === tagId),
       );
 
       // If it has all selected tags or if no filters are applied, include it
@@ -190,7 +189,7 @@ export function NodeView() {
         const filteredChildren = filterTreeByTags(node.children, filterTagIds);
         filteredNodes.push({
           ...node,
-          children: filteredChildren
+          children: filteredChildren,
         });
       } else {
         // Even if the node doesn't match, check if any children match
@@ -198,7 +197,7 @@ export function NodeView() {
         if (filteredChildren.length > 0) {
           filteredNodes.push({
             ...node,
-            children: filteredChildren
+            children: filteredChildren,
           });
         }
       }
@@ -302,8 +301,8 @@ export function NodeView() {
                 {isManagingLists
                   ? "No lists found."
                   : selectedFilters.length > 0
-                  ? "No items match the selected filters."
-                  : "No items found in this list."}
+                    ? "No items match the selected filters."
+                    : "No items found in this list."}
               </p>
             )}
           </div>
