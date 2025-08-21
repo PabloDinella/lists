@@ -247,6 +247,7 @@ export function NodeView() {
       title={breadcrumbTitle}
       onNewItem={handleCreateStart}
       newItemLabel={isManagingLists ? "New List" : "New Item"}
+      searchNodes={allNodesTree}
     >
       {/* Tag filters - full width outside container */}
       {!isLoading && !isError && !isManagingLists && tagNodes.length > 0 && (

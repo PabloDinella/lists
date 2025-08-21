@@ -2,17 +2,20 @@ import { ReactNode } from "react";
 import { SidebarInset, SidebarTrigger } from "./ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { ModeToggle } from "./mode-toggle";
+import { SearchInput } from "./search-input";
 import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
+import { TreeNode } from "./node-view/use-list-data";
 
 interface AppLayoutProps {
   children: ReactNode;
   title: ReactNode;
   onNewItem?: () => void;
   newItemLabel?: string;
+  searchNodes?: TreeNode[];
 }
 
-export function AppLayout({ children, title, onNewItem, newItemLabel }: AppLayoutProps) {
+export function AppLayout({ children, title, onNewItem, newItemLabel, searchNodes = [] }: AppLayoutProps) {
   return (
     <>
       <AppSidebar />
@@ -27,6 +30,10 @@ export function AppLayout({ children, title, onNewItem, newItemLabel }: AppLayou
                 {newItemLabel || "New Item"}
               </Button>
             )}
+          </div>
+          {/* Search Input */}
+          <div className="flex-1 max-w-sm">
+            <SearchInput nodes={searchNodes} />
           </div>
           <ModeToggle />
         </header>

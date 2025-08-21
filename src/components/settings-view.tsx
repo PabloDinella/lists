@@ -69,6 +69,10 @@ export function SettingsView() {
   const updateSettingsMutation = useUpdateSettings();
   const resetSystemMutation = useResetSystem();
 
+  const { hierarchicalTree: searchNodes } = useListData({
+    userId,
+  });
+
   const { hierarchicalTree, isLoading: nodesLoading } = useListData({
     userId,
   });
@@ -144,7 +148,7 @@ export function SettingsView() {
 
   if (!userId) {
     return (
-      <AppLayout title="Settings">
+      <AppLayout title="Settings" searchNodes={[]}>
         <Container size="md">
           <p>Please sign in to access settings.</p>
         </Container>
@@ -156,7 +160,7 @@ export function SettingsView() {
     settings && JSON.stringify(settings) !== JSON.stringify(localSettings);
 
   return (
-    <AppLayout title="GTD Settings">
+    <AppLayout title="GTD Settings" searchNodes={searchNodes}>
       <Container size="md">
         <div className="space-y-6">
           <div>

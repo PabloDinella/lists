@@ -12,7 +12,6 @@ import {
   NirvanaRow,
   ImportMapping,
 } from "@/hooks/use-import";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 
 const GTD_CATEGORIES = [
@@ -324,7 +323,7 @@ export function ImportView() {
 
   if (!userId) {
     return (
-      <AppLayout title="Import">
+      <AppLayout title="Import" searchNodes={[]}>
         <Container size="md">
           <p>Please sign in to import data.</p>
         </Container>
@@ -335,7 +334,7 @@ export function ImportView() {
   const stats = getPreviewStats();
 
   return (
-    <AppLayout title="Import from Nirvana">
+    <AppLayout title="Import from Nirvana" searchNodes={hierarchicalTree}>
       <Container size="md">
         <div className="space-y-6">
           <div>
