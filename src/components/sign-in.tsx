@@ -16,7 +16,7 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 

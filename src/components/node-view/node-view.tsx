@@ -214,7 +214,7 @@ export function NodeView() {
         <BreadcrumbItem>
           <BreadcrumbLink
             className="cursor-pointer"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/app")}
           >
             Home
           </BreadcrumbLink>
