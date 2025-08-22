@@ -52,16 +52,16 @@ export function LandingPage() {
                 href="https://x.com/trylists"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                <svg 
-                  role="img" 
-                  viewBox="0 0 24 24" 
+                <svg
+                  role="img"
+                  viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 fill-current"
                 >
                   <title>X</title>
-                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>
+                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
                 </svg>
               </a>
               <Button onClick={() => navigate("/sign-in")}>Sign In</Button>
@@ -69,6 +69,26 @@ export function LandingPage() {
           </div>
         </Container>
       </header>
+
+      {/* Early Testing Alert Bar */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <Container>
+          <div className="flex flex-col items-center justify-center gap-2 py-3 text-center sm:flex-row sm:gap-4">
+            <div className="text-sm sm:text-base">
+              <span className="opacity-90">
+                We're in early testing! Help us improve by trying the app and
+                sharing your feedback.
+              </span>
+              <a
+                href="mailto:hello@trylists.app"
+                className="ml-2 underline underline-offset-2 hover:no-underline"
+              >
+                Send feedback →
+              </a>
+            </div>
+          </div>
+        </Container>
+      </div>
 
       {/* Hero Section */}
       <section className="py-20 lg:py-32">
@@ -292,16 +312,16 @@ export function LandingPage() {
                 href="https://x.com/trylists"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                <svg 
-                  role="img" 
-                  viewBox="0 0 24 24" 
+                <svg
+                  role="img"
+                  viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 fill-current"
                 >
                   <title>X</title>
-                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>
+                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
                 </svg>
               </a>
               <p className="text-sm text-muted-foreground">
