@@ -1,5 +1,8 @@
 import { createNode } from "@/method/access/nodeAccess/createNode";
 import { Metadata } from "@/method/access/nodeAccess/models";
+import { supabase } from "@/lib/supabase";
+import { GTDSettings } from "@/hooks/use-settings";
+import { Json } from "@/database.types";
 
 interface DefaultNode {
   name: string;
@@ -8,7 +11,7 @@ interface DefaultNode {
   children?: DefaultNode[];
 }
 
-export async function createDefaultStructure(userId: string): Promise<void> {
+export async function createDefaultStructure(userId: string): Promise<Map<string, number>> {
   // Default GTD structure as JSON
   const defaultNodes: DefaultNode[] = [
     {
@@ -176,6 +179,35 @@ export async function createDefaultStructure(userId: string): Promise<void> {
   // Create nodes recursively
   const nodeIdMap = new Map<string, number>();
   await createNodesRecursively(defaultNodes, null, userId, nodeIdMap);
+  
+  // Create default settings based on the created nodes
+  await createDefaultSettings(userId, nodeIdMap);
+  
+  return nodeIdMap;
+}
+
+async function createDefaultSettings(userId: string, nodeIdMap: Map<string, number>): Promise<void> {
+  const defaultSettings: GTDSettings = {
+    inbox: nodeIdMap.get("Inbox") ?? null,
+    nextActions: nodeIdMap.get("Next actions") ?? null,
+    projects: nodeIdMap.get("Projects") ?? null,
+    somedayMaybe: nodeIdMap.get("Someday/Maybe") ?? null,
+    contexts: nodeIdMap.get("Contexts") ?? null,
+    areasOfFocus: nodeIdMap.get("Areas of focus") ?? null,
+    reference: nodeIdMap.get("Reference") ?? null,
+  };
+
+  // Insert the default settings
+  const { error } = await supabase
+    .from("settings")
+    .upsert({
+      user_id: userId,
+      settings: defaultSettings as unknown as Json,
+    });
+
+  if (error) {
+    throw new Error(`Failed to create default settings: ${error.message}`);
+  }
 }
 
 async function createNodesRecursively(
