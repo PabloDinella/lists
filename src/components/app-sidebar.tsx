@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Logo } from "@/components/ui/logo";
+import { useUpdateNode } from "@/hooks/use-update-node";
 
 import {
   Sidebar,
@@ -67,17 +68,37 @@ function ListSection({
   listId,
   listName,
   children,
+  listNode,
 }: {
   listId: number;
   listName: string;
   children: TreeNode[];
+  listNode: TreeNode;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const updateNodeMutation = useUpdateNode();
+  const { user } = useAuth();
+  
+  // Initialize collapse state from node's metadata, defaulting to false if not set
+  const [isCollapsed, setIsCollapsed] = useState(
+    listNode.metadata?.collapsed ?? false
+  );
 
   const toggleCollapsed = () => {
-    setIsCollapsed(!isCollapsed);
+    const newCollapsedState = !isCollapsed;
+    setIsCollapsed(newCollapsedState);
+    
+    // Save the collapse state to the node's metadata
+    if (user?.id) {
+      updateNodeMutation.mutate({
+        nodeId: listId,
+        userId: user.id,
+        metadata: {
+          collapsed: newCollapsedState,
+        },
+      });
+    }
   };
 
   const handleListNameClick = () => {
@@ -196,6 +217,7 @@ export function AppSidebar() {
               listId={list.id}
               listName={list.name}
               children={list.children}
+              listNode={list}
             />
           ))
         ) : (

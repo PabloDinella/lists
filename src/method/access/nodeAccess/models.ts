@@ -13,6 +13,7 @@ export const metadataSchema = z.object({
   renderDepth: z.number().optional(),
   childrenOrder: z.array(z.number()).optional(),
   completed: z.boolean().optional(),
+  collapsed: z.boolean().optional(),
   defaultChildrenMetadata: z
     .object({
       type: z
@@ -27,6 +28,7 @@ export const metadataSchema = z.object({
       renderDepth: z.number().optional(),
       childrenOrder: z.array(z.number()).optional(),
       completed: z.boolean().optional(),
+      collapsed: z.boolean().optional(),
     })
     .optional(),
 });
