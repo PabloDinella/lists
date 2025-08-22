@@ -7,8 +7,8 @@ import { SignIn } from "./components/sign-in";
 import { ProtectedRoute } from "./components/protected-route";
 import { SettingsView } from "./components/settings-view";
 import { ImportView } from "./components/import-view";
-import { LandingPage } from "./components/landing-page";
-import { PricingPage } from "./components/pricing-page";
+import { LandingPage } from "./site/landing-page";
+import { PricingPage } from "./site/pricing-page";
 
 function App() {
   return (

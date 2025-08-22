@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { SiteLayout } from "@/components/site-layout";
+import { SiteLayout } from "@/site/site-layout";
 import { Check, Clock } from "lucide-react";
 import { useEffect } from "react";
 
