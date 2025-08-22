@@ -48,6 +48,12 @@ export function LandingPage() {
               <span className="text-xl font-bold">trylists.app</span>
             </div>
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/pricing")}
+              >
+                Pricing
+              </Button>
               <a
                 href="https://x.com/trylists"
                 target="_blank"

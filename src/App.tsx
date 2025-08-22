@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/protected-route";
 import { SettingsView } from "./components/settings-view";
 import { ImportView } from "./components/import-view";
 import { LandingPage } from "./components/landing-page";
+import { PricingPage } from "./components/pricing-page";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <TooltipProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/sign-in" element={<SignIn />} />
           <Route
             path="/app"
