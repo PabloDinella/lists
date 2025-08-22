@@ -20,12 +20,21 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
     }
   }, [isAuthenticated, navigate]);
 
+  const redirectTo = `${window.location.origin}/app`;
+  console.log(redirectTo);
+
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({ 
+      email,
+      options: {
+        emailRedirectTo: redirectTo
+      }
+    });
     setLoading(false);
     if (error) {
       setError(error.message);
