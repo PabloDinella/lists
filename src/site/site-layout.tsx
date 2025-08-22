@@ -52,6 +52,28 @@ export function SiteLayout({ children }: MarketingLayoutProps) {
         </Container>
       </header>
 
+      {/* Early Testing Alert Bar */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <Container>
+          <div className="flex flex-col items-center justify-center gap-2 py-3 text-center sm:flex-row sm:gap-4">
+            <div className="text-sm sm:text-base">
+              <span className="opacity-90">
+                We're in early testing! Help us improve by trying the app and
+                sharing your feedback.
+              </span>
+              <a
+                href="https://trylistsapp.featurebase.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 underline underline-offset-2 hover:no-underline"
+              >
+                Send feedback →
+              </a>
+            </div>
+          </div>
+        </Container>
+      </div>
+
       {/* Content */}
       {children}
 
