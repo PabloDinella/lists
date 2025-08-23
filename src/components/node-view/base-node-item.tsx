@@ -119,7 +119,7 @@ export function BaseNodeItem({
               {/* Clickable node content area */}
               <div
                 className={clsx(
-                  "flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors",
+                  "flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors min-w-0",
                   {
                     "opacity-60": node.metadata?.completed,
                   }
@@ -154,7 +154,7 @@ export function BaseNodeItem({
                 {node.content && (
                   <p 
                     className={clsx(
-                      "text-sm text-muted-foreground",
+                      "text-sm text-muted-foreground break-all hyphens-auto max-w-full",
                       {
                         "line-through": node.metadata?.completed,
                       }
