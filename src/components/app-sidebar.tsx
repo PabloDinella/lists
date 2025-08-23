@@ -1,8 +1,5 @@
 import {
-  Search,
   Settings,
-  FolderArchive,
-  Trash2,
   Tag,
   LogOut,
   Upload,
@@ -25,27 +22,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Separator } from "./ui/separator";
 import { TreeNode, useListData } from "./node-view/use-list-data";
 import { useAuth } from "@/hooks/use-auth";
 
 // Other sections
 const otherItems = [
-  {
-    title: "Archive",
-    url: "#archive",
-    icon: FolderArchive,
-  },
-  {
-    title: "Trash",
-    url: "#trash",
-    icon: Trash2,
-  },
-  {
-    title: "Search",
-    url: "#search",
-    icon: Search,
-  },
   {
     title: "Manage lists",
     url: "/lists/manage",
@@ -189,7 +170,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent className="custom-scrollbar">
+      <SidebarContent className="custom-scrollbar flex flex-col">
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <Logo className="w-6 h-6" />
@@ -197,84 +178,88 @@ export function AppSidebar() {
           </div>
         </div>
 
-        {/* Each top-level list as its own section */}
-        {listsLoading ? (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton disabled>
-                    <span>Loading lists...</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ) : topLevelNodes && topLevelNodes.length > 0 ? (
-          topLevelNodes.map((list) => (
-            <ListSection
-              key={list.id}
-              listId={list.id}
-              listName={list.name}
-              children={list.children}
-              listNode={list}
-            />
-          ))
-        ) : (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton disabled>
-                    <span className="text-sm text-muted-foreground">
-                      No lists yet
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Each top-level list as its own section */}
+          {listsLoading ? (
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      <span>Loading lists...</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ) : topLevelNodes && topLevelNodes.length > 0 ? (
+            topLevelNodes.map((list) => (
+              <ListSection
+                key={list.id}
+                listId={list.id}
+                listName={list.name}
+                children={list.children}
+                listNode={list}
+              />
+            ))
+          ) : (
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      <span className="text-sm text-muted-foreground">
+                        No lists yet
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </div>
 
-        <Separator className="my-2" />
-        <SidebarGroup>
-          <SidebarGroupLabel>Other</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {otherItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+        {/* Fixed bottom section - always visible */}
+        <div className="border-t">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {otherItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      {item.url.startsWith("/") ? (
+                        <button
+                          onClick={() => navigate(item.url)}
+                          className="w-full select-none text-left"
+                        >
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.title}</span>
+                        </button>
+                      ) : (
+                        <a href={item.url} className="select-none">
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.title}</span>
+                        </a>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    {item.url.startsWith("/") ? (
-                      <button
-                        onClick={() => navigate(item.url)}
-                        className="w-full select-none text-left"
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.title}</span>
-                      </button>
-                    ) : (
-                      <a href={item.url} className="select-none">
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.title}</span>
-                      </a>
-                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full select-none text-left"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign out</span>
+                    </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full select-none text-left"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

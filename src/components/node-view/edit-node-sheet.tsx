@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +13,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { Checkbox } from "../ui/checkbox";
 import { SingleSelectAutocomplete } from "../ui/single-select-autocomplete";
 
 import { NodeTypeSelector } from "./node-type-selector";
@@ -53,6 +54,9 @@ export function EditNodeSheet({
 
   const { user } = useAuth();
   const addUpdateNodeMutation = useAddUpdateNode();
+  
+  // State for "create more" option
+  const [createMore, setCreateMore] = useState(false);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -222,7 +226,27 @@ export function EditNodeSheet({
         relationType: "tagged_with",
       });
 
-      handleClose(); // Close the sheet after successful save
+      // In create mode, check if user wants to create more
+      if (mode === "create" && createMore) {
+        // Reset form for next item but keep parent and type
+        reset({
+          name: "",
+          description: "",
+          parentId: data.parentId, // Keep the same parent
+          nodeType: data.nodeType, // Keep the same type
+          selectedRelatedNodes: [], // Clear tags for new item
+        });
+
+        // Focus back to name field for next item
+        setTimeout(() => {
+          const nameInput = document.getElementById("name");
+          if (nameInput) {
+            nameInput.focus();
+          }
+        }, 100);
+      } else {
+        handleClose(); // Close the sheet after successful save
+      }
     } catch (error) {
       console.error(`Failed to ${mode} node:`, error);
     }
@@ -328,97 +352,124 @@ export function EditNodeSheet({
           <SheetDescription>{modeContent.description}</SheetDescription>
         </SheetHeader>
 
-        <div className="custom-scrollbar flex flex-1 flex-col gap-7 overflow-y-auto py-4 pr-3">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              {...register("name")}
-              placeholder={modeContent.namePlaceholder}
+        <form onSubmit={handleSave} className="flex flex-1 flex-col">
+          <div className="custom-scrollbar flex flex-1 flex-col gap-7 overflow-y-auto py-4 pr-3">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                {...register("name")}
+                placeholder={modeContent.namePlaceholder}
+                disabled={isSaving}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                {...register("description")}
+                placeholder={modeContent.descriptionPlaceholder}
+                rows={3}
+                disabled={isSaving}
+                onKeyDown={(e) => {
+                  if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSave();
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted border rounded">Ctrl</kbd>+<kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted border rounded">Enter</kbd> to save
+              </p>
+            </div>
+
+            {/* Show parent selection for create mode or edit mode with existing parent */}
+            {availableParents && availableParents.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-base font-medium">Parent Item</Label>
+                </div>
+                <div>
+                  <SingleSelectAutocomplete
+                    hierarchicalOptions={[
+                      ...convertToHierarchicalOptions(allNodesTree),
+                    ]}
+                    value={parentId}
+                    onChange={(selectedId) => {
+                      setValue("parentId", selectedId as number | null);
+                    }}
+                    placeholder="Select a parent item..."
+                    disabled={isSaving}
+                    freeSolo={false}
+                    noOptionsText="No parent items found"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Show related nodes selection when not in structural mode or when creating items in a list */}
+            <TagsSelector
+              tagNodes={tagNodes || []}
+              selectedRelatedNodes={selectedRelatedNodes}
+              onSelectionChange={(newSelection) =>
+                setValue("selectedRelatedNodes", newSelection)
+              }
               disabled={isSaving}
+              defaultExpanded={!isManagingLists}
+              onCreateNewItem={handleCreateNewItem}
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...register("description")}
-              placeholder={modeContent.descriptionPlaceholder}
-              rows={3}
+
+            {/* Node type selection when managing lists or editing existing nodes */}
+            <NodeTypeSelector
+              nodeType={nodeType}
+              onNodeTypeChange={(newType) => {
+                setValue("nodeType", newType);
+              }}
               disabled={isSaving}
+              defaultExpanded={isManagingLists}
             />
           </div>
 
-          {/* Show parent selection for create mode or edit mode with existing parent */}
-          {availableParents && availableParents.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Label className="text-base font-medium">Parent Item</Label>
-              </div>
-              <div>
-                <SingleSelectAutocomplete
-                  hierarchicalOptions={[
-                    ...convertToHierarchicalOptions(allNodesTree),
-                  ]}
-                  value={parentId}
-                  onChange={(selectedId) => {
-                    setValue("parentId", selectedId as number | null);
-                  }}
-                  placeholder="Select a parent item..."
-                  disabled={isSaving}
-                  freeSolo={false}
-                  noOptionsText="No parent items found"
-                />
-              </div>
+          {/* Create more option for create mode */}
+          {mode === "create" && (
+            <div className="flex items-center justify-end space-x-2 px-1 py-2 mb-2">
+              <Checkbox
+                id="create-more"
+                checked={createMore}
+                onCheckedChange={(checked) => setCreateMore(checked === true)}
+              />
+              <Label htmlFor="create-more" className="text-sm font-normal cursor-pointer">
+                Create more items
+              </Label>
             </div>
           )}
 
-          {/* Show related nodes selection when not in structural mode or when creating items in a list */}
-          <TagsSelector
-            tagNodes={tagNodes || []}
-            selectedRelatedNodes={selectedRelatedNodes}
-            onSelectionChange={(newSelection) =>
-              setValue("selectedRelatedNodes", newSelection)
-            }
-            disabled={isSaving}
-            defaultExpanded={!isManagingLists}
-            onCreateNewItem={handleCreateNewItem}
-          />
-
-          {/* Node type selection when managing lists or editing existing nodes */}
-          <NodeTypeSelector
-            nodeType={nodeType}
-            onNodeTypeChange={(newType) => {
-              setValue("nodeType", newType);
-            }}
-            disabled={isSaving}
-            defaultExpanded={isManagingLists}
-          />
-        </div>
-
-        <SheetFooter className="flex-shrink-0">
-          <Button variant="outline" onClick={handleClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          {mode === "create" && (
-            <Button
-              onClick={handleSaveAndOpen}
-              disabled={!name.trim() || isSaving}
-              variant="outline"
-            >
-              {isSaving ? "Creating..." : "Create and open"}
+          <SheetFooter className="flex-shrink-0">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
+              Cancel
             </Button>
-          )}
-          <Button onClick={handleSave} disabled={!name.trim() || isSaving}>
-            {isSaving
-              ? mode === "create"
-                ? "Creating..."
-                : "Saving..."
-              : mode === "create"
-                ? "Create"
-                : "Save changes"}
-          </Button>
-        </SheetFooter>
+            {mode === "create" && (
+              <Button
+                type="button"
+                onClick={handleSaveAndOpen}
+                disabled={!name.trim() || isSaving}
+                variant="outline"
+              >
+                {isSaving ? "Creating..." : "Create and open"}
+              </Button>
+            )}
+            <Button type="submit" disabled={!name.trim() || isSaving}>
+              {isSaving
+                ? mode === "create"
+                  ? "Creating..."
+                  : "Saving..."
+                : mode === "create"
+                  ? "Create"
+                  : "Save changes"}
+            </Button>
+          </SheetFooter>
+        </form>
       </SheetContent>
     </Sheet>
   );
