@@ -26,6 +26,11 @@ const GTD_CATEGORIES = [
     description: "Tasks with state 'Next'",
   },
   {
+    key: "waiting" as keyof ImportMapping,
+    label: "Waiting",
+    description: "Tasks with state 'Waiting'",
+  },
+  {
     key: "projects" as keyof ImportMapping,
     label: "Projects",
     description: "Nirvana projects and project tasks",
@@ -61,6 +66,7 @@ export function ImportView() {
   const [mapping, setMapping] = useState<ImportMapping>({
     inbox: null,
     nextActions: null,
+    waiting: null,
     projects: null,
     somedayMaybe: null,
     contexts: null,
@@ -97,6 +103,7 @@ export function ImportView() {
       const searchTerms: Record<keyof ImportMapping, string[]> = {
         inbox: ["inbox", "in", "input"],
         nextActions: ["next actions", "next", "actions", "todo", "tasks"],
+        waiting: ["waiting", "wait", "waiting for", "delegated"],
         projects: ["projects", "project"],
         somedayMaybe: ["someday maybe", "someday", "maybe", "later"],
         contexts: ["contexts", "context", "tags", "categories"],
@@ -167,6 +174,7 @@ export function ImportView() {
     const newMapping: ImportMapping = {
       inbox: null,
       nextActions: null,
+      waiting: null,
       projects: null,
       somedayMaybe: null,
       contexts: null,
@@ -281,6 +289,7 @@ export function ImportView() {
       setMapping({
         inbox: null,
         nextActions: null,
+        waiting: null,
         projects: null,
         somedayMaybe: null,
         contexts: null,
@@ -308,6 +317,9 @@ export function ImportView() {
       projects: dataToAnalyze.filter((row) => row.TYPE === "Project").length,
       nextActions: dataToAnalyze.filter(
         (row) => row.TYPE === "Task" && row.STATE === "Next",
+      ).length,
+      waiting: dataToAnalyze.filter(
+        (row) => row.TYPE === "Task" && row.STATE === "Waiting",
       ).length,
       someday: dataToAnalyze.filter(
         (row) => row.TYPE === "Task" && row.STATE === "Someday",
@@ -387,7 +399,7 @@ export function ImportView() {
               {stats && (
                 <div className="rounded-lg bg-muted/50 p-4">
                   <h3 className="mb-2 font-medium">Import Preview</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-6">
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-7">
                     <div>
                       <div className="text-lg font-medium">{stats.tasks}</div>
                       <div className="text-muted-foreground">Tasks</div>
@@ -403,6 +415,10 @@ export function ImportView() {
                         {stats.nextActions}
                       </div>
                       <div className="text-muted-foreground">Next Actions</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-medium">{stats.waiting}</div>
+                      <div className="text-muted-foreground">Waiting</div>
                     </div>
                     <div>
                       <div className="text-lg font-medium">{stats.someday}</div>
@@ -520,6 +536,7 @@ export function ImportView() {
                     setMapping({
                       inbox: null,
                       nextActions: null,
+                      waiting: null,
                       projects: null,
                       somedayMaybe: null,
                       contexts: null,

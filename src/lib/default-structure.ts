@@ -167,17 +167,6 @@ export async function createDefaultStructure(
           ],
         },
         {
-          name: "Contacts",
-          description: "People you need to keep in touch with or follow up on.",
-          metadata: {
-            type: "tagging",
-            renderInline: true,
-            defaultChildrenMetadata: {
-              type: "tag",
-            },
-          },
-        },
-        {
           name: "Reference",
           description: "For stuff you want to keep around as a reference.",
           metadata: {
@@ -208,6 +197,7 @@ async function createDefaultSettings(
   const defaultSettings: GTDSettings = {
     inbox: nodeIdMap.get("Inbox") ?? null,
     nextActions: nodeIdMap.get("Next actions") ?? null,
+    waiting: nodeIdMap.get("Waiting") ?? null,
     projects: nodeIdMap.get("Projects") ?? null,
     somedayMaybe: nodeIdMap.get("Someday/Maybe") ?? null,
     contexts: nodeIdMap.get("Contexts") ?? null,

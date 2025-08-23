@@ -25,6 +25,11 @@ const GTD_CATEGORIES = [
     description: "Tasks that can be done immediately",
   },
   {
+    key: "waiting" as keyof GTDSettings,
+    label: "Waiting",
+    description: "Items you've delegated or are pending from others",
+  },
+  {
     key: "projects" as keyof GTDSettings,
     label: "Projects",
     description: "Multi-step outcomes requiring more than one action",
@@ -58,6 +63,7 @@ export function SettingsView() {
   const [localSettings, setLocalSettings] = useState<GTDSettings>({
     inbox: null,
     nextActions: null,
+    waiting: null,
     projects: null,
     somedayMaybe: null,
     contexts: null,
@@ -135,6 +141,7 @@ export function SettingsView() {
       setLocalSettings({
         inbox: null,
         nextActions: null,
+        waiting: null,
         projects: null,
         somedayMaybe: null,
         contexts: null,

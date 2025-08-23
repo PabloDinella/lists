@@ -20,6 +20,7 @@ export interface NirvanaRow {
 export interface ImportMapping {
   inbox: number | null;
   nextActions: number | null;
+  waiting: number | null;
   projects: number | null;
   somedayMaybe: number | null;
   contexts: number | null;
@@ -43,98 +44,141 @@ export function useImportNirvana() {
       ignoreCompleted?: boolean;
     }) => {
       const results = [];
+      const startTime = Date.now();
       
       // Filter out completed items if ignoreCompleted is true
       const filteredData = ignoreCompleted 
         ? data.filter(row => !row.COMPLETED || row.COMPLETED.toLowerCase() !== 'true')
         : data;
       
+      console.log(`Starting import of ${filteredData.length} items (${data.length - filteredData.length} filtered out)`);
+      
       // Create a map to track created projects by name
       const projectIdMap = new Map<string, number>();
       
-      // First pass: Create projects
-      for (const row of filteredData) {
-        if (row.TYPE === "Project" && row.PARENT === "Standalone") {
-          const parentId = row.STATE === "Active" ? mapping.projects : 
-                          row.STATE === "Someday" ? mapping.somedayMaybe : 
-                          mapping.projects; // Default to projects
-          
-          if (parentId) {
-            const { data: projectData, error } = await supabase
-              .from("node")
-              .insert({
-                name: row.NAME,
-                content: row.NOTES || null,
-                parent_node: parentId,
-                user_id: userId,
-                metadata: {
-                  type: "loop",
-                  completed: !!row.COMPLETED,
-                }
-              })
-              .select()
-              .single();
+
+      
+      // First pass: Create projects in batch
+      const projectRows = filteredData.filter(row => row.TYPE === "Project" && row.PARENT === "Standalone");
+      
+      if (projectRows.length > 0) {
+        console.log(`Creating ${projectRows.length} projects in batch...`);
+        const projectsToInsert = projectRows
+          .map(row => {
+            const parentId = row.STATE === "Active" ? mapping.projects : 
+                            row.STATE === "Someday" ? mapping.somedayMaybe : 
+                            mapping.projects; // Default to projects
             
-            if (error) throw error;
-            projectIdMap.set(row.NAME, projectData.id);
-            results.push(projectData);
+            if (!parentId) return null;
+            
+            return {
+              name: row.NAME,
+              content: row.NOTES || null,
+              parent_node: parentId,
+              user_id: userId,
+              metadata: {
+                type: "loop" as const,
+                completed: !!row.COMPLETED,
+              }
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null);
+        
+        if (projectsToInsert.length > 0) {
+          const { data: projectsData, error: projectsError } = await supabase
+            .from("node")
+            .insert(projectsToInsert)
+            .select();
+          
+          if (projectsError) throw projectsError;
+          
+          if (projectsData) {
+            // Map project names to their IDs
+            projectsData.forEach(project => {
+              const originalRow = projectRows.find(row => 
+                row.NAME === project.name && 
+                (row.NOTES || null) === project.content
+              );
+              if (originalRow) {
+                projectIdMap.set(originalRow.NAME, project.id);
+              }
+            });
+            results.push(...projectsData);
           }
         }
       }
       
-      // Second pass: Create tasks
-      for (const row of filteredData) {
-        if (row.TYPE === "Task") {
-          let parentId: number | null = null;
-          
-          // Determine parent based on PARENT field
-          if (row.PARENT === "Standalone") {
-            // Map based on STATE
-            switch (row.STATE) {
-              case "Next":
-                parentId = mapping.nextActions;
-                break;
-              case "Someday":
-                parentId = mapping.somedayMaybe;
-                break;
-              case "Logbook":
-                parentId = mapping.nextActions;
-                break;
-              default:
-                parentId = mapping.inbox; // Default to inbox
+      // Second pass: Create tasks in batch
+      const taskRows = filteredData.filter(row => row.TYPE === "Task");
+      
+      if (taskRows.length > 0) {
+        console.log(`Creating ${taskRows.length} tasks in batch...`);
+        const tasksToInsert = taskRows
+          .map(row => {
+            let parentId: number | null = null;
+            
+            // Determine parent based on PARENT field
+            if (row.PARENT === "Standalone") {
+              // Map based on STATE
+              switch (row.STATE) {
+                case "Next":
+                  parentId = mapping.nextActions;
+                  break;
+                case "Waiting":
+                  parentId = mapping.waiting;
+                  break;
+                case "Someday":
+                  parentId = mapping.somedayMaybe;
+                  break;
+                case "Logbook":
+                  parentId = mapping.nextActions;
+                  break;
+                default:
+                  parentId = mapping.inbox; // Default to inbox
+              }
+            } else {
+              // Task belongs to a project
+              parentId = projectIdMap.get(row.PARENT) || mapping.projects;
             }
-          } else {
-            // Task belongs to a project
-            parentId = projectIdMap.get(row.PARENT) || mapping.projects;
-          }
-          
-          if (parentId) {
+            
+            if (!parentId) return null;
+            
             const tags = row.TAGS ? row.TAGS.split(",").map(tag => tag.trim()) : [];
             
-            const { data: taskData, error } = await supabase
-              .from("node")
-              .insert({
-                name: row.NAME,
-                content: row.NOTES || null,
-                parent_node: parentId,
-                user_id: userId,
-                metadata: {
-                  type: "loop",
-                  completed: !!row.COMPLETED,
-                  tags: tags.length > 0 ? tags : undefined,
-                  energy: row.ENERGY || undefined,
-                  time: row.TIME || undefined,
-                  dueDate: row.DUEDATE || undefined,
-                }
-              })
-              .select()
-              .single();
-            
-            if (error) throw error;
-            results.push(taskData);
+            return {
+              name: row.NAME,
+              content: row.NOTES || null,
+              parent_node: parentId,
+              user_id: userId,
+              metadata: {
+                type: "loop" as const,
+                completed: !!row.COMPLETED,
+                tags: tags.length > 0 ? tags : undefined,
+                energy: row.ENERGY || undefined,
+                time: row.TIME || undefined,
+                dueDate: row.DUEDATE || undefined,
+                waitingFor: row.WAITINGFOR || undefined,
+              }
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null);
+        
+        if (tasksToInsert.length > 0) {
+          const { data: tasksData, error: tasksError } = await supabase
+            .from("node")
+            .insert(tasksToInsert)
+            .select();
+          
+          if (tasksError) throw tasksError;
+          
+          if (tasksData) {
+            results.push(...tasksData);
           }
         }
       }
+      
+      const endTime = Date.now();
+      console.log(`Import completed in ${endTime - startTime}ms. Created ${results.length} items.`);
       
       return results;
     },

@@ -52,6 +52,17 @@ export function GTDProcessingDialog({
     onClose();
   };
 
+  const handleMoveToWaiting = () => {
+    if (!settings?.waiting) return;
+    
+    updateNodeMutation.mutate({
+      nodeId: node.id,
+      userId,
+      parentNode: settings.waiting,
+    });
+    onClose();
+  };
+
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       setCurrentStep('two-minute');
@@ -128,13 +139,11 @@ export function GTDProcessingDialog({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // TODO: Handle delegation
-                    onClose();
-                  }}
+                  onClick={handleMoveToWaiting}
                   className="flex-1"
+                  disabled={!settings?.waiting}
                 >
-                  Delegate
+                  Delegate - Move to Waiting
                 </Button>
               </div>
             </div>

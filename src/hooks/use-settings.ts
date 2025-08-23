@@ -5,6 +5,7 @@ import { Json } from "@/database.types";
 export interface GTDSettings {
   inbox: number | null;
   nextActions: number | null;
+  waiting: number | null;
   projects: number | null;
   somedayMaybe: number | null;
   contexts: number | null;
@@ -31,6 +32,7 @@ export function useSettings(userId: string | null) {
         return {
           inbox: null,
           nextActions: null,
+          waiting: null,
           projects: null,
           somedayMaybe: null,
           contexts: null,
