@@ -11,6 +11,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Logo } from "@/components/ui/logo";
 import { useUpdateNode } from "@/hooks/use-update-node";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Sidebar,
@@ -66,6 +72,11 @@ function ListSection({
     listNode.metadata?.collapsed ?? false
   );
 
+  // Initialize inline rendering state from node's metadata, defaulting to false if not set
+  const [renderInline, setRenderInline] = useState(
+    listNode.metadata?.renderInline ?? false
+  );
+
   const toggleCollapsed = () => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
@@ -77,6 +88,22 @@ function ListSection({
         userId: user.id,
         metadata: {
           collapsed: newCollapsedState,
+        },
+      });
+    }
+  };
+
+  const toggleRenderInline = () => {
+    const newRenderInlineState = !renderInline;
+    setRenderInline(newRenderInlineState);
+    
+    // Save the render inline state to the node's metadata
+    if (user?.id) {
+      updateNodeMutation.mutate({
+        nodeId: listId,
+        userId: user.id,
+        metadata: {
+          renderInline: newRenderInlineState,
         },
       });
     }
@@ -117,21 +144,58 @@ function ListSection({
         >
           {listName}
         </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="-m-1 ml-1 p-1 opacity-60 transition-opacity hover:opacity-100">
+              <Settings className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={renderInline}
+              onCheckedChange={toggleRenderInline}
+            >
+              Render subitems inline
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarGroupLabel>
       {!isCollapsed && (
         <SidebarGroupContent>
           <SidebarMenu>
             {children.length > 0 ? (
-              children.map((child) => (
-                <SidebarMenuItem key={child.id}>
-                  <SidebarMenuButton
-                    className="cursor-pointer select-none pl-6"
-                    onClick={() => navigate(`/lists/${child.id}`)}
-                  >
-                    <span>{child.name}</span>
-                  </SidebarMenuButton>
+              renderInline ? (
+                // Render inline: show all children in a single line with separators, each clickable
+                <SidebarMenuItem>
+                  <div className="pl-6 py-1.5 flex flex-wrap items-center gap-1">
+                    {children.map((child, index) => (
+                      <span key={child.id} className="flex items-center">
+                        <button
+                          onClick={() => navigate(`/lists/${child.id}`)}
+                          className="text-sm hover:text-foreground text-muted-foreground hover:underline cursor-pointer"
+                        >
+                          {child.name}
+                        </button>
+                        {index < children.length - 1 && (
+                          <span className="text-muted-foreground mx-1">•</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
                 </SidebarMenuItem>
-              ))
+              ) : (
+                // Render normal: show each child as separate menu item
+                children.map((child) => (
+                  <SidebarMenuItem key={child.id}>
+                    <SidebarMenuButton
+                      className="cursor-pointer select-none pl-6"
+                      onClick={() => navigate(`/lists/${child.id}`)}
+                    >
+                      <span>{child.name}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              )
             ) : (
               <SidebarMenuItem>
                 <SidebarMenuButton disabled>

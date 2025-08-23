@@ -11,7 +11,9 @@ interface DefaultNode {
   children?: DefaultNode[];
 }
 
-export async function createDefaultStructure(userId: string): Promise<Map<string, number>> {
+export async function createDefaultStructure(
+  userId: string,
+): Promise<Map<string, number>> {
   // Default GTD structure as JSON
   const defaultNodes: DefaultNode[] = [
     {
@@ -100,6 +102,7 @@ export async function createDefaultStructure(userId: string): Promise<Map<string
             "Key spheres of responsibility that define what you must maintain or improve over time.",
           metadata: {
             type: "tagging",
+            renderInline: true,
             defaultChildrenMetadata: {
               type: "tag",
             },
@@ -137,6 +140,7 @@ export async function createDefaultStructure(userId: string): Promise<Map<string
             "Tags that group actions by the tools, locations, or situations needed to do them.",
           metadata: {
             type: "tagging",
+            renderInline: true,
             defaultChildrenMetadata: {
               type: "tag",
             },
@@ -163,6 +167,17 @@ export async function createDefaultStructure(userId: string): Promise<Map<string
           ],
         },
         {
+          name: "Contacts",
+          description: "People you need to keep in touch with or follow up on.",
+          metadata: {
+            type: "tagging",
+            renderInline: true,
+            defaultChildrenMetadata: {
+              type: "tag",
+            },
+          },
+        },
+        {
           name: "Reference",
           description: "For stuff you want to keep around as a reference.",
           metadata: {
@@ -179,14 +194,17 @@ export async function createDefaultStructure(userId: string): Promise<Map<string
   // Create nodes recursively
   const nodeIdMap = new Map<string, number>();
   await createNodesRecursively(defaultNodes, null, userId, nodeIdMap);
-  
+
   // Create default settings based on the created nodes
   await createDefaultSettings(userId, nodeIdMap);
-  
+
   return nodeIdMap;
 }
 
-async function createDefaultSettings(userId: string, nodeIdMap: Map<string, number>): Promise<void> {
+async function createDefaultSettings(
+  userId: string,
+  nodeIdMap: Map<string, number>,
+): Promise<void> {
   const defaultSettings: GTDSettings = {
     inbox: nodeIdMap.get("Inbox") ?? null,
     nextActions: nodeIdMap.get("Next actions") ?? null,
@@ -198,12 +216,10 @@ async function createDefaultSettings(userId: string, nodeIdMap: Map<string, numb
   };
 
   // Insert the default settings
-  const { error } = await supabase
-    .from("settings")
-    .upsert({
-      user_id: userId,
-      settings: defaultSettings as unknown as Json,
-    });
+  const { error } = await supabase.from("settings").upsert({
+    user_id: userId,
+    settings: defaultSettings as unknown as Json,
+  });
 
   if (error) {
     throw new Error(`Failed to create default settings: ${error.message}`);
