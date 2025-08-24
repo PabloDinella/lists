@@ -56,10 +56,52 @@ export function useImportNirvana() {
       
       // Filter out completed items if ignoreCompleted is true
       const filteredData = ignoreCompleted 
-        ? data.filter(row => !row.COMPLETED || row.COMPLETED.toLowerCase() !== 'true')
+        ? data.filter(row => !row.COMPLETED || row.COMPLETED.trim() === '')
         : data;
       
       console.log(`Starting import of ${filteredData.length} items (${data.length - filteredData.length} filtered out)`);
+      
+      // Check if there are items with status Logbook and if we're not ignoring completed items
+      const hasLogbookItems = !ignoreCompleted && data.some(row => row.STATE === "Logbook");
+      let logbookNodeId: number | null = null;
+      
+      // Create Logbook node if needed
+      if (hasLogbookItems) {
+        console.log("Creating Logbook list node...");
+        
+        // Find the root node (parent_node is null)
+        const rootNodeQuery = await supabase
+          .from("node")
+          .select("id")
+          .eq("user_id", userId)
+          .is("parent_node", null)
+          .single();
+        
+        if (rootNodeQuery.error) throw rootNodeQuery.error;
+        
+        const rootNodeId = rootNodeQuery.data.id;
+        
+        // Create the Logbook node as a child of root
+        const { data: logbookNodeData, error: logbookNodeError } = await supabase
+          .from("node")
+          .insert({
+            name: "Logbook",
+            content: null,
+            parent_node: rootNodeId,
+            user_id: userId,
+            metadata: {
+              type: "list" as const,
+            }
+          })
+          .select()
+          .single();
+        
+        if (logbookNodeError) throw logbookNodeError;
+        
+        logbookNodeId = logbookNodeData.id;
+        results.push(logbookNodeData);
+        console.log(`Created Logbook node with ID: ${logbookNodeId}`);
+      }
       
       // Create a map to track created projects by name
       const projectIdMap = new Map<string, number>();
@@ -195,7 +237,7 @@ export function useImportNirvana() {
                 user_id: userId,
                 metadata: {
                   type: "loop" as const,
-                  completed: !!row.COMPLETED,
+                  completed: !!(row.COMPLETED && row.COMPLETED.trim()),
                   focus: row.FOCUS?.toLowerCase() === "yes" ? true : undefined,
                 }
               },
@@ -280,7 +322,7 @@ export function useImportNirvana() {
                   parentId = mapping.scheduled;
                   break;
                 case "Logbook":
-                  parentId = mapping.nextActions;
+                  parentId = logbookNodeId || mapping.nextActions;
                   break;
                 default:
                   parentId = mapping.inbox; // Default to inbox
@@ -297,7 +339,7 @@ export function useImportNirvana() {
             // Prepare metadata for scheduled items
             const metadata: Metadata = {
               type: "loop" as const,
-              completed: !!row.COMPLETED,
+              completed: !!(row.COMPLETED && row.COMPLETED.trim()),
               energy: row.ENERGY || undefined,
               time: row.TIME || undefined,
               dueDate: row.DUEDATE || undefined,

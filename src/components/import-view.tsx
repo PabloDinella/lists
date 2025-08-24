@@ -340,7 +340,7 @@ export function ImportView() {
     // Filter data based on ignoreCompleted setting
     const dataToAnalyze = ignoreCompleted
       ? csvData.filter(
-          (row) => !row.COMPLETED || row.COMPLETED.toLowerCase() !== "true",
+          (row) => !row.COMPLETED || row.COMPLETED.trim() === "",
         )
       : csvData;
 
@@ -357,7 +357,7 @@ export function ImportView() {
         (row) => row.TYPE === "Task" && row.STATE === "Someday",
       ).length,
       completed: csvData.filter(
-        (row) => row.COMPLETED && row.COMPLETED.toLowerCase() === "true",
+        (row) => row.COMPLETED && row.COMPLETED.trim() !== "",
       ).length,
       total: csvData.length,
     };
