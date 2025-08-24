@@ -2,6 +2,7 @@ import { GripVertical, Edit, Trash2, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { GTDProcessingDialog } from "./gtd-processing-dialog";
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useSettings } from "@/hooks/use-settings";
@@ -16,7 +17,7 @@ interface BaseNodeItemProps {
   node: TreeNode;
   isChild?: boolean;
   onEditStart: (node: Node) => void;
-  onDelete: (nodeId: number) => void;
+  onDelete: (nodeId: number) => void | Promise<void>;
   children: React.ReactNode;
   isDragging?: boolean;
   depth?: number;
@@ -38,6 +39,7 @@ export function BaseNodeItem({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isGTDDialogOpen, setIsGTDDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const { data: settings } = useSettings(user?.id ?? null);
 
@@ -70,6 +72,23 @@ export function BaseNodeItem({
 
   const handleOpenGTDDialog = () => {
     setIsGTDDialogOpen(true);
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      const result = onDelete(node.id);
+      if (result instanceof Promise) {
+        await result;
+      }
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to delete node:", error);
+      // Keep dialog open on error so user can retry
+    }
   };
 
   return (
@@ -195,7 +214,7 @@ export function BaseNodeItem({
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent triggering node click
-                  onDelete(node.id);
+                  handleDeleteClick();
                 }}
                 disabled={deleteNodeMutation.isPending}
               >
@@ -217,6 +236,15 @@ export function BaseNodeItem({
           onClose={() => setIsGTDDialogOpen(false)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleConfirmDelete}
+        node={node}
+        isDeleting={deleteNodeMutation.isPending}
+      />
     </div>
   );
 }
