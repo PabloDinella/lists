@@ -9,68 +9,71 @@ import { SettingsView } from "./components/settings-view";
 import { ImportView } from "./components/import-view";
 import { LandingPage } from "./site/landing-page";
 import { PricingPage } from "./site/pricing-page";
+import { AuthProvider } from "./contexts/auth-context";
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <TooltipProvider>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/sign-in" element={<SignIn />} />
-          <Route
-            path="/app"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <NodeView />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/lists/manage"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <NodeView />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/lists/:listId"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <NodeView />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <SettingsView />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/import"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <ImportView />
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </TooltipProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <TooltipProvider>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/sign-in" element={<SignIn />} />
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <NodeView />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lists/manage"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <NodeView />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lists/:listId"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <NodeView />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <SettingsView />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/import"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <ImportView />
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </TooltipProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
