@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { Metadata } from "@/method/access/nodeAccess/models";
 
 export interface NirvanaRow {
   TYPE: string;
@@ -26,6 +27,11 @@ export interface ImportMapping {
   contexts: number | null;
   areasOfFocus: number | null;
   reference: number | null;
+  scheduled: number | null;
+}
+
+export interface TagMapping {
+  [tagName: string]: 'contexts' | 'areasOfFocus';
 }
 
 export function useImportNirvana() {
@@ -36,11 +42,13 @@ export function useImportNirvana() {
       userId, 
       data, 
       mapping,
+      tagMappings,
       ignoreCompleted = false
     }: { 
       userId: string; 
       data: NirvanaRow[]; 
       mapping: ImportMapping;
+      tagMappings: TagMapping;
       ignoreCompleted?: boolean;
     }) => {
       const results = [];
@@ -56,6 +64,112 @@ export function useImportNirvana() {
       // Create a map to track created projects by name
       const projectIdMap = new Map<string, number>();
       
+      // Collect all unique tags from the data
+      const allTags = new Set<string>();
+      filteredData.forEach(row => {
+        if (row.TAGS) {
+          const tags = row.TAGS.split(",").map(tag => tag.trim()).filter(tag => tag);
+          tags.forEach(tag => allTags.add(tag));
+        }
+      });
+      
+      // Create tags as nodes under their specified parents
+      const tagIdMap = new Map<string, number>();
+      if (allTags.size > 0) {
+        console.log(`Processing ${allTags.size} tags...`);
+        
+        // First, check for existing tags in both Contexts and Areas of Focus
+        const existingTagsQuery = await supabase
+          .from("node")
+          .select("id, name, parent_node")
+          .eq("user_id", userId)
+          .in("parent_node", [mapping.contexts, mapping.areasOfFocus].filter(Boolean))
+          .eq("metadata->>type", "tag");
+        
+        if (existingTagsQuery.error) throw existingTagsQuery.error;
+        
+        const existingTags = existingTagsQuery.data || [];
+        
+        // Map existing tags by name
+        existingTags.forEach(tag => {
+          tagIdMap.set(tag.name, tag.id);
+        });
+        
+        // Group tags by their parent type, excluding those that already exist
+        const contextTags: string[] = [];
+        const areaOfFocusTags: string[] = [];
+        
+        Array.from(allTags).forEach(tagName => {
+          // Skip if tag already exists
+          if (tagIdMap.has(tagName)) {
+            console.log(`Tag "${tagName}" already exists, using existing one`);
+            return;
+          }
+          
+          if (tagMappings[tagName] === 'contexts') {
+            contextTags.push(tagName);
+          } else {
+            areaOfFocusTags.push(tagName);
+          }
+        });
+        
+        // Create context tags
+        if (contextTags.length > 0 && mapping.contexts) {
+          console.log(`Creating ${contextTags.length} new context tags...`);
+          const contextTagsToInsert = contextTags.map(tagName => ({
+            name: tagName,
+            content: null,
+            parent_node: mapping.contexts!,
+            user_id: userId,
+            metadata: {
+              type: "tag" as const,
+            }
+          }));
+          
+          const { data: contextTagsData, error: contextTagsError } = await supabase
+            .from("node")
+            .insert(contextTagsToInsert)
+            .select();
+          
+          if (contextTagsError) throw contextTagsError;
+          
+          if (contextTagsData) {
+            contextTagsData.forEach(tag => {
+              tagIdMap.set(tag.name, tag.id);
+            });
+            results.push(...contextTagsData);
+          }
+        }
+        
+        // Create area of focus tags
+        if (areaOfFocusTags.length > 0 && mapping.areasOfFocus) {
+          console.log(`Creating ${areaOfFocusTags.length} new area of focus tags...`);
+          const areaTagsToInsert = areaOfFocusTags.map(tagName => ({
+            name: tagName,
+            content: null,
+            parent_node: mapping.areasOfFocus!,
+            user_id: userId,
+            metadata: {
+              type: "tag" as const,
+            }
+          }));
+          
+          const { data: areaTagsData, error: areaTagsError } = await supabase
+            .from("node")
+            .insert(areaTagsToInsert)
+            .select();
+          
+          if (areaTagsError) throw areaTagsError;
+          
+          if (areaTagsData) {
+            areaTagsData.forEach(tag => {
+              tagIdMap.set(tag.name, tag.id);
+            });
+            results.push(...areaTagsData);
+          }
+        }
+      }
+      
 
       
       // First pass: Create projects in batch
@@ -63,7 +177,7 @@ export function useImportNirvana() {
       
       if (projectRows.length > 0) {
         console.log(`Creating ${projectRows.length} projects in batch...`);
-        const projectsToInsert = projectRows
+        const projectsWithTags = projectRows
           .map(row => {
             const parentId = row.STATE === "Active" ? mapping.projects : 
                             row.STATE === "Someday" ? mapping.somedayMaybe : 
@@ -71,20 +185,29 @@ export function useImportNirvana() {
             
             if (!parentId) return null;
             
+            const tags = row.TAGS ? row.TAGS.split(",").map(tag => tag.trim()).filter(tag => tag) : [];
+            
             return {
-              name: row.NAME,
-              content: row.NOTES || null,
-              parent_node: parentId,
-              user_id: userId,
-              metadata: {
-                type: "loop" as const,
-                completed: !!row.COMPLETED,
-              }
+              node: {
+                name: row.NAME,
+                content: row.NOTES || null,
+                parent_node: parentId,
+                user_id: userId,
+                metadata: {
+                  type: "loop" as const,
+                  completed: !!row.COMPLETED,
+                  focus: row.FOCUS?.toLowerCase() === "yes" ? true : undefined,
+                }
+              },
+              tags: tags,
+              originalName: row.NAME // Keep track for mapping
             };
           })
           .filter((item): item is NonNullable<typeof item> => item !== null);
         
-        if (projectsToInsert.length > 0) {
+        if (projectsWithTags.length > 0) {
+          const projectsToInsert = projectsWithTags.map(item => item.node);
+          
           const { data: projectsData, error: projectsError } = await supabase
             .from("node")
             .insert(projectsToInsert)
@@ -94,16 +217,38 @@ export function useImportNirvana() {
           
           if (projectsData) {
             // Map project names to their IDs
-            projectsData.forEach(project => {
-              const originalRow = projectRows.find(row => 
-                row.NAME === project.name && 
-                (row.NOTES || null) === project.content
-              );
-              if (originalRow) {
-                projectIdMap.set(originalRow.NAME, project.id);
-              }
+            projectsData.forEach((project, index) => {
+              const originalName = projectsWithTags[index].originalName;
+              projectIdMap.set(originalName, project.id);
             });
             results.push(...projectsData);
+            
+            // Create relationships between projects and tags
+            const relationshipsToInsert = [];
+            for (let i = 0; i < projectsData.length; i++) {
+              const project = projectsData[i];
+              const projectWithTags = projectsWithTags[i];
+              
+              for (const tagName of projectWithTags.tags) {
+                const tagId = tagIdMap.get(tagName);
+                if (tagId) {
+                  relationshipsToInsert.push({
+                    node_id_1: project.id,
+                    node_id_2: tagId,
+                    user_id: userId
+                  });
+                }
+              }
+            }
+            
+            if (relationshipsToInsert.length > 0) {
+              console.log(`Creating ${relationshipsToInsert.length} project tag relationships...`);
+              const { error: relationshipsError } = await supabase
+                .from("relationship")
+                .insert(relationshipsToInsert);
+              
+              if (relationshipsError) throw relationshipsError;
+            }
           }
         }
       }
@@ -113,7 +258,7 @@ export function useImportNirvana() {
       
       if (taskRows.length > 0) {
         console.log(`Creating ${taskRows.length} tasks in batch...`);
-        const tasksToInsert = taskRows
+        const tasksWithTags = taskRows
           .map(row => {
             let parentId: number | null = null;
             
@@ -130,6 +275,10 @@ export function useImportNirvana() {
                 case "Someday":
                   parentId = mapping.somedayMaybe;
                   break;
+                case "Scheduled":
+                case "Scheduled/Repeating":
+                  parentId = mapping.scheduled;
+                  break;
                 case "Logbook":
                   parentId = mapping.nextActions;
                   break;
@@ -143,27 +292,47 @@ export function useImportNirvana() {
             
             if (!parentId) return null;
             
-            const tags = row.TAGS ? row.TAGS.split(",").map(tag => tag.trim()) : [];
+            const tags = row.TAGS ? row.TAGS.split(",").map(tag => tag.trim()).filter(tag => tag) : [];
+            
+            // Prepare metadata for scheduled items
+            const metadata: Metadata = {
+              type: "loop" as const,
+              completed: !!row.COMPLETED,
+              energy: row.ENERGY || undefined,
+              time: row.TIME || undefined,
+              dueDate: row.DUEDATE || undefined,
+              waitingFor: row.WAITINGFOR || undefined,
+              focus: row.FOCUS?.toLowerCase() === "yes" ? true : undefined,
+            };
+            
+            // Add scheduling information for scheduled items
+            if (row.STATE === "Scheduled" || row.STATE === "Scheduled/Repeating") {
+              if (row.STARTDATE) {
+                metadata.scheduledDate = row.STARTDATE;
+              }
+              if (row.STATE === "Scheduled/Repeating") {
+                metadata.isRepeating = true;
+                // Note: Nirvana doesn't export detailed repeat pattern info,
+                // so we just mark it as repeating
+              }
+            }
             
             return {
-              name: row.NAME,
-              content: row.NOTES || null,
-              parent_node: parentId,
-              user_id: userId,
-              metadata: {
-                type: "loop" as const,
-                completed: !!row.COMPLETED,
-                tags: tags.length > 0 ? tags : undefined,
-                energy: row.ENERGY || undefined,
-                time: row.TIME || undefined,
-                dueDate: row.DUEDATE || undefined,
-                waitingFor: row.WAITINGFOR || undefined,
-              }
+              node: {
+                name: row.NAME,
+                content: row.NOTES || null,
+                parent_node: parentId,
+                user_id: userId,
+                metadata: metadata
+              },
+              tags: tags
             };
           })
           .filter((item): item is NonNullable<typeof item> => item !== null);
         
-        if (tasksToInsert.length > 0) {
+        if (tasksWithTags.length > 0) {
+          const tasksToInsert = tasksWithTags.map(item => item.node);
+          
           const { data: tasksData, error: tasksError } = await supabase
             .from("node")
             .insert(tasksToInsert)
@@ -173,6 +342,33 @@ export function useImportNirvana() {
           
           if (tasksData) {
             results.push(...tasksData);
+            
+            // Create relationships between tasks and tags
+            const relationshipsToInsert = [];
+            for (let i = 0; i < tasksData.length; i++) {
+              const task = tasksData[i];
+              const taskWithTags = tasksWithTags[i];
+              
+              for (const tagName of taskWithTags.tags) {
+                const tagId = tagIdMap.get(tagName);
+                if (tagId) {
+                  relationshipsToInsert.push({
+                    node_id_1: task.id,
+                    node_id_2: tagId,
+                    user_id: userId
+                  });
+                }
+              }
+            }
+            
+            if (relationshipsToInsert.length > 0) {
+              console.log(`Creating ${relationshipsToInsert.length} tag relationships...`);
+              const { error: relationshipsError } = await supabase
+                .from("relationship")
+                .insert(relationshipsToInsert);
+              
+              if (relationshipsError) throw relationshipsError;
+            }
           }
         }
       }
@@ -227,4 +423,24 @@ export function parseCsvData(csvText: string): NirvanaRow[] {
   }
   
   return data;
+}
+
+export function extractUniqueTagsFromData(data: NirvanaRow[]): string[] {
+  const allTags = new Set<string>();
+  data.forEach(row => {
+    if (row.TAGS) {
+      const tags = row.TAGS.split(",").map(tag => tag.trim()).filter(tag => tag);
+      tags.forEach(tag => allTags.add(tag));
+    }
+  });
+  return Array.from(allTags).sort();
+}
+
+export function createDefaultTagMappings(tags: string[]): TagMapping {
+  const tagMappings: TagMapping = {};
+  tags.forEach(tag => {
+    // Default all tags to contexts - user can change this
+    tagMappings[tag] = 'contexts';
+  });
+  return tagMappings;
 }

@@ -11,6 +11,9 @@ import {
   parseCsvData,
   NirvanaRow,
   ImportMapping,
+  TagMapping,
+  extractUniqueTagsFromData,
+  createDefaultTagMappings,
 } from "@/hooks/use-import";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -51,6 +54,11 @@ const GTD_CATEGORIES = [
     description: "Focus areas from Nirvana",
   },
   {
+    key: "scheduled" as keyof ImportMapping,
+    label: "Scheduled",
+    description: "Tasks with state 'Scheduled' or 'Scheduled/Repeating'",
+  },
+  {
     key: "reference" as keyof ImportMapping,
     label: "Reference",
     description: "Completed tasks (Logbook)",
@@ -63,6 +71,8 @@ export function ImportView() {
 
   const [csvData, setCsvData] = useState<NirvanaRow[] | null>(null);
   const [ignoreCompleted, setIgnoreCompleted] = useState(false);
+  const [tagMappings, setTagMappings] = useState<TagMapping>({});
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [mapping, setMapping] = useState<ImportMapping>({
     inbox: null,
     nextActions: null,
@@ -72,6 +82,7 @@ export function ImportView() {
     contexts: null,
     areasOfFocus: null,
     reference: null,
+    scheduled: null,
   });
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -108,6 +119,7 @@ export function ImportView() {
         somedayMaybe: ["someday maybe", "someday", "maybe", "later"],
         contexts: ["contexts", "context", "tags", "categories"],
         areasOfFocus: ["areas of focus", "areas", "focus", "area"],
+        scheduled: ["scheduled", "schedule", "calendar", "appointments"],
         reference: [
           "reference",
           "references",
@@ -180,6 +192,7 @@ export function ImportView() {
       contexts: null,
       areasOfFocus: null,
       reference: null,
+      scheduled: null,
     };
 
     GTD_CATEGORIES.forEach(({ key }) => {
@@ -208,6 +221,14 @@ export function ImportView() {
       try {
         const data = parseCsvData(text);
         setCsvData(data);
+        
+        // Extract tags from the data
+        const tags = extractUniqueTagsFromData(data);
+        setAvailableTags(tags);
+        
+        // Create default tag mappings (all as contexts)
+        const defaultMappings = createDefaultTagMappings(tags);
+        setTagMappings(defaultMappings);
       } catch (error) {
         console.error("Error parsing CSV:", error);
         alert("Error parsing CSV file. Please check the format.");
@@ -265,6 +286,13 @@ export function ImportView() {
     }));
   };
 
+  const handleTagMappingChange = (tagName: string, parentType: 'contexts' | 'areasOfFocus') => {
+    setTagMappings((prev) => ({
+      ...prev,
+      [tagName]: parentType,
+    }));
+  };
+
   const handleImport = async () => {
     if (!userId || !csvData) return;
 
@@ -280,12 +308,15 @@ export function ImportView() {
         userId,
         data: csvData,
         mapping,
+        tagMappings,
         ignoreCompleted,
       });
 
       alert("Import completed successfully!");
       setCsvData(null);
       setIgnoreCompleted(false);
+      setTagMappings({});
+      setAvailableTags([]);
       setMapping({
         inbox: null,
         nextActions: null,
@@ -295,6 +326,7 @@ export function ImportView() {
         contexts: null,
         areasOfFocus: null,
         reference: null,
+        scheduled: null,
       });
     } catch (error) {
       console.error("Import failed:", error);
@@ -517,6 +549,78 @@ export function ImportView() {
                 )}
               </div>
 
+              {/* Tag Configuration */}
+              {availableTags.length > 0 && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Configure Tags</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your import contains {availableTags.length} unique tags. Please choose whether each tag should be created as a Context or Area of Focus.
+                    </p>
+                  </div>
+                  
+                  <div className="rounded-lg border p-4 space-y-4">
+                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
+                      {availableTags.map((tag) => (
+                        <div key={tag} className="flex items-center justify-between p-2 rounded bg-muted/30">
+                          <span className="font-medium text-sm">{tag}</span>
+                          <div className="flex gap-2">
+                            <label className="flex items-center gap-1 text-xs">
+                              <input
+                                type="radio"
+                                name={`tag-${tag}`}
+                                value="contexts"
+                                checked={tagMappings[tag] === 'contexts'}
+                                onChange={() => handleTagMappingChange(tag, 'contexts')}
+                                className="text-xs"
+                              />
+                              Context
+                            </label>
+                            <label className="flex items-center gap-1 text-xs">
+                              <input
+                                type="radio"
+                                name={`tag-${tag}`}
+                                value="areasOfFocus"
+                                checked={tagMappings[tag] === 'areasOfFocus'}
+                                onChange={() => handleTagMappingChange(tag, 'areasOfFocus')}
+                                className="text-xs"
+                              />
+                              Area of Focus
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex gap-2 flex-wrap">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const allContexts = createDefaultTagMappings(availableTags);
+                          setTagMappings(allContexts);
+                        }}
+                      >
+                        Set All as Contexts
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const allAreas: TagMapping = {};
+                          availableTags.forEach(tag => {
+                            allAreas[tag] = 'areasOfFocus';
+                          });
+                          setTagMappings(allAreas);
+                        }}
+                      >
+                        Set All as Areas of Focus
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <Button
@@ -533,6 +637,8 @@ export function ImportView() {
                   onClick={() => {
                     setCsvData(null);
                     setIgnoreCompleted(false);
+                    setTagMappings({});
+                    setAvailableTags([]);
                     setMapping({
                       inbox: null,
                       nextActions: null,
@@ -542,6 +648,7 @@ export function ImportView() {
                       contexts: null,
                       areasOfFocus: null,
                       reference: null,
+                      scheduled: null,
                     });
                   }}
                   disabled={importMutation.isPending}

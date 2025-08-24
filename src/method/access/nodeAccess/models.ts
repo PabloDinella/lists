@@ -15,6 +15,13 @@ export const metadataSchema = z.object({
   completed: z.boolean().optional(),
   collapsed: z.boolean().optional(),
   renderInline: z.boolean().optional(),
+  focus: z.boolean().optional(),
+  energy: z.string().optional(),
+  time: z.string().optional(),
+  dueDate: z.string().optional(),
+  waitingFor: z.string().optional(),
+  scheduledDate: z.string().optional(),
+  isRepeating: z.boolean().optional(),
   defaultChildrenMetadata: z
     .object({
       type: z
