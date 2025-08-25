@@ -2,16 +2,22 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Container } from "./container";
 
-export function FeedbackAlertBar() {
+interface FeedbackAlertBarProps {
+  dismissible?: boolean;
+}
+
+export function FeedbackAlertBar({ dismissible = false }: FeedbackAlertBarProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Check localStorage on component mount
-    const isDismissed = localStorage.getItem('feedback-alert-dismissed');
-    if (isDismissed === 'true') {
-      setIsVisible(false);
+    // Only check localStorage if dismissible
+    if (dismissible) {
+      const isDismissed = localStorage.getItem('feedback-alert-dismissed');
+      if (isDismissed === 'true') {
+        setIsVisible(false);
+      }
     }
-  }, []);
+  }, [dismissible]);
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -42,13 +48,15 @@ export function FeedbackAlertBar() {
               </a>
             </div>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="absolute right-0 p-1 rounded-full hover:bg-white/10 transition-colors"
-            aria-label="Dismiss feedback alert"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {dismissible && (
+            <button
+              onClick={handleDismiss}
+              className="absolute right-0 p-1 rounded-full hover:bg-white/10 transition-colors"
+              aria-label="Dismiss feedback alert"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </Container>
     </div>

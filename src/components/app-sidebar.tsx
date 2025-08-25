@@ -8,7 +8,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Logo } from "@/components/ui/logo";
 import { useUpdateNode } from "@/hooks/use-update-node";
@@ -242,10 +242,13 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent className="custom-scrollbar flex flex-col">
         <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          >
             <Logo className="w-6 h-6" />
             <h1 className="text-xl font-bold">trylists.app</h1>
-          </div>
+          </Link>
         </div>
 
         {/* Scrollable content area */}
