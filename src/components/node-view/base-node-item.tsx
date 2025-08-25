@@ -1,6 +1,7 @@
 import { GripVertical, Edit, Trash2, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { GTDProcessingDialog } from "./gtd-processing-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { useDeleteNode } from "@/hooks/use-delete-node";
@@ -195,27 +196,41 @@ export function BaseNodeItem({
                   <Sparkles className="h-4 w-4" />
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering node click
-                  onEditStart(node);
-                }}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering node click
-                  handleDeleteClick();
-                }}
-                disabled={deleteNodeMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering node click
+                      onEditStart(node);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit (or right-click the item)</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering node click
+                      handleDeleteClick();
+                    }}
+                    disabled={deleteNodeMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
