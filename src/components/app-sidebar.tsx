@@ -5,6 +5,7 @@ import {
   Upload,
   ChevronDown,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -42,6 +43,11 @@ const otherItems = [
     title: "Import",
     url: "/import",
     icon: Upload,
+  },
+  {
+    title: "Feedback & Roadmap",
+    url: "https://trylistsapp.featurebase.app/",
+    icon: MessageSquare,
   },
   {
     title: "Settings",
@@ -301,9 +307,26 @@ export function AppSidebar() {
                           <span>{item.title}</span>
                         </button>
                       ) : (
-                        <a href={item.url} className="select-none">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.title}</span>
+                        <a 
+                          href={item.url} 
+                          className={`select-none ${
+                            item.title === "Feedback & Roadmap" 
+                              ? "bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/20 rounded-md hover:from-blue-600/20 hover:to-purple-600/20 transition-all duration-200" 
+                              : ""
+                          }`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <item.icon className={`mr-2 h-4 w-4 ${
+                            item.title === "Feedback & Roadmap" 
+                              ? "text-blue-600 dark:text-blue-400" 
+                              : ""
+                          }`} />
+                          <span className={
+                            item.title === "Feedback & Roadmap" 
+                              ? "text-blue-700 dark:text-blue-300 font-medium" 
+                              : ""
+                          }>{item.title}</span>
                         </a>
                       )}
                     </SidebarMenuButton>
