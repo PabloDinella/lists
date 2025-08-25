@@ -27,7 +27,6 @@ interface BaseNodeItemProps {
 
 export function BaseNodeItem({
   node,
-  isChild = false,
   onEditStart,
   onDelete,
   isDragging = false,
