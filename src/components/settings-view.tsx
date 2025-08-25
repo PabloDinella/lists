@@ -54,6 +54,11 @@ const GTD_CATEGORIES = [
     label: "Reference",
     description: "Information you might need to refer to later",
   },
+  {
+    key: "scheduled" as keyof GTDSettings,
+    label: "Scheduled",
+    description: "Date-specific commitments or actions",
+  },
 ];
 
 export function SettingsView() {
@@ -69,6 +74,7 @@ export function SettingsView() {
     contexts: null,
     areasOfFocus: null,
     reference: null,
+    scheduled: null,
   });
 
   const { data: settings, isLoading: settingsLoading } = useSettings(userId);
@@ -147,6 +153,7 @@ export function SettingsView() {
         contexts: null,
         areasOfFocus: null,
         reference: null,
+        scheduled: null,
       });
     } catch (error) {
       console.error("Failed to reset system:", error);

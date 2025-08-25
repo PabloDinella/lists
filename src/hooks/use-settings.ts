@@ -11,6 +11,7 @@ export interface GTDSettings {
   contexts: number | null;
   areasOfFocus: number | null;
   reference: number | null;
+  scheduled: number | null;
 }
 
 export function useSettings(userId: string | null) {
@@ -38,6 +39,7 @@ export function useSettings(userId: string | null) {
           contexts: null,
           areasOfFocus: null,
           reference: null,
+          scheduled: null,
         } as GTDSettings;
       }
       

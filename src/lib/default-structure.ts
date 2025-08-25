@@ -203,6 +203,7 @@ async function createDefaultSettings(
     contexts: nodeIdMap.get("Contexts") ?? null,
     areasOfFocus: nodeIdMap.get("Areas of focus") ?? null,
     reference: nodeIdMap.get("Reference") ?? null,
+    scheduled: nodeIdMap.get("Scheduled") ?? null,
   };
 
   // Insert the default settings

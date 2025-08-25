@@ -21,6 +21,7 @@ import { TagsSelector } from "./tags-selector";
 import { useAddUpdateNode } from "@/hooks/use-add-update-node";
 import { useAuth } from "@/hooks/use-auth";
 import { useNodeId } from "@/hooks/use-node-id";
+import { useSettings } from "@/hooks/use-settings";
 import { TreeNode, useListData } from "./use-list-data";
 import { Metadata, Node } from "@/method/access/nodeAccess/models";
 
@@ -54,7 +55,10 @@ export function EditNodeSheet({
 
   const { user } = useAuth();
   const addUpdateNodeMutation = useAddUpdateNode();
-  
+
+  // Get user settings for quick list buttons
+  const { data: settings } = useSettings(user?.id || null);
+
   // State for "create more" option
   const [createMore, setCreateMore] = useState(false);
 
@@ -148,8 +152,10 @@ export function EditNodeSheet({
         name: node.name || "",
         description: node.content || "",
         parentId: node.parent_node || defaultParentId,
-        nodeType: (node.metadata?.type as "list" | "tagging" | "tag" | "loop") || "loop",
-        selectedRelatedNodes: node.related_nodes?.map(rn => rn.id) || [],
+        nodeType:
+          (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
+          "loop",
+        selectedRelatedNodes: node.related_nodes?.map((rn) => rn.id) || [],
       });
     } else if (mode === "create") {
       reset({
@@ -310,8 +316,10 @@ export function EditNodeSheet({
           name: node.name || "",
           description: node.content || "",
           parentId: node.parent_node || defaultParentId,
-          nodeType: (node.metadata?.type as "list" | "tagging" | "tag" | "loop") || "loop",
-          selectedRelatedNodes: node.related_nodes?.map(rn => rn.id) || [],
+          nodeType:
+            (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
+            "loop",
+          selectedRelatedNodes: node.related_nodes?.map((rn) => rn.id) || [],
         });
       }
     }, 300);
@@ -373,14 +381,22 @@ export function EditNodeSheet({
                 rows={3}
                 disabled={isSaving}
                 onKeyDown={(e) => {
-                  if (e.ctrlKey && e.key === 'Enter') {
+                  if (e.ctrlKey && e.key === "Enter") {
                     e.preventDefault();
                     handleSave();
                   }
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted border rounded">Ctrl</kbd>+<kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted border rounded">Enter</kbd> to save
+                Press{" "}
+                <kbd className="rounded border bg-muted px-1.5 py-0.5 text-xs font-semibold">
+                  Ctrl
+                </kbd>
+                +
+                <kbd className="rounded border bg-muted px-1.5 py-0.5 text-xs font-semibold">
+                  Enter
+                </kbd>{" "}
+                to save
               </p>
             </div>
 
@@ -405,6 +421,111 @@ export function EditNodeSheet({
                     noOptionsText="No parent items found"
                   />
                 </div>
+
+                {/* Quick list buttons */}
+                {settings && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Quick Lists
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {settings.inbox && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setValue("parentId", settings.inbox)}
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.inbox ? "bg-accent" : ""
+                          }
+                        >
+                          Inbox
+                        </Button>
+                      )}
+                      {settings.nextActions && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setValue("parentId", settings.nextActions)
+                          }
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.nextActions ? "bg-accent" : ""
+                          }
+                        >
+                          Next Actions
+                        </Button>
+                      )}
+                      {settings.projects && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setValue("parentId", settings.projects)
+                          }
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.projects ? "bg-accent" : ""
+                          }
+                        >
+                          Projects
+                        </Button>
+                      )}
+                      {settings.waiting && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setValue("parentId", settings.waiting)}
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.waiting ? "bg-accent" : ""
+                          }
+                        >
+                          Waiting
+                        </Button>
+                      )}
+                      {settings.somedayMaybe && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setValue("parentId", settings.somedayMaybe)
+                          }
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.somedayMaybe
+                              ? "bg-accent"
+                              : ""
+                          }
+                        >
+                          Someday/Maybe
+                        </Button>
+                      )}
+                      {settings.scheduled && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setValue("parentId", settings.scheduled)
+                          }
+                          disabled={isSaving}
+                          className={
+                            parentId === settings.scheduled ? "bg-accent" : ""
+                          }
+                        >
+                          Scheduled
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -433,20 +554,28 @@ export function EditNodeSheet({
 
           {/* Create more option for create mode */}
           {mode === "create" && (
-            <div className="flex items-center justify-end space-x-2 px-1 py-2 mb-2">
+            <div className="mb-2 flex items-center justify-end space-x-2 px-1 py-2">
               <Checkbox
                 id="create-more"
                 checked={createMore}
                 onCheckedChange={(checked) => setCreateMore(checked === true)}
               />
-              <Label htmlFor="create-more" className="text-sm font-normal cursor-pointer">
+              <Label
+                htmlFor="create-more"
+                className="cursor-pointer text-sm font-normal"
+              >
                 Create more items
               </Label>
             </div>
           )}
 
           <SheetFooter className="flex-shrink-0">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSaving}
+            >
               Cancel
             </Button>
             {mode === "create" && (
