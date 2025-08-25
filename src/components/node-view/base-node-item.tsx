@@ -5,10 +5,10 @@ import { GTDProcessingDialog } from "./gtd-processing-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
-import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 import clsx from "clsx";
 import { TreeNode } from "./use-list-data";
 import { Node } from "@/method/access/nodeAccess/models";
@@ -40,11 +40,10 @@ export function BaseNodeItem({
   const navigate = useNavigate();
   const [isGTDDialogOpen, setIsGTDDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
-  const { data: settings } = useSettings(user?.id ?? null);
 
-  // Check if this item is in the inbox
-  const isInInbox = settings?.inbox === node.parent_node;
+  const isGtdProcessingFeatureEnabled = useFeatureFlagEnabled(
+    "gtd-processing-feature",
+  );
 
   const handleNodeClick = () => {
     // Navigate to the list view for this node
@@ -60,7 +59,7 @@ export function BaseNodeItem({
 
   const handleToggleCompleted = (checked: boolean) => {
     if (!user?.id) return;
-    
+
     updateNodeMutation.mutate({
       nodeId: node.id,
       userId: user.id,
@@ -96,22 +95,22 @@ export function BaseNodeItem({
       <div className="p-2">
         <div
           className={clsx(
-            "p-4 border rounded-lg bg-background transition-[box-shadow,transform] duration-150",
+            "rounded-lg border bg-background p-4 transition-[box-shadow,transform] duration-150",
             {
               "shadow-md ring-1 ring-border": isDragging,
               "hover:shadow-sm": !isDragging,
-            }
+            },
           )}
           style={{ marginLeft: depth > 0 ? `${depth * 24}px` : undefined }}
         >
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex flex-1 items-center gap-3">
               <button
                 // react-movable handle
                 data-movable-handle
                 // keep it focusable off the tab order to avoid stealing focus while still clickable
                 tabIndex={-1}
-                className="p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                className="cursor-grab p-1 text-muted-foreground hover:text-foreground active:cursor-grabbing"
                 aria-label="Drag to reorder"
                 title="Drag to reorder"
               >
@@ -127,21 +126,21 @@ export function BaseNodeItem({
               </button>
 
               {/* Checkbox for completion status - only show for loop type nodes */}
-              {node.metadata?.type === 'loop' && (
+              {node.metadata?.type === "loop" && (
                 <Checkbox
                   checked={node.metadata?.completed || false}
                   onCheckedChange={handleToggleCompleted}
-                  aria-label={`Mark ${node.name} as ${node.metadata?.completed ? 'incomplete' : 'complete'}`}
+                  aria-label={`Mark ${node.name} as ${node.metadata?.completed ? "incomplete" : "complete"}`}
                 />
               )}
 
               {/* Clickable node content area */}
               <div
                 className={clsx(
-                  "flex-1 cursor-pointer hover:bg-accent/50 rounded-md p-2 -m-2 transition-colors min-w-0",
+                  "-m-2 min-w-0 flex-1 cursor-pointer rounded-md p-2 transition-colors hover:bg-accent/50",
                   {
                     "opacity-60": node.metadata?.completed,
-                  }
+                  },
                 )}
                 onClick={handleNodeClick}
                 onContextMenu={handleNodeRightClick}
@@ -155,28 +154,25 @@ export function BaseNodeItem({
                 }}
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
-                <h3 
-                  className={clsx(
-                    "font-medium",
-                    {
-                      "line-through": node.metadata?.completed,
-                    }
-                  )}
+                <h3
+                  className={clsx("font-medium", {
+                    "line-through": node.metadata?.completed,
+                  })}
                 >
                   {node.name}
                   {relatedNodes.length > 0 && (
-                    <span className="ml-2 text-xs text-muted-foreground font-normal">
-                      · {relatedNodes.map(related => related.name).join(", ")}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      · {relatedNodes.map((related) => related.name).join(", ")}
                     </span>
                   )}
                 </h3>
                 {node.content && (
-                  <p 
+                  <p
                     className={clsx(
-                      "text-sm text-muted-foreground break-all hyphens-auto max-w-full",
+                      "max-w-full hyphens-auto break-all text-sm text-muted-foreground",
                       {
                         "line-through": node.metadata?.completed,
-                      }
+                      },
                     )}
                   >
                     {node.content}
@@ -185,8 +181,8 @@ export function BaseNodeItem({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* GTD Processing button - only show for items in inbox */}
-              {isInInbox && (
+              {/* GTD Processing button - only show for items in inbox and when feature flag is enabled */}
+              {isGtdProcessingFeatureEnabled && (
                 <Button
                   size="sm"
                   variant="outline"
