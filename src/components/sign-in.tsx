@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Logo } from "./ui/logo";
 
 export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
   const navigate = useNavigate();
@@ -41,6 +42,17 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      {/* Logo Header */}
+      <div className="mb-8">
+        <Link
+          to="/"
+          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+        >
+          <Logo width={48} height={48} />
+          <span className="text-2xl font-bold">trylists.app</span>
+        </Link>
+      </div>
+
       {isAuthenticated ? (
         <div className="bg-card border border-border shadow-lg rounded-lg p-8 w-full max-w-sm text-center">
           <h2 className="text-2xl font-bold mb-4 text-foreground">Welcome back!</h2>
