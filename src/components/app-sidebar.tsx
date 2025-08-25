@@ -45,7 +45,7 @@ const otherItems = [
     icon: Upload,
   },
   {
-    title: "Feedback & Roadmap",
+    title: "Feedback & Support",
     url: "https://trylistsapp.featurebase.app/",
     icon: MessageSquare,
   },
@@ -313,7 +313,7 @@ export function AppSidebar() {
                         <a 
                           href={item.url} 
                           className={`select-none ${
-                            item.title === "Feedback & Roadmap" 
+                            item.title === "Feedback & Support" 
                               ? "bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/20 rounded-md hover:from-blue-600/20 hover:to-purple-600/20 transition-all duration-200" 
                               : ""
                           }`}
@@ -321,12 +321,12 @@ export function AppSidebar() {
                           rel="noopener noreferrer"
                         >
                           <item.icon className={`mr-2 h-4 w-4 ${
-                            item.title === "Feedback & Roadmap" 
+                            item.title === "Feedback & Support" 
                               ? "text-blue-600 dark:text-blue-400" 
                               : ""
                           }`} />
                           <span className={
-                            item.title === "Feedback & Roadmap" 
+                            item.title === "Feedback & Support" 
                               ? "text-blue-700 dark:text-blue-300 font-medium" 
                               : ""
                           }>{item.title}</span>
