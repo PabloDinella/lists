@@ -4,6 +4,7 @@ import { AppSidebar } from "./app-sidebar";
 import { ModeToggle } from "./mode-toggle";
 import { SearchInput } from "./search-input";
 import { Button } from "./ui/button";
+import { FeedbackAlertBar } from "./ui/feedback-alert-bar";
 import { Plus } from "lucide-react";
 import { TreeNode } from "./node-view/use-list-data";
 
@@ -37,6 +38,8 @@ export function AppLayout({ children, title, onNewItem, newItemLabel, searchNode
           </div>
           <ModeToggle />
         </header>
+
+        <FeedbackAlertBar />
 
         <main className="flex-1 overflow-auto p-4">
           {children}
