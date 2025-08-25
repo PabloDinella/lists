@@ -93,40 +93,31 @@ export function BaseNodeItem({
 
   return (
     <div>
-      <div className="p-2">
+      <div className="py-2 px-0">
         <div
           className={clsx(
-            "rounded-lg border bg-background p-4 transition-[box-shadow,transform] duration-150",
+            "rounded-lg border bg-background p-2 sm:p-4 transition-[box-shadow,transform] duration-150",
             {
               "shadow-md ring-1 ring-border": isDragging,
               "hover:shadow-sm": !isDragging,
             },
           )}
-          style={{ marginLeft: depth > 0 ? `${depth * 24}px` : undefined }}
+          style={{ marginLeft: depth > 0 ? `${depth * 16}px` : undefined }} // reduce indent on mobile
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-1 items-center gap-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex flex-1 items-center gap-2 sm:gap-3">
               <button
                 // react-movable handle
                 data-movable-handle
-                // keep it focusable off the tab order to avoid stealing focus while still clickable
                 tabIndex={-1}
                 className="cursor-grab p-1 text-muted-foreground hover:text-foreground active:cursor-grabbing"
                 aria-label="Drag to reorder"
                 title="Drag to reorder"
               >
-                {isChild ? (
-                  <div className="relative">
-                    <GripVertical className="h-4 w-4" />
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <GripVertical className="h-4 w-4" />
-                  </div>
-                )}
+                <div className="relative">
+                  <GripVertical className="h-4 w-4" />
+                </div>
               </button>
-
-              {/* Checkbox for completion status - only show for loop type nodes */}
               {node.metadata?.type === "loop" && (
                 <Checkbox
                   checked={node.metadata?.completed || false}
@@ -134,11 +125,9 @@ export function BaseNodeItem({
                   aria-label={`Mark ${node.name} as ${node.metadata?.completed ? "incomplete" : "complete"}`}
                 />
               )}
-
-              {/* Clickable node content area */}
               <div
                 className={clsx(
-                  "-m-2 min-w-0 flex-1 cursor-pointer rounded-md p-2 transition-colors hover:bg-accent/50",
+                  "-m-1 min-w-0 flex-1 cursor-pointer rounded-md p-1 sm:-m-2 sm:p-2 transition-colors hover:bg-accent/50",
                   {
                     "opacity-60": node.metadata?.completed,
                   },
@@ -156,7 +145,7 @@ export function BaseNodeItem({
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
                 <h3
-                  className={clsx("font-medium", {
+                  className={clsx("font-medium text-base sm:text-base", {
                     "line-through": node.metadata?.completed,
                   })}
                 >
@@ -167,10 +156,11 @@ export function BaseNodeItem({
                     </span>
                   )}
                 </h3>
+                {/* Hide description on mobile */}
                 {node.content && (
                   <p
                     className={clsx(
-                      "max-w-full hyphens-auto break-all text-sm text-muted-foreground",
+                      "hidden sm:block max-w-full hyphens-auto break-all text-sm text-muted-foreground",
                       {
                         "line-through": node.metadata?.completed,
                       },
@@ -181,8 +171,8 @@ export function BaseNodeItem({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {/* GTD Processing button - only show for items in inbox and when feature flag is enabled */}
+            {/* Hide edit/delete on mobile */}
+            <div className="hidden sm:flex items-center gap-2">
               {isGtdProcessingFeatureEnabled && (
                 <Button
                   size="sm"
@@ -202,7 +192,7 @@ export function BaseNodeItem({
                     size="sm"
                     variant="outline"
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering node click
+                      e.stopPropagation();
                       onEditStart(node);
                     }}
                   >
@@ -219,7 +209,7 @@ export function BaseNodeItem({
                     size="sm"
                     variant="outline"
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering node click
+                      e.stopPropagation();
                       handleDeleteClick();
                     }}
                     disabled={deleteNodeMutation.isPending}
@@ -235,9 +225,7 @@ export function BaseNodeItem({
           </div>
         </div>
       </div>
-
       {children}
-
       {/* GTD Processing Dialog */}
       {user?.id && (
         <GTDProcessingDialog
@@ -247,7 +235,6 @@ export function BaseNodeItem({
           onClose={() => setIsGTDDialogOpen(false)}
         />
       )}
-
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}

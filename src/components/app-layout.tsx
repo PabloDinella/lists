@@ -21,22 +21,58 @@ export function AppLayout({ children, title, onNewItem, newItemLabel, searchNode
     <>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-          <div className="flex items-center gap-4 flex-1">
-            <div className="text-xl font-semibold">{title}</div>
-            {onNewItem && (
-              <Button onClick={onNewItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                {newItemLabel || "New Item"}
-              </Button>
-            )}
+        <header className="shrink-0 border-b">
+          {/* Mobile: Two-row layout, Desktop: Single row */}
+          <div className="md:hidden">
+            {/* First row: Sidebar trigger + breadcrumbs */}
+            <div className="flex h-12 items-center gap-2 px-4">
+              <SidebarTrigger />
+              <div className="text-lg font-semibold truncate flex-1">{title}</div>
+            </div>
+            {/* Second row: Search + New Item button */}
+            <div className="flex h-12 items-center gap-2 px-4 border-t">
+              <div className="flex-1">
+                <SearchInput 
+                  nodes={searchNodes} 
+                  placeholder="Search..."
+                />
+              </div>
+              {onNewItem && (
+                <Button 
+                  onClick={onNewItem}
+                  size="sm"
+                  className="px-2"
+                  aria-label={newItemLabel || "New Item"}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-          {/* Search Input */}
-          <div className="flex-1 max-w-sm">
-            <SearchInput nodes={searchNodes} />
+
+          {/* Desktop: Single row layout */}
+          <div className="hidden md:flex h-16 items-center gap-2 px-4">
+            <SidebarTrigger />
+            <div className="flex items-center gap-4 flex-1">
+              <div className="text-xl font-semibold">{title}</div>
+              {onNewItem && (
+                <Button onClick={onNewItem}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {newItemLabel || "New Item"}
+                </Button>
+              )}
+            </div>
+            {/* Search Input */}
+            <div className="flex-1 max-w-sm">
+              <SearchInput nodes={searchNodes} />
+            </div>
+            <ModeToggle />
           </div>
-          <ModeToggle />
+
+          {/* Mode toggle for mobile - positioned absolutely */}
+          <div className="md:hidden absolute top-2 right-4">
+            <ModeToggle />
+          </div>
         </header>
 
         <FeedbackAlertBar dismissible />

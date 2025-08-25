@@ -10,9 +10,10 @@ import { TreeNode } from './node-view/use-list-data';
 interface SearchInputProps {
   nodes: TreeNode[];
   className?: string;
+  placeholder?: string;
 }
 
-export function SearchInput({ nodes, className }: SearchInputProps) {
+export function SearchInput({ nodes, className, placeholder = "Search lists and items... (Cmd/Ctrl + /)" }: SearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -92,7 +93,7 @@ export function SearchInput({ nodes, className }: SearchInputProps) {
         <Input
           ref={inputRef}
           type="text"
-          placeholder="Search lists and items... (Cmd/Ctrl + /)"
+          placeholder={placeholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
