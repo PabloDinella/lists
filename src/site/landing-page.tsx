@@ -58,11 +58,20 @@ export function LandingPage() {
               >
                 {user ? "Open App" : "Get Started Free"}
               </Button>
-              <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
-                Import data from Nirvana
-              </Button>
-              <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
-                Learn More
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-8 py-3 text-lg"
+                asChild
+              >
+                <a 
+                  href="https://trylistsapp.featurebase.app/en/help/articles/4450394-importing-from-nirvana"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Import data from Nirvana (opens in new tab)"
+                >
+                  Import data from Nirvana
+                </a>
               </Button>
             </div>
           </div>
@@ -216,8 +225,20 @@ export function LandingPage() {
               >
                 {user ? "Open App" : "Import from Nirvana"}
               </Button>
-              <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
-                Learn About Import
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-8 py-3 text-lg"
+                asChild
+              >
+                <a 
+                  href="https://trylistsapp.featurebase.app/en/help/articles/4450394-importing-from-nirvana"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Learn About Import (opens in new tab)"
+                >
+                  Learn About Import
+                </a>
               </Button>
             </div>
           </div>
