@@ -15,18 +15,12 @@ import {
   Gauge,
   Sparkles,
 } from "lucide-react";
-import { useEffect } from "react";
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Redirect authenticated users to the app
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/app");
-    }
-  }, [user, loading, navigate]);
+  // No automatic redirect - let users stay on landing page if they want
 
   if (loading) {
     return (
@@ -59,10 +53,10 @@ export function LandingPage() {
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button
                 size="lg"
-                onClick={() => navigate("/sign-in")}
+                onClick={() => navigate(user ? "/app" : "/sign-in")}
                 className="px-8 py-3 text-lg"
               >
-                Get Started Free
+                {user ? "Open App" : "Get Started Free"}
               </Button>
               <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
                 Import data from Nirvana
@@ -217,10 +211,10 @@ export function LandingPage() {
             <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <Button
                 size="lg"
-                onClick={() => navigate("/sign-in")}
+                onClick={() => navigate(user ? "/app" : "/sign-in")}
                 className="px-8 py-3 text-lg"
               >
-                Import from Nirvana
+                {user ? "Open App" : "Import from Nirvana"}
               </Button>
               <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
                 Learn About Import
@@ -240,10 +234,10 @@ export function LandingPage() {
             </p>
             <Button
               size="lg"
-              onClick={() => navigate("/sign-in")}
+              onClick={() => navigate(user ? "/app" : "/sign-in")}
               className="px-8 py-3 text-lg"
             >
-              Start Your Free Account
+              {user ? "Open App" : "Start Your Free Account"}
             </Button>
           </div>
         </Container>
