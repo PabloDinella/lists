@@ -281,7 +281,7 @@ export function NodeView() {
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
                     {currentNode.content && (
                       <div 
-                        className="text-muted-foreground markdown-content"
+                        className="text-muted-foreground markdown-content max-w-full"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(currentNode.content) }}
                         onClick={(e) => {
                           // Allow clicks on links within the markdown content

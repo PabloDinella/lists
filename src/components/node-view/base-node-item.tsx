@@ -160,7 +160,7 @@ export function BaseNodeItem({
                 {node.content && (
                   <div
                     className={clsx(
-                      "hidden sm:block max-w-full hyphens-auto break-all text-sm text-muted-foreground markdown-content",
+                      "hidden sm:block max-w-full text-sm text-muted-foreground markdown-content",
                       {
                         "line-through": node.metadata?.completed,
                       },
