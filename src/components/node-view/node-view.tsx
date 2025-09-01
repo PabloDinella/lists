@@ -274,7 +274,7 @@ export function NodeView() {
 
             {/* Show current list name and description when viewing a specific list */}
             {!isManagingLists && currentNode && (
-              <div className="group space-y-2">
+              <div className="group space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
@@ -287,20 +287,6 @@ export function NodeView() {
                         </span>
                       </div>
                     )}
-                    {currentNode.content && (
-                      <div
-                        className="markdown-content max-w-full text-muted-foreground mt-5"
-                        dangerouslySetInnerHTML={{
-                          __html: renderMarkdown(currentNode.content),
-                        }}
-                        onClick={(e) => {
-                          // Allow clicks on links within the markdown content
-                          if ((e.target as HTMLElement).tagName === "A") {
-                            e.stopPropagation();
-                          }
-                        }}
-                      />
-                    )}
                   </div>
                   <Button
                     size="sm"
@@ -311,6 +297,20 @@ export function NodeView() {
                     <Edit className="h-4 w-4" />
                   </Button>
                 </div>
+                {currentNode.content && (
+                  <div
+                    className="markdown-content max-w-full text-muted-foreground"
+                    dangerouslySetInnerHTML={{
+                      __html: renderMarkdown(currentNode.content),
+                    }}
+                    onClick={(e) => {
+                      // Allow clicks on links within the markdown content
+                      if ((e.target as HTMLElement).tagName === "A") {
+                        e.stopPropagation();
+                      }
+                    }}
+                  />
+                )}
               </div>
             )}
 
