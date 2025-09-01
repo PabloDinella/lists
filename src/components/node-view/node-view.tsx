@@ -268,7 +268,6 @@ export function NodeView() {
         )}
         {!isLoading && !isError && (
           <div className="space-y-4">
-
             {isManagingLists && (
               <h2 className="text-xl font-semibold">Your lists</h2>
             )}
@@ -279,13 +278,24 @@ export function NodeView() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
+                    {currentNode.related_nodes.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-sm text-muted-foreground">
+                          {currentNode.related_nodes
+                            .map((related) => related.name)
+                            .join(", ")}
+                        </span>
+                      </div>
+                    )}
                     {currentNode.content && (
-                      <div 
-                        className="text-muted-foreground markdown-content max-w-full"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(currentNode.content) }}
+                      <div
+                        className="markdown-content max-w-full text-muted-foreground mt-5"
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdown(currentNode.content),
+                        }}
                         onClick={(e) => {
                           // Allow clicks on links within the markdown content
-                          if ((e.target as HTMLElement).tagName === 'A') {
+                          if ((e.target as HTMLElement).tagName === "A") {
                             e.stopPropagation();
                           }
                         }}
