@@ -13,6 +13,7 @@ import { useFeatureFlagEnabled } from "posthog-js/react";
 import clsx from "clsx";
 import { TreeNode } from "./use-list-data";
 import { Node } from "@/method/access/nodeAccess/models";
+import { renderMarkdown } from "@/lib/utils";
 
 interface BaseNodeItemProps {
   node: TreeNode;
@@ -157,16 +158,21 @@ export function BaseNodeItem({
                 </h3>
                 {/* Hide description on mobile */}
                 {node.content && (
-                  <p
+                  <div
                     className={clsx(
-                      "hidden sm:block max-w-full hyphens-auto break-all text-sm text-muted-foreground",
+                      "hidden sm:block max-w-full hyphens-auto break-all text-sm text-muted-foreground markdown-content",
                       {
                         "line-through": node.metadata?.completed,
                       },
                     )}
-                  >
-                    {node.content}
-                  </p>
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(node.content) }}
+                    onClick={(e) => {
+                      // Allow clicks on links within the markdown content
+                      if ((e.target as HTMLElement).tagName === 'A') {
+                        e.stopPropagation();
+                      }
+                    }}
+                  />
                 )}
               </div>
             </div>

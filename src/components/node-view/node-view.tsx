@@ -20,6 +20,7 @@ import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
+import { renderMarkdown } from "@/lib/utils";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -279,9 +280,16 @@ export function NodeView() {
                   <div>
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
                     {currentNode.content && (
-                      <p className="text-muted-foreground">
-                        {currentNode.content}
-                      </p>
+                      <div 
+                        className="text-muted-foreground markdown-content"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(currentNode.content) }}
+                        onClick={(e) => {
+                          // Allow clicks on links within the markdown content
+                          if ((e.target as HTMLElement).tagName === 'A') {
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
                     )}
                   </div>
                   <Button
