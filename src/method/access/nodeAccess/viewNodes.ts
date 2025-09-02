@@ -55,32 +55,86 @@ export async function viewNodes(
     return { error: relationshipError };
   }
 
-  // Create a map of node ID to related nodes
-  const relatedNodesMap = new Map<number, { id: number; name: string }[]>();
+  // Get all unique related node IDs
+  const allRelatedNodeIds = new Set<number>();
+  if (relationships) {
+    relationships.forEach(rel => {
+      if (rel.node_id_1 && rel.node_id_2) {
+        // For each relationship, add the "other" node as a related node
+        if (nodeIds.includes(rel.node_id_1)) {
+          allRelatedNodeIds.add(rel.node_id_2);
+        }
+        if (nodeIds.includes(rel.node_id_2)) {
+          allRelatedNodeIds.add(rel.node_id_1);
+        }
+      }
+    });
+  }
+
+  // Fetch complete node data for all related nodes
+  let relatedNodesData: typeof data = [];
+  if (allRelatedNodeIds.size > 0) {
+    const { data: relatedData, error: relatedError } = await supabase
+      .from("node")
+      .select("*")
+      .eq("user_id", params.userId)
+      .in("id", Array.from(allRelatedNodeIds));
+
+    if (relatedError) {
+      return { error: relatedError };
+    }
+
+    relatedNodesData = relatedData || [];
+  }
+
+  // Create a map of node ID to complete related nodes
+  const relatedNodesMap = new Map<number, Node[]>();
   
   // Initialize empty arrays for all nodes
   nodeIds.forEach(id => {
     relatedNodesMap.set(id, []);
   });
 
-  // Process relationships to build related nodes map
+  // Process relationships to build related nodes map with complete Node data
   if (relationships) {
     relationships.forEach(rel => {
       if (rel.node_id_1 && rel.node_id_2) {
-        // Find the names of related nodes
-        const node1 = data.find(n => n.id === rel.node_id_1);
-        const node2 = data.find(n => n.id === rel.node_id_2);
+        // Add node2 as related to node1 if node1 is in our main data
+        if (nodeIds.includes(rel.node_id_1)) {
+          const relatedNodeData = relatedNodesData.find(n => n.id === rel.node_id_2);
+          if (relatedNodeData) {
+            const node1Related = relatedNodesMap.get(rel.node_id_1) || [];
+            node1Related.push({
+              id: relatedNodeData.id,
+              name: relatedNodeData.name,
+              content: relatedNodeData.content,
+              parent_node: relatedNodeData.parent_node,
+              user_id: relatedNodeData.user_id!,
+              created_at: relatedNodeData.created_at,
+              metadata: metadataSchema.safeParse(relatedNodeData.metadata).data || null,
+              related_nodes: [], // We don't need nested related nodes for now
+            });
+            relatedNodesMap.set(rel.node_id_1, node1Related);
+          }
+        }
         
-        if (node1 && node2) {
-          // Add node2 as related to node1
-          const node1Related = relatedNodesMap.get(rel.node_id_1) || [];
-          node1Related.push({ id: rel.node_id_2, name: node2.name });
-          relatedNodesMap.set(rel.node_id_1, node1Related);
-          
-          // Add node1 as related to node2 (bidirectional)
-          const node2Related = relatedNodesMap.get(rel.node_id_2) || [];
-          node2Related.push({ id: rel.node_id_1, name: node1.name });
-          relatedNodesMap.set(rel.node_id_2, node2Related);
+        // Add node1 as related to node2 if node2 is in our main data (bidirectional)
+        if (nodeIds.includes(rel.node_id_2)) {
+          const relatedNodeData = relatedNodesData.find(n => n.id === rel.node_id_1);
+          if (relatedNodeData) {
+            const node2Related = relatedNodesMap.get(rel.node_id_2) || [];
+            node2Related.push({
+              id: relatedNodeData.id,
+              name: relatedNodeData.name,
+              content: relatedNodeData.content,
+              parent_node: relatedNodeData.parent_node,
+              user_id: relatedNodeData.user_id!,
+              created_at: relatedNodeData.created_at,
+              metadata: metadataSchema.safeParse(relatedNodeData.metadata).data || null,
+              related_nodes: [], // We don't need nested related nodes for now
+            });
+            relatedNodesMap.set(rel.node_id_2, node2Related);
+          }
         }
       }
     });

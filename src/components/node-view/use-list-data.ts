@@ -11,7 +11,7 @@ export type TreeNode = {
   created_at: string;
   metadata: Metadata | null;
   children: TreeNode[];
-  related_nodes: { id: number; name: string }[];
+  related_nodes: TreeNode[];
 };
 
 interface UseListDataProps {
@@ -23,6 +23,13 @@ interface UseListDataReturn {
   isLoading: boolean;
   isError: boolean;
 }
+
+// Helper function to convert Node to TreeNode
+const convertNodeToTreeNode = (node: Node): TreeNode => ({
+  ...node,
+  children: [], // Will be populated by buildTree
+  related_nodes: node.related_nodes.map(relatedNode => convertNodeToTreeNode(relatedNode)),
+});
 
 export function useListData({ userId }: UseListDataProps): UseListDataReturn {
   const {
@@ -68,10 +75,11 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
         }
       }
 
-      return orderedChildNodes.map((node) => ({
-        ...node,
-        children: buildTree(allNodes, node.id, currentDepth + 1),
-      }));
+      return orderedChildNodes.map((node) => {
+        const treeNode = convertNodeToTreeNode(node);
+        treeNode.children = buildTree(allNodes, node.id, currentDepth + 1);
+        return treeNode;
+      });
     };
 
     // For root level, we don't have a parent with childrenOrder, so just use the lists as-is

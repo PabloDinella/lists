@@ -330,6 +330,20 @@ export function NodeView() {
                     : "No items found in this list."}
               </p>
             )}
+
+            {currentNode?.related_nodes &&
+              currentNode.related_nodes.length > 0 && (
+                <div>
+                  <h2 className="mb-2 mt-10 text-xl">Related items</h2>
+
+                  <HierarchicalMovableList
+                    hierarchicalTree={currentNode.related_nodes}
+                    rootNode={currentNode!}
+                    onEditStart={handleEditStart}
+                    onDelete={handleDelete}
+                  />
+                </div>
+              )}
           </div>
         )}
       </Container>
