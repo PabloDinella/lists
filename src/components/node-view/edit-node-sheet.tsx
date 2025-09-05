@@ -354,7 +354,7 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="flex flex-col sm:max-w-md h-full">
+      <SheetContent className="flex flex-col w-full h-full sm:w-3/4 sm:max-w-md">
         <SheetHeader className="flex-shrink-0">
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
