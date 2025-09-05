@@ -260,7 +260,7 @@ export function NodeView() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleEditStart(currentNode)}
-                    className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    className="opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

@@ -176,8 +176,8 @@ export function BaseNodeItem({
                 )}
               </div>
             </div>
-            {/* Hide edit/delete on mobile */}
-            <div className="hidden sm:flex items-center gap-2">
+            {/* Show edit/delete buttons - always visible on mobile, hover on desktop */}
+            <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
               {isGtdProcessingFeatureEnabled && (
                 <Button
                   size="sm"
