@@ -354,14 +354,14 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="flex flex-col sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="flex flex-col sm:max-w-md h-full">
+        <SheetHeader className="flex-shrink-0">
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSave} className="flex flex-1 flex-col">
-          <div className="custom-scrollbar flex flex-1 flex-col gap-7 overflow-y-auto py-4 pr-3">
+        <form onSubmit={handleSave} className="flex flex-1 flex-col min-h-0">
+          <div className="custom-scrollbar flex flex-1 flex-col gap-7 overflow-y-auto py-4 pr-3 min-h-0">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -569,7 +569,7 @@ export function EditNodeSheet({
             </div>
           )}
 
-          <SheetFooter className="flex-shrink-0">
+          <SheetFooter className="flex-shrink-0 mt-auto">
             <Button
               type="button"
               variant="outline"
