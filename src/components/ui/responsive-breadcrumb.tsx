@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -73,7 +72,7 @@ export function ResponsiveBreadcrumb({ breadcrumbPath, onNavigate }: ResponsiveB
       const ellipsisWidth = 30; // Approximate width of " ... /"
       const separatorWidth = 20; // Approximate width of " /"
       
-      let availableWidth = containerWidth - homeWidth - ellipsisWidth - separatorWidth;
+      const availableWidth = containerWidth - homeWidth - ellipsisWidth - separatorWidth;
       
       // Try to fit the last item
       const lastItem = breadcrumbPath[breadcrumbPath.length - 1];
