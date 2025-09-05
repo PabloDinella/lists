@@ -96,7 +96,7 @@ export function BaseNodeItem({
       <div className="py-2 px-0">
         <div
           className={clsx(
-            "rounded-lg border bg-background p-2 sm:p-4 transition-[box-shadow,transform] duration-150",
+            "group rounded-lg border bg-background p-2 sm:p-4 transition-[box-shadow,transform] duration-150",
             {
               "shadow-md ring-1 ring-border": isDragging,
               "hover:shadow-sm": !isDragging,
@@ -176,8 +176,8 @@ export function BaseNodeItem({
                 )}
               </div>
             </div>
-            {/* Show edit/delete buttons - always visible on mobile, hover on desktop */}
-            <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
+            {/* Show edit/delete buttons - always visible */}
+            <div className="flex items-center gap-2">
               {isGtdProcessingFeatureEnabled && (
                 <Button
                   size="sm"
