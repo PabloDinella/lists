@@ -9,6 +9,8 @@ import { SettingsView } from "./components/settings-view";
 import { ImportView } from "./components/import-view";
 import { LandingPage } from "./site/landing-page";
 import { PricingPage } from "./site/pricing-page";
+import { PrivacyPolicy } from "./site/privacy-policy";
+import { TermsOfService } from "./site/terms-of-service";
 import { AuthProvider } from "./contexts/auth-context";
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route
               path="/app"
