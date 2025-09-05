@@ -2,14 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../app-layout";
 import { Container } from "../ui/container";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "../ui/breadcrumb";
+import { ResponsiveBreadcrumb } from "../ui/responsive-breadcrumb";
 import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
@@ -210,35 +203,10 @@ export function NodeView() {
   const breadcrumbTitle = isManagingLists ? (
     <span>Manage Lists</span>
   ) : breadcrumbPath.length > 0 ? (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink
-            className="cursor-pointer"
-            onClick={() => navigate("/app")}
-          >
-            Home
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        {breadcrumbPath.map((node, index) => (
-          <React.Fragment key={node.id}>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              {index === breadcrumbPath.length - 1 ? (
-                <BreadcrumbPage>{node.name}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/lists/${node.id}`)}
-                >
-                  {node.name}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-          </React.Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+    <ResponsiveBreadcrumb 
+      breadcrumbPath={breadcrumbPath} 
+      onNavigate={navigate}
+    />
   ) : (
     <span>List Items</span>
   );
