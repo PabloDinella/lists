@@ -145,7 +145,7 @@ export function BaseNodeItem({
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
                 <h3
-                  className={clsx("font-medium text-base sm:text-base", {
+                  className={clsx("font-medium text-base sm:text-base wrap-anywhere break-all", {
                     "line-through": node.metadata?.completed,
                   })}
                 >
