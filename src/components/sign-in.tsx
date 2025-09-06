@@ -193,7 +193,7 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
           
           {/* Google Sign-In Button */}
           <div className="mb-6">
-            <div id="google-signin-button" className="w-full"></div>
+            <div id="google-signin-button" className="w-full flex justify-center"></div>
             {!googleLoaded && import.meta.env.VITE_GOOGLE_CLIENT_ID && (
               <div className="text-sm text-muted-foreground text-center">
                 Loading Google Sign-In...
