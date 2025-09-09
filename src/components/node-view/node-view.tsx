@@ -11,9 +11,11 @@ import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
+import { BrushCleaning } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
 import { renderMarkdown } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -126,6 +128,25 @@ export function NodeView() {
     }
   };
 
+  const handleRemoveCompleted = async () => {
+    if (!userId || !tree) return;
+    const completedChildren = tree.filter((item) => !!item.metadata?.completed);
+    if (completedChildren.length === 0) return;
+    const confirmed = window.confirm(
+      `Remove ${completedChildren.length} completed item${completedChildren.length === 1 ? "" : "s"}? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    try {
+      await Promise.allSettled(
+        completedChildren.map((item) =>
+          deleteNodeMutation.mutateAsync({ nodeId: item.id, userId: userId }),
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to remove completed items:", error);
+    }
+  };
+
   if (!userId) {
     return (
       <AppLayout title="Manage Lists">
@@ -203,8 +224,8 @@ export function NodeView() {
   const breadcrumbTitle = isManagingLists ? (
     <span>Manage Lists</span>
   ) : breadcrumbPath.length > 0 ? (
-    <ResponsiveBreadcrumb 
-      breadcrumbPath={breadcrumbPath} 
+    <ResponsiveBreadcrumb
+      breadcrumbPath={breadcrumbPath}
       onNavigate={navigate}
     />
   ) : (
@@ -256,14 +277,43 @@ export function NodeView() {
                       </div>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEditStart(currentNode)}
-                    className="opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleRemoveCompleted}
+                          disabled={
+                            !tree ||
+                            tree.every((item) => !item.metadata?.completed)
+                          }
+                        >
+                          <BrushCleaning className="h-4 w-4" />
+                          <span className="sr-only">
+                            Clean up completed items
+                          </span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Clean up completed items</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditStart(currentNode)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
                 {currentNode.content && (
                   <div
