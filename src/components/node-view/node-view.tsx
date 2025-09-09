@@ -137,6 +137,7 @@ export function NodeView() {
     );
     if (!confirmed) return;
     try {
+      // TODO: Instead of multiple calls, use a single call to delete all completed items with an array of nodeIds
       await Promise.allSettled(
         completedChildren.map((item) =>
           deleteNodeMutation.mutateAsync({ nodeId: item.id, userId: userId }),
