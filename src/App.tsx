@@ -7,7 +7,7 @@ import { SignIn } from "./components/sign-in";
 import { ProtectedRoute } from "./components/protected-route";
 import { SettingsView } from "./components/settings-view";
 import { ImportView } from "./components/import-view";
-import { LandingPage } from "./site/landing-page";
+import { HomeRedirect } from "./components/home-redirect";
 import { PricingPage } from "./site/pricing-page";
 import { PrivacyPolicy } from "./site/privacy-policy";
 import { TermsOfService } from "./site/terms-of-service";
@@ -19,7 +19,7 @@ function App() {
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <TooltipProvider>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomeRedirect />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
