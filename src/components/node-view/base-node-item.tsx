@@ -24,6 +24,7 @@ interface BaseNodeItemProps {
   isDragging?: boolean;
   depth?: number;
   relatedNodes?: { id: number; name: string }[];
+  isCompactView?: boolean;
 }
 
 export function BaseNodeItem({
@@ -34,6 +35,7 @@ export function BaseNodeItem({
   depth = 0,
   children,
   relatedNodes = [],
+  isCompactView = false,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeMutation = useUpdateNode();
@@ -93,19 +95,22 @@ export function BaseNodeItem({
 
   return (
     <div>
-      <div className="py-2 px-0">
+      <div className={clsx("px-0", isCompactView ? "py-1" : "py-2")}>
         <div
           className={clsx(
-            "group rounded-lg border bg-background p-2 sm:p-4 transition-[box-shadow,transform] duration-150",
+            "group rounded-lg border bg-background transition-[box-shadow,transform] duration-150",
+            isCompactView 
+              ? "p-1 sm:p-2" 
+              : "p-2 sm:p-4",
             {
               "shadow-md ring-1 ring-border": isDragging,
               "hover:shadow-sm": !isDragging,
             },
           )}
-          style={{ marginLeft: depth > 0 ? `${depth * 16}px` : undefined }} // reduce indent on mobile
+          style={{ marginLeft: depth > 0 ? `${depth * (isCompactView ? 8 : 16)}px` : undefined }} // reduce indent in compact mode
         >
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <div className="flex flex-1 items-center gap-2 sm:gap-3">
+          <div className={clsx("flex items-center justify-between", isCompactView ? "gap-1 sm:gap-2" : "gap-2 sm:gap-3")}>
+            <div className={clsx("flex flex-1 items-center", isCompactView ? "gap-1 sm:gap-2" : "gap-2 sm:gap-3")}>
               <button
                 // react-movable handle
                 data-movable-handle
@@ -115,7 +120,7 @@ export function BaseNodeItem({
                 title="Drag to reorder"
               >
                 <div className="relative">
-                  <GripVertical className="h-4 w-4" />
+                  <GripVertical className={clsx(isCompactView ? "h-3 w-3" : "h-4 w-4")} />
                 </div>
               </button>
               {node.metadata?.type === "loop" && (
@@ -127,7 +132,8 @@ export function BaseNodeItem({
               )}
               <div
                 className={clsx(
-                  "-m-1 min-w-0 flex-1 cursor-pointer rounded-md p-1 sm:-m-2 sm:p-2 transition-colors hover:bg-accent/50",
+                  "min-w-0 flex-1 cursor-pointer rounded-md transition-colors hover:bg-accent/50",
+                  isCompactView ? "-m-1 p-1" : "-m-1 p-1 sm:-m-2 sm:p-2",
                   {
                     "opacity-60": node.metadata?.completed,
                   },
@@ -145,19 +151,26 @@ export function BaseNodeItem({
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
                 <h3
-                  className={clsx("font-medium text-base sm:text-base wrap-anywhere break-all", {
-                    "line-through": node.metadata?.completed,
-                  })}
+                  className={clsx(
+                    "font-medium wrap-anywhere break-all",
+                    isCompactView ? "text-sm" : "text-base sm:text-base",
+                    {
+                      "line-through": node.metadata?.completed,
+                    }
+                  )}
                 >
                   {node.name}
                   {relatedNodes.length > 0 && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className={clsx(
+                      "ml-2 font-normal text-muted-foreground",
+                      isCompactView ? "text-xs" : "text-xs"
+                    )}>
                       · {relatedNodes.map((related) => related.name).join(", ")}
                     </span>
                   )}
                 </h3>
-                {/* Hide description on mobile */}
-                {node.content && (
+                {/* Hide description on mobile or in compact mode */}
+                {node.content && !isCompactView && (
                   <div
                     className={clsx(
                       "hidden sm:block max-w-full text-sm text-muted-foreground markdown-content",
@@ -177,10 +190,10 @@ export function BaseNodeItem({
               </div>
             </div>
             {/* Show edit/delete buttons - always visible */}
-            <div className="flex items-center gap-2">
+            <div className={clsx("flex items-center", isCompactView ? "gap-1" : "gap-2")}>
               {isGtdProcessingFeatureEnabled && (
                 <Button
-                  size="sm"
+                  size={isCompactView ? "sm" : "sm"}
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -188,20 +201,20 @@ export function BaseNodeItem({
                   }}
                   title="GTD Process this item"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className={clsx(isCompactView ? "h-3 w-3" : "h-4 w-4")} />
                 </Button>
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
+                    size={isCompactView ? "sm" : "sm"}
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
                       onEditStart(node);
                     }}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className={clsx(isCompactView ? "h-3 w-3" : "h-4 w-4")} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -211,7 +224,7 @@ export function BaseNodeItem({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
+                    size={isCompactView ? "sm" : "sm"}
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -219,7 +232,7 @@ export function BaseNodeItem({
                     }}
                     disabled={deleteNodeMutation.isPending}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className={clsx(isCompactView ? "h-3 w-3" : "h-4 w-4")} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

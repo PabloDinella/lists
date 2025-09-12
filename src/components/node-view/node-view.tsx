@@ -10,7 +10,7 @@ import { EditNodeSheet } from "./edit-node-sheet";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Maximize2, Minimize2 } from "lucide-react";
 import { BrushCleaning } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
@@ -66,6 +66,7 @@ export function NodeView() {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
+  const [isCompactView, setIsCompactView] = useState(false);
 
   const { user } = useAuth();
 
@@ -242,7 +243,7 @@ export function NodeView() {
     >
       {/* Tag filters - full width outside container */}
       {!isLoading && !isError && !isManagingLists && tagNodes.length > 0 && (
-        <Container size="md" className="mb-3">
+        <Container size={isCompactView ? "full" : "md"} className="mb-3">
           <TagFilters
             tagNodes={tagNodes}
             selectedFilters={selectedFilters}
@@ -251,7 +252,7 @@ export function NodeView() {
         </Container>
       )}
 
-      <Container size="md">
+      <Container size={isCompactView ? "full" : "md"}>
         {isLoading && <p>Loading lists…</p>}
         {isError && (
           <p className="text-sm text-red-500">Failed to load lists.</p>
@@ -279,6 +280,27 @@ export function NodeView() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsCompactView(!isCompactView)}
+                        >
+                          {isCompactView ? (
+                            <Minimize2 className="h-4 w-4" />
+                          ) : (
+                            <Maximize2 className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {isCompactView ? "Switch to normal view" : "Switch to compact view"}
+                          </span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isCompactView ? "Normal view" : "Compact view"}</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -339,6 +361,7 @@ export function NodeView() {
                 rootNode={currentNode!}
                 onEditStart={handleEditStart}
                 onDelete={handleDelete}
+                isCompactView={isCompactView}
               />
             ) : (
               <p className="py-8 text-center text-muted-foreground">
@@ -360,6 +383,7 @@ export function NodeView() {
                     rootNode={currentNode!}
                     onEditStart={handleEditStart}
                     onDelete={handleDelete}
+                    isCompactView={isCompactView}
                   />
                 </div>
               )}
