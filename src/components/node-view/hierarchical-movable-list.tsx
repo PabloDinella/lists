@@ -17,7 +17,6 @@ interface HierarchicalMovableListProps {
   depth?: number;
   onEditStart: (node: Node) => void;
   onDelete: (nodeId: number) => void;
-  isCompactView?: boolean;
 }
 
 export function HierarchicalMovableList({
@@ -26,7 +25,6 @@ export function HierarchicalMovableList({
   depth = 0,
   onEditStart,
   onDelete,
-  isCompactView = false,
 }: HierarchicalMovableListProps) {
   const [items, setItems] = useState<HierarchicalItem[]>([]);
 
@@ -99,7 +97,6 @@ export function HierarchicalMovableList({
                 isDragging={isDragged}
                 depth={depth}
                 relatedNodes={item.node.related_nodes}
-                isCompactView={isCompactView}
               >
                 <HierarchicalMovableList
                   hierarchicalTree={item.node.children}
@@ -107,7 +104,6 @@ export function HierarchicalMovableList({
                   depth={depth + 1}
                   onEditStart={onEditStart}
                   onDelete={onDelete}
-                  isCompactView={isCompactView}
                 />
               </BaseNodeItem>
             </div>
