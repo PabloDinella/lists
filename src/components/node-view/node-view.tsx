@@ -242,7 +242,7 @@ export function NodeView() {
     >
       {/* Tag filters - full width outside container */}
       {!isLoading && !isError && !isManagingLists && tagNodes.length > 0 && (
-        <Container size="md" className="mb-3">
+        <Container size="full" className="mb-3">
           <TagFilters
             tagNodes={tagNodes}
             selectedFilters={selectedFilters}
@@ -251,7 +251,7 @@ export function NodeView() {
         </Container>
       )}
 
-      <Container size="md">
+      <Container size="full">
         {isLoading && <p>Loading lists…</p>}
         {isError && (
           <p className="text-sm text-red-500">Failed to load lists.</p>

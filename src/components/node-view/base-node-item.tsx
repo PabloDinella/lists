@@ -93,19 +93,20 @@ export function BaseNodeItem({
 
   return (
     <div>
-      <div className="py-2 px-0">
+      <div className="px-0 py-1">
         <div
           className={clsx(
-            "group rounded-lg border bg-background p-2 sm:p-4 transition-[box-shadow,transform] duration-150",
+            "group rounded-lg border bg-background transition-[box-shadow,transform] duration-150",
+            "p-1 sm:p-2",
             {
               "shadow-md ring-1 ring-border": isDragging,
               "hover:shadow-sm": !isDragging,
             },
           )}
-          style={{ marginLeft: depth > 0 ? `${depth * 16}px` : undefined }} // reduce indent on mobile
+          style={{ marginLeft: depth > 0 ? `${depth * 8}px` : undefined }} // reduce indent in compact mode
         >
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <div className="flex flex-1 items-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-between gap-1 sm:gap-2">
+            <div className="flex flex-1 items-center gap-1 sm:gap-2">
               <button
                 // react-movable handle
                 data-movable-handle
@@ -115,7 +116,7 @@ export function BaseNodeItem({
                 title="Drag to reorder"
               >
                 <div className="relative">
-                  <GripVertical className="h-4 w-4" />
+                  <GripVertical className="h-3 w-3" />
                 </div>
               </button>
               {node.metadata?.type === "loop" && (
@@ -127,7 +128,8 @@ export function BaseNodeItem({
               )}
               <div
                 className={clsx(
-                  "-m-1 min-w-0 flex-1 cursor-pointer rounded-md p-1 sm:-m-2 sm:p-2 transition-colors hover:bg-accent/50",
+                  "min-w-0 flex-1 cursor-pointer rounded-md transition-colors hover:bg-accent/50",
+                  "-m-1 p-1",
                   {
                     "opacity-60": node.metadata?.completed,
                   },
@@ -145,18 +147,22 @@ export function BaseNodeItem({
                 aria-label={`View ${node.name}. Right-click to edit.`}
               >
                 <h3
-                  className={clsx("font-medium text-base sm:text-base wrap-anywhere break-all", {
-                    "line-through": node.metadata?.completed,
-                  })}
+                  className={clsx(
+                    "font-medium wrap-anywhere break-all",
+                    "text-sm",
+                    {
+                      "line-through": node.metadata?.completed,
+                    }
+                  )}
                 >
                   {node.name}
                   {relatedNodes.length > 0 && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="ml-2 font-normal text-muted-foreground text-xs">
                       · {relatedNodes.map((related) => related.name).join(", ")}
                     </span>
                   )}
                 </h3>
-                {/* Hide description on mobile */}
+                {/* Show description content */}
                 {node.content && (
                   <div
                     className={clsx(
@@ -177,7 +183,7 @@ export function BaseNodeItem({
               </div>
             </div>
             {/* Show edit/delete buttons - always visible */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {isGtdProcessingFeatureEnabled && (
                 <Button
                   size="sm"
@@ -188,7 +194,7 @@ export function BaseNodeItem({
                   }}
                   title="GTD Process this item"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3 w-3" />
                 </Button>
               )}
               <Tooltip>
@@ -201,7 +207,7 @@ export function BaseNodeItem({
                       onEditStart(node);
                     }}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -219,7 +225,7 @@ export function BaseNodeItem({
                     }}
                     disabled={deleteNodeMutation.isPending}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
