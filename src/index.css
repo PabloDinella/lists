@@ -125,8 +125,9 @@
 }
 
 .markdown-content a {
-  @apply text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline;
-  text-decoration-line: underline;
+  @apply text-muted-foreground hover:text-foreground underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
   word-break: break-all;
   overflow-wrap: break-word;
 }
