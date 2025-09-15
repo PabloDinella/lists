@@ -78,8 +78,240 @@ export function LandingPage() {
         </Container>
       </section>
 
-      {/* Features Section */}
+      {/* Product Demo Section 1: Inbox Capture */}
+      <section className="py-20">
+        <Container>
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <h2 className="mb-6 text-3xl font-bold">
+                  Capture Ideas Instantly
+                </h2>
+                <p className="mb-6 text-lg text-muted-foreground">
+                  Getting thoughts out of your head is the first step to stress-free productivity. 
+                  See how easy it is to quickly capture new items in your inbox and process them later.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Quick capture with keyboard shortcuts
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Add context and details on the fly
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Process inbox items into actionable tasks
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="order-1 lg:order-2">
+                {/* Video Placeholder */}
+                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
+                      <Mail className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Video: Creating New Inbox Items
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Placeholder for product demo video
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Product Demo Section 2: Filtering and Organization */}
       <section className="bg-muted/30 py-20">
+        <Container>
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+              <div>
+                {/* Video Placeholder */}
+                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-background/50 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
+                      <Search className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Video: Filtering by Area of Focus & Context
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Placeholder for product demo video
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h2 className="mb-6 text-3xl font-bold">
+                  Find What Matters Most
+                </h2>
+                <p className="mb-6 text-lg text-muted-foreground">
+                  Stay focused on what's important with powerful filtering by area of focus and context. 
+                  See only the tasks that matter for your current situation and energy level.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Filter by areas of focus (Work, Personal, Health, etc.)
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Use contexts to show tasks by location or tool needed
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Combine filters to create the perfect view for any situation
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Product Demo Section 3: Advanced Search & Quick Navigation */}
+      <section className="py-20">
+        <Container>
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <h2 className="mb-6 text-3xl font-bold">
+                  Find Anything Instantly
+                </h2>
+                <p className="mb-6 text-lg text-muted-foreground">
+                  Never lose track of important tasks or ideas. Use powerful search and quick navigation 
+                  to find what you need in seconds, not minutes.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Global search with Cmd/Ctrl + / shortcut
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Search across all lists, projects, and notes
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Instant results as you type
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Navigate directly to any item with keyboard shortcuts
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="order-1 lg:order-2">
+                {/* Video Placeholder */}
+                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
+                      <Search className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Video: Advanced Search & Quick Navigation
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Placeholder for product demo video
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Product Demo Section 4: Custom Lists & Tagging System */}
+      <section className="bg-muted/30 py-20">
+        <Container>
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+              <div>
+                {/* Video Placeholder */}
+                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-background/50 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
+                      <Lightbulb className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Video: Custom Lists & Tagging System
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Placeholder for product demo video
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h2 className="mb-6 text-3xl font-bold">
+                  Organize Your Way
+                </h2>
+                <p className="mb-6 text-lg text-muted-foreground">
+                  Go beyond basic task lists. Create custom categories, use flexible tagging, 
+                  and build the exact organizational system that fits your workflow.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Create unlimited custom lists and categories
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Use flexible tags to cross-reference items
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Connect related items with the node-based system
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 text-primary flex-shrink-0" />
+                    <p className="text-muted-foreground">
+                      Start with GTD defaults or build from scratch
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20">
         <Container>
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-bold">
