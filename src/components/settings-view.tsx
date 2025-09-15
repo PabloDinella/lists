@@ -12,6 +12,7 @@ import {
 import { useListData, TreeNode } from "./node-view/use-list-data";
 import { useResetSystem } from "@/hooks/use-reset-system";
 import { useAuth } from "@/hooks/use-auth";
+import { SeedDataManager } from "./seed-data-manager";
 
 const GTD_CATEGORIES = [
   {
@@ -317,6 +318,23 @@ export function SettingsView() {
                     Failed to reset system. Please try again.
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Development Tools Section */}
+          {!settingsLoading && !nodesLoading && process.env.NODE_ENV === 'development' && (
+            <div className="mt-8 border-t pt-6">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-blue-600">
+                    Development Tools
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Tools for development and testing. These are only visible in development mode.
+                  </p>
+                </div>
+                <SeedDataManager />
               </div>
             </div>
           )}
