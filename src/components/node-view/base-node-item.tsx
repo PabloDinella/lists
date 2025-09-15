@@ -103,7 +103,7 @@ export function BaseNodeItem({
               "hover:shadow-sm": !isDragging,
             },
           )}
-          style={{ marginLeft: depth > 0 ? `${depth * 8}px` : undefined }} // reduce indent in compact mode
+          style={{ marginLeft: depth > 0 ? `${depth * 12}px` : undefined }} // reduce indent in compact mode
         >
           <div className="flex items-center justify-between gap-1 sm:gap-2">
             <div className="flex flex-1 items-center gap-1 sm:gap-2">
