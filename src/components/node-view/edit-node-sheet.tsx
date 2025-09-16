@@ -369,6 +369,7 @@ export function EditNodeSheet({
                 {...register("name")}
                 placeholder={modeContent.namePlaceholder}
                 disabled={isSaving}
+                autoComplete="off"
                 autoFocus
               />
             </div>
