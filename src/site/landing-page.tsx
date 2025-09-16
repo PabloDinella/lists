@@ -81,9 +81,9 @@ export function LandingPage() {
       {/* Product Demo Section 1: Inbox Capture */}
       <section className="py-20">
         <Container>
-          <div className="mx-auto max-w-6xl">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-              <div className="order-2 lg:order-1">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-16 lg:grid-cols-5 lg:gap-20 items-center">
+              <div className="order-2 lg:order-1 lg:col-span-2">
                 <h2 className="mb-6 text-3xl font-bold">
                   Capture Ideas Instantly
                 </h2>
@@ -112,20 +112,21 @@ export function LandingPage() {
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2">
-                {/* Video Placeholder */}
-                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
-                      <Mail className="h-6 w-6 text-primary" />
+              <div className="order-1 lg:order-2 lg:col-span-3">
+                {/* Inbox Capture Demo Video */}
+                <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1280/776' }}>
+                  <video
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/1_capture_demo.mp4" type="video/mp4" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                      <p className="text-muted-foreground">Video not supported</p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Video: Creating New Inbox Items
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Placeholder for product demo video
-                    </p>
-                  </div>
+                  </video>
                 </div>
               </div>
             </div>
@@ -136,25 +137,26 @@ export function LandingPage() {
       {/* Product Demo Section 2: Filtering and Organization */}
       <section className="bg-muted/30 py-20">
         <Container>
-          <div className="mx-auto max-w-6xl">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-              <div>
-                {/* Video Placeholder */}
-                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-background/50 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
-                      <Search className="h-6 w-6 text-primary" />
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-16 lg:grid-cols-5 lg:gap-20 items-center">
+              <div className="lg:col-span-3">
+                {/* Filtering Demo Video */}
+                <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1280/776' }}>
+                  <video
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/2_filter_demo.mp4" type="video/mp4" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                      <p className="text-muted-foreground">Video not supported</p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Video: Filtering by Area of Focus & Context
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Placeholder for product demo video
-                    </p>
-                  </div>
+                  </video>
                 </div>
               </div>
-              <div>
+              <div className="lg:col-span-2">
                 <h2 className="mb-6 text-3xl font-bold">
                   Find What Matters Most
                 </h2>
@@ -191,9 +193,9 @@ export function LandingPage() {
       {/* Product Demo Section 3: Advanced Search & Quick Navigation */}
       <section className="py-20">
         <Container>
-          <div className="mx-auto max-w-6xl">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-              <div className="order-2 lg:order-1">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-16 lg:grid-cols-5 lg:gap-20 items-center">
+              <div className="order-2 lg:order-1 lg:col-span-2">
                 <h2 className="mb-6 text-3xl font-bold">
                   Find Anything Instantly
                 </h2>
@@ -228,20 +230,21 @@ export function LandingPage() {
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2">
-                {/* Video Placeholder */}
-                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
-                      <Search className="h-6 w-6 text-primary" />
+              <div className="order-1 lg:order-2 lg:col-span-3">
+                {/* Search Demo Video */}
+                <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1280/776' }}>
+                  <video
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/3_search_demo.mp4" type="video/mp4" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                      <p className="text-muted-foreground">Video not supported</p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Video: Advanced Search & Quick Navigation
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Placeholder for product demo video
-                    </p>
-                  </div>
+                  </video>
                 </div>
               </div>
             </div>
@@ -252,25 +255,26 @@ export function LandingPage() {
       {/* Product Demo Section 4: Custom Lists & Tagging System */}
       <section className="bg-muted/30 py-20">
         <Container>
-          <div className="mx-auto max-w-6xl">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-              <div>
-                {/* Video Placeholder */}
-                <div className="relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 bg-background/50 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mx-auto">
-                      <Lightbulb className="h-6 w-6 text-primary" />
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-16 lg:grid-cols-5 lg:gap-20 items-center">
+              <div className="lg:col-span-3">
+                {/* Custom Lists Demo Video */}
+                <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ aspectRatio: '1280/776' }}>
+                  <video
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/4_custom_lists_demo.mp4" type="video/mp4" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                      <p className="text-muted-foreground">Video not supported</p>
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Video: Custom Lists & Tagging System
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Placeholder for product demo video
-                    </p>
-                  </div>
+                  </video>
                 </div>
               </div>
-              <div>
+              <div className="lg:col-span-2">
                 <h2 className="mb-6 text-3xl font-bold">
                   Organize Your Way
                 </h2>
