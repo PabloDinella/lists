@@ -7,13 +7,16 @@ import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
+import { GTDOutlineDialog } from "./gtd-outline-dialog";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { BrushCleaning } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
+import { useSettings } from "@/hooks/use-settings";
 import { renderMarkdown } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -66,10 +69,12 @@ export function NodeView() {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
+  const [processingNode, setProcessingNode] = useState<TreeNode | null>(null);
 
   const { user } = useAuth();
 
   const userId = user?.id || null;
+  const { data: settings } = useSettings(userId);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -148,6 +153,40 @@ export function NodeView() {
     }
   };
 
+  const handleStartProcessing = () => {
+    if (!tree || tree.length === 0) return;
+    
+    // Find the first unprocessed item (not completed)
+    const firstUnprocessedItem = tree.find((item) => !item.metadata?.completed);
+    if (firstUnprocessedItem) {
+      setProcessingNode(firstUnprocessedItem);
+    }
+  };
+
+  const handleProcessingClose = () => {
+    setProcessingNode(null);
+  };
+
+  const handleProcessNext = (currentNodeId: number) => {
+    if (!tree) {
+      setProcessingNode(null);
+      return;
+    }
+
+    // Find the next unprocessed item after the current one
+    const currentIndex = tree.findIndex((item) => item.id === currentNodeId);
+    const nextUnprocessedItem = tree
+      .slice(currentIndex + 1)
+      .find((item) => !item.metadata?.completed);
+
+    if (nextUnprocessedItem) {
+      setProcessingNode(nextUnprocessedItem);
+    } else {
+      // No more items to process, close the dialog
+      setProcessingNode(null);
+    }
+  };
+
   if (!userId) {
     return (
       <AppLayout title="Manage Lists">
@@ -187,6 +226,12 @@ export function NodeView() {
     tree && selectedFilters.length > 0
       ? filterTreeByTags(tree, selectedFilters)
       : tree;
+
+  // Check if current node is the inbox list
+  const isInboxList = settings?.inbox && currentNode?.id === settings.inbox;
+
+  // Get unprocessed items count for the Process button
+  const unprocessedCount = filteredTree?.filter((item) => !item.metadata?.completed).length || 0;
 
   // Helper function to filter tree based on selected tag filters
   function filterTreeByTags(
@@ -279,6 +324,23 @@ export function NodeView() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
+                    {isInboxList && unprocessedCount > 0 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleStartProcessing}
+                          >
+                            <Settings className="h-4 w-4" />
+                            Process ({unprocessedCount})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Process inbox items using GTD workflow</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -377,6 +439,16 @@ export function NodeView() {
           defaultMetadata={
             currentNode?.metadata?.defaultChildrenMetadata ?? undefined
           }
+        />
+      )}
+
+      {processingNode && userId && (
+        <GTDOutlineDialog
+          node={processingNode}
+          userId={userId}
+          isOpen={!!processingNode}
+          onClose={handleProcessingClose}
+          onProcessNext={handleProcessNext}
         />
       )}
     </AppLayout>

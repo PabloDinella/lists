@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -16,17 +15,16 @@ interface GTDProcessingDialogProps {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
+  onProcessNext?: (currentNodeId: number) => void;
 }
-
-type GTDStep = 'two-minute' | 'single-action' | 'yourself-or-delegate';
 
 export function GTDProcessingDialog({
   node,
   userId,
   isOpen,
   onClose,
+  onProcessNext,
 }: GTDProcessingDialogProps) {
-  const [currentStep, setCurrentStep] = useState<GTDStep>('two-minute');
   const updateNodeMutation = useUpdateNode();
   const { data: settings } = useSettings(userId);
 
@@ -38,7 +36,7 @@ export function GTDProcessingDialog({
         completed: true,
       },
     });
-    onClose();
+    handleProcessNext();
   };
 
   const handleMoveToNextActions = () => {
@@ -49,7 +47,7 @@ export function GTDProcessingDialog({
       userId,
       parentNode: settings.nextActions,
     });
-    onClose();
+    handleProcessNext();
   };
 
   const handleMoveToWaiting = () => {
@@ -60,94 +58,195 @@ export function GTDProcessingDialog({
       userId,
       parentNode: settings.waiting,
     });
-    onClose();
+    handleProcessNext();
+  };
+
+  const handleMoveToSomedayMaybe = () => {
+    if (!settings?.somedayMaybe) return;
+    
+    updateNodeMutation.mutate({
+      nodeId: node.id,
+      userId,
+      parentNode: settings.somedayMaybe,
+    });
+    handleProcessNext();
+  };
+
+  const handleMoveToProjects = () => {
+    if (!settings?.projects) return;
+    
+    updateNodeMutation.mutate({
+      nodeId: node.id,
+      userId,
+      parentNode: settings.projects,
+    });
+    handleProcessNext();
+  };
+
+  const handleMoveToReference = () => {
+    if (!settings?.reference) return;
+    
+    updateNodeMutation.mutate({
+      nodeId: node.id,
+      userId,
+      parentNode: settings.reference,
+    });
+    handleProcessNext();
+  };
+
+  const handleDelete = () => {
+    // Mark as completed for now - could implement actual deletion if needed
+    updateNodeMutation.mutate({
+      nodeId: node.id,
+      userId,
+      metadata: {
+        completed: true,
+      },
+    });
+    handleProcessNext();
+  };
+
+  const handleProcessNext = () => {
+    if (onProcessNext) {
+      onProcessNext(node.id);
+    } else {
+      onClose();
+    }
   };
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
-      setCurrentStep('two-minute');
       onClose();
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>GTD Processing: {node.name}</DialogTitle>
           <DialogDescription>
-            Let's process this item using the Getting Things Done methodology.
+            Choose the appropriate action for this item based on the Getting Things Done methodology.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
-          {currentStep === 'two-minute' && (
-            <div className="space-y-4">
-              <p className="text-sm">Is this item doable in less than 2 minutes?</p>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleMarkComplete}
-                  className="flex-1"
-                >
-                  Yes - Do it now and mark complete
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('single-action')}
-                  className="flex-1"
-                >
-                  No - Continue processing
-                </Button>
-              </div>
+        <div className="space-y-6">
+          {/* Quick Actions Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={handleMarkComplete}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">✅ Do it now (2 min rule)</div>
+                  <div className="text-xs text-muted-foreground">Complete this task immediately and mark as done</div>
+                </div>
+              </Button>
             </div>
-          )}
-          
-          {currentStep === 'single-action' && (
-            <div className="space-y-4">
-              <p className="text-sm">Is this item a single action?</p>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setCurrentStep('yourself-or-delegate')}
-                  className="flex-1"
-                >
-                  Yes - Single action
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // TODO: Handle multi-step projects
-                    onClose();
-                  }}
-                  className="flex-1"
-                >
-                  No - It's a project
-                </Button>
-              </div>
+          </div>
+
+          {/* Actionable Items Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Actionable Items
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={handleMoveToNextActions}
+                disabled={!settings?.nextActions}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">⚡ Next Actions</div>
+                  <div className="text-xs text-muted-foreground">Single action I can do myself</div>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={handleMoveToWaiting}
+                disabled={!settings?.waiting}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">⏳ Waiting For</div>
+                  <div className="text-xs text-muted-foreground">Delegated to someone else or waiting for response</div>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={handleMoveToProjects}
+                disabled={!settings?.projects}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">📂 Projects</div>
+                  <div className="text-xs text-muted-foreground">Multi-step outcome requiring several actions</div>
+                </div>
+              </Button>
             </div>
-          )}
-          
-          {currentStep === 'yourself-or-delegate' && (
-            <div className="space-y-4">
-              <p className="text-sm">Is this something you should do yourself, or delegate?</p>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleMoveToNextActions}
-                  className="flex-1"
-                  disabled={!settings?.nextActions}
-                >
-                  Myself - Move to Next Actions
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleMoveToWaiting}
-                  className="flex-1"
-                  disabled={!settings?.waiting}
-                >
-                  Delegate - Move to Waiting
-                </Button>
-              </div>
+          </div>
+
+          {/* Non-Actionable Items Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Non-Actionable Items
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={handleMoveToSomedayMaybe}
+                disabled={!settings?.somedayMaybe}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">🔮 Someday/Maybe</div>
+                  <div className="text-xs text-muted-foreground">Might want to do this in the future</div>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={handleMoveToReference}
+                disabled={!settings?.reference}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">📚 Reference</div>
+                  <div className="text-xs text-muted-foreground">Information I might need later</div>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={handleDelete}
+                className="justify-start text-left h-auto py-3"
+                variant="outline"
+              >
+                <div>
+                  <div className="font-medium">🗑️ Delete</div>
+                  <div className="text-xs text-muted-foreground">Not needed anymore</div>
+                </div>
+              </Button>
             </div>
-          )}
+          </div>
+
+          {/* Cancel Section */}
+          <div className="pt-2 border-t">
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              className="w-full"
+            >
+              Cancel Processing
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
