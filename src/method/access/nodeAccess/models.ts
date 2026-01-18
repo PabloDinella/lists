@@ -22,6 +22,14 @@ export const metadataSchema = z.object({
   waitingFor: z.string().optional(),
   scheduledDate: z.string().optional(),
   isRepeating: z.boolean().optional(),
+  eisenhowerQuadrant: z
+    .union([
+      z.literal("urgent-important"),
+      z.literal("not-urgent-important"),
+      z.literal("urgent-not-important"),
+      z.literal("not-urgent-not-important"),
+    ])
+    .optional(),
   defaultChildrenMetadata: z
     .object({
       type: z

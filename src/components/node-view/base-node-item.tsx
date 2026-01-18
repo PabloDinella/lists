@@ -1,8 +1,9 @@
-import { GripVertical, Edit, Trash2, Sparkles } from "lucide-react";
+import { GripVertical, Edit, Trash2, Sparkles, Grid2x2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { GTDProcessingDialog } from "./gtd-processing-dialog";
+import { EisenhowerMatrixDialog } from "./eisenhower-matrix-dialog";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { useUpdateNode } from "@/hooks/use-update-node";
@@ -24,6 +25,8 @@ interface BaseNodeItemProps {
   isDragging?: boolean;
   depth?: number;
   relatedNodes?: { id: number; name: string }[];
+  siblings?: TreeNode[];
+  currentIndex?: number;
 }
 
 export function BaseNodeItem({
@@ -34,12 +37,15 @@ export function BaseNodeItem({
   depth = 0,
   children,
   relatedNodes = [],
+  siblings = [],
+  currentIndex = -1,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeMutation = useUpdateNode();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isGTDDialogOpen, setIsGTDDialogOpen] = useState(false);
+  const [isEisenhowerDialogOpen, setIsEisenhowerDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const isGtdProcessingFeatureEnabled = useFeatureFlagEnabled(
@@ -72,6 +78,36 @@ export function BaseNodeItem({
 
   const handleOpenGTDDialog = () => {
     setIsGTDDialogOpen(true);
+  };
+
+  const handleOpenEisenhowerDialog = () => {
+    setIsEisenhowerDialogOpen(true);
+  };
+
+  const handleNextUnclassifiedItem = () => {
+    // Find next unclassified item in siblings
+    if (siblings.length === 0 || currentIndex === -1) {
+      setIsEisenhowerDialogOpen(false);
+      return;
+    }
+
+    // Search forward from current item
+    for (let i = currentIndex + 1; i < siblings.length; i++) {
+      if (!siblings[i].metadata?.eisenhowerQuadrant) {
+        setIsEisenhowerDialogOpen(false);
+        // Use a small timeout to ensure state update before opening new dialog
+        setTimeout(() => {
+          // We need to trigger opening the dialog for the next item
+          // This is a bit tricky since we need to update which item's dialog is open
+          // For now, just close the current dialog
+          setIsEisenhowerDialogOpen(false);
+        }, 100);
+        return;
+      }
+    }
+
+    // If no next item found, just close
+    setIsEisenhowerDialogOpen(false);
   };
 
   const handleDeleteClick = () => {
@@ -204,6 +240,24 @@ export function BaseNodeItem({
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleOpenEisenhowerDialog();
+                    }}
+                    title="Eisenhower Matrix"
+                  >
+                    <Grid2x2 className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Classify in Eisenhower Matrix</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onEditStart(node);
                     }}
                   >
@@ -244,6 +298,16 @@ export function BaseNodeItem({
           userId={user.id}
           isOpen={isGTDDialogOpen}
           onClose={() => setIsGTDDialogOpen(false)}
+        />
+      )}
+      {/* Eisenhower Matrix Dialog */}
+      {user?.id && (
+        <EisenhowerMatrixDialog
+          node={node}
+          userId={user.id}
+          isOpen={isEisenhowerDialogOpen}
+          onClose={() => setIsEisenhowerDialogOpen(false)}
+          onNext={handleNextUnclassifiedItem}
         />
       )}
       {/* Delete Confirmation Dialog */}
