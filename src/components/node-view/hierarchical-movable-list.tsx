@@ -81,8 +81,6 @@ export function HierarchicalMovableList({
         )}
         renderItem={({ value: item, props, isDragged }) => {
           const { key, ...restProps } = props;
-          const currentIndex = items.findIndex(i => i.node.id === item.node.id);
-          const siblings = items.map(i => i.node);
           
           return (
             <div
@@ -100,8 +98,6 @@ export function HierarchicalMovableList({
                 isDragging={isDragged}
                 depth={depth}
                 relatedNodes={item.node.related_nodes}
-                siblings={siblings}
-                currentIndex={currentIndex}
               >
                 <HierarchicalMovableList
                   hierarchicalTree={item.node.children}

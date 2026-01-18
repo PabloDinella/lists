@@ -25,8 +25,6 @@ interface BaseNodeItemProps {
   isDragging?: boolean;
   depth?: number;
   relatedNodes?: { id: number; name: string }[];
-  siblings?: TreeNode[];
-  currentIndex?: number;
 }
 
 export function BaseNodeItem({
@@ -37,8 +35,6 @@ export function BaseNodeItem({
   depth = 0,
   children,
   relatedNodes = [],
-  siblings = [],
-  currentIndex = -1,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeMutation = useUpdateNode();
@@ -84,29 +80,7 @@ export function BaseNodeItem({
     setIsEisenhowerDialogOpen(true);
   };
 
-  const handleNextUnclassifiedItem = () => {
-    // Find next unclassified item in siblings
-    if (siblings.length === 0 || currentIndex === -1) {
-      setIsEisenhowerDialogOpen(false);
-      return;
-    }
-
-    // Search forward from current item
-    for (let i = currentIndex + 1; i < siblings.length; i++) {
-      if (!siblings[i].metadata?.eisenhowerQuadrant) {
-        setIsEisenhowerDialogOpen(false);
-        // Use a small timeout to ensure state update before opening new dialog
-        setTimeout(() => {
-          // We need to trigger opening the dialog for the next item
-          // This is a bit tricky since we need to update which item's dialog is open
-          // For now, just close the current dialog
-          setIsEisenhowerDialogOpen(false);
-        }, 100);
-        return;
-      }
-    }
-
-    // If no next item found, just close
+  const handleCloseEisenhowerDialog = () => {
     setIsEisenhowerDialogOpen(false);
   };
 
@@ -306,8 +280,7 @@ export function BaseNodeItem({
           node={node}
           userId={user.id}
           isOpen={isEisenhowerDialogOpen}
-          onClose={() => setIsEisenhowerDialogOpen(false)}
-          onNext={handleNextUnclassifiedItem}
+          onClose={handleCloseEisenhowerDialog}
         />
       )}
       {/* Delete Confirmation Dialog */}

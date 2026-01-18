@@ -17,7 +17,6 @@ interface EisenhowerMatrixDialogProps {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
-  onNext?: () => void; // Callback to move to next item
 }
 
 type EisenhowerQuadrant =
@@ -31,7 +30,6 @@ export function EisenhowerMatrixDialog({
   userId,
   isOpen,
   onClose,
-  onNext,
 }: EisenhowerMatrixDialogProps) {
   const [selectedQuadrant, setSelectedQuadrant] =
     useState<EisenhowerQuadrant | null>(
@@ -57,12 +55,7 @@ export function EisenhowerMatrixDialog({
       },
     });
 
-    // If onNext is provided, call it to move to the next item
-    if (onNext) {
-      onNext();
-    } else {
-      onClose();
-    }
+    onClose();
   };
 
   const handleDialogChange = (open: boolean) => {
