@@ -7,13 +7,16 @@ import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
+import { GTDOutlineDialog } from "./gtd-outline-dialog";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { BrushCleaning } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
+import { useSettings } from "@/hooks/use-settings";
 import { renderMarkdown } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -66,10 +69,14 @@ export function NodeView() {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
+  const [processingNode, setProcessingNode] = useState<TreeNode | null>(null);
+  const [processingQueue, setProcessingQueue] = useState<TreeNode[]>([]);
+  const [processingIndex, setProcessingIndex] = useState<number>(0);
 
   const { user } = useAuth();
 
   const userId = user?.id || null;
+  const { data: settings } = useSettings(userId);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -148,6 +155,69 @@ export function NodeView() {
     }
   };
 
+  const handleStartProcessing = () => {
+    if (!tree || tree.length === 0) return;
+    
+    // Capture the list of unprocessed items at the start
+    const unprocessedItems = tree.filter((item) => !item.metadata?.completed);
+    if (unprocessedItems.length > 0) {
+      setProcessingQueue(unprocessedItems);
+      setProcessingIndex(0);
+      setProcessingNode(unprocessedItems[0]);
+    }
+  };
+
+  const handleProcessingClose = () => {
+    setProcessingNode(null);
+    setProcessingQueue([]);
+    setProcessingIndex(0);
+  };
+
+  const handleProcessNext = (_currentNodeId: number) => {
+    const nextIndex = processingIndex + 1;
+    
+    if (nextIndex < processingQueue.length) {
+      setProcessingIndex(nextIndex);
+      setProcessingNode(processingQueue[nextIndex]);
+    } else {
+      // No more items to process, close the dialog
+      handleProcessingClose();
+    }
+  };
+
+  const handleNavigatePrevious = () => {
+    if (processingIndex > 0) {
+      const prevIndex = processingIndex - 1;
+      setProcessingIndex(prevIndex);
+      setProcessingNode(processingQueue[prevIndex]);
+    }
+  };
+
+  const handleNavigateNext = () => {
+    if (processingIndex < processingQueue.length - 1) {
+      const nextIndex = processingIndex + 1;
+      setProcessingIndex(nextIndex);
+      setProcessingNode(processingQueue[nextIndex]);
+    }
+  };
+
+  const handleEditFromProcessing = () => {
+    if (processingNode) {
+      handleEditStart(processingNode);
+    }
+  };
+
+  const handleNodeUpdated = (updatedNode: TreeNode) => {
+    // Update the node in the processing queue
+    setProcessingQueue(prevQueue => 
+      prevQueue.map(n => n.id === updatedNode.id ? updatedNode : n)
+    );
+    // Update the current processing node if it matches
+    if (processingNode && processingNode.id === updatedNode.id) {
+      setProcessingNode(updatedNode);
+    }
+  };
+
   if (!userId) {
     return (
       <AppLayout title="Manage Lists">
@@ -187,6 +257,12 @@ export function NodeView() {
     tree && selectedFilters.length > 0
       ? filterTreeByTags(tree, selectedFilters)
       : tree;
+
+  // Check if current node is the inbox list
+  const isInboxList = settings?.inbox && currentNode?.id === settings.inbox;
+
+  // Get unprocessed items count for the Process button
+  const unprocessedCount = filteredTree?.filter((item) => !item.metadata?.completed).length || 0;
 
   // Helper function to filter tree based on selected tag filters
   function filterTreeByTags(
@@ -279,6 +355,23 @@ export function NodeView() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
+                    {isInboxList && unprocessedCount > 0 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={handleStartProcessing}
+                          >
+                            <Settings className="h-4 w-4" />
+                            Process ({unprocessedCount})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Process inbox items using GTD workflow</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -379,6 +472,27 @@ export function NodeView() {
           }
         />
       )}
+
+      {processingNode && userId && processingQueue.length > 0 && tree && (() => {
+        // Find the current node from the live tree to get updated data
+        const currentLiveNode = tree.find(item => item.id === processingNode.id) || processingNode;
+        return (
+          <GTDOutlineDialog
+            node={currentLiveNode}
+            userId={userId}
+            isOpen={!!processingNode}
+            onClose={handleProcessingClose}
+            onProcessNext={handleProcessNext}
+            currentIndex={processingIndex}
+            totalCount={processingQueue.length}
+            onNavigatePrevious={handleNavigatePrevious}
+            onNavigateNext={handleNavigateNext}
+            onEdit={handleEditFromProcessing}
+            onNodeUpdated={handleNodeUpdated}
+            tagNodes={tagNodes}
+          />
+        );
+      })()}
     </AppLayout>
   );
 }
