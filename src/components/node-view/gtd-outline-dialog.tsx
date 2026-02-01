@@ -13,10 +13,12 @@ import { TreeNode } from "./use-list-data";
 import { Separator } from "../ui/separator";
 import { Edit } from "lucide-react";
 import { renderMarkdown } from "@/lib/utils";
-import { TagsSelector } from "./tags-selector";
 import { useUpsertRelationships } from "@/hooks/use-upsert-relationships";
 import { useCreateNode } from "@/hooks/use-create-node";
-import { MultiSelectAutocomplete, Option } from "../ui/multi-select-autocomplete";
+import {
+  MultiSelectAutocomplete,
+  Option,
+} from "../ui/multi-select-autocomplete";
 
 interface GTDOutlineDialogProps {
   node: TreeNode;
@@ -50,7 +52,7 @@ export function GTDOutlineDialog({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedRelatedNodes, setSelectedRelatedNodes] = useState<number[]>(
-    node.related_nodes.map((n) => n.id)
+    node.related_nodes.map((n) => n.id),
   );
   const contentRef = useRef<HTMLDivElement>(null);
   const updateNodeMutation = useUpdateNode();
@@ -80,18 +82,18 @@ export function GTDOutlineDialog({
     // Optimistic update - update UI immediately
     const previousSelection = selectedRelatedNodes;
     setSelectedRelatedNodes(selectedIds);
-    
+
     // Optimistically update the node in parent's processing queue
     if (onNodeUpdated) {
       const updatedNode = {
         ...node,
         related_nodes: tagNodes
-          .flatMap(tag => tag.children)
-          .filter(tag => selectedIds.includes(tag.id)),
+          .flatMap((tag) => tag.children)
+          .filter((tag) => selectedIds.includes(tag.id)),
       };
       onNodeUpdated(updatedNode);
     }
-    
+
     // Then make the async call in the background
     try {
       await upsertRelationshipsMutation.mutateAsync({
@@ -108,8 +110,8 @@ export function GTDOutlineDialog({
         const revertedNode = {
           ...node,
           related_nodes: tagNodes
-            .flatMap(tag => tag.children)
-            .filter(tag => previousSelection.includes(tag.id)),
+            .flatMap((tag) => tag.children)
+            .filter((tag) => previousSelection.includes(tag.id)),
         };
         onNodeUpdated(revertedNode);
       }
@@ -118,7 +120,7 @@ export function GTDOutlineDialog({
 
   const handleCreateNewTag = async (
     categoryId: number,
-    itemName: string
+    itemName: string,
   ): Promise<number> => {
     const newNode = await createNodeMutation.mutateAsync({
       name: itemName,
@@ -126,7 +128,10 @@ export function GTDOutlineDialog({
       userId,
       metadata: {},
     });
-    return newNode.id;
+    if ("result" in newNode) {
+      return newNode.result.id;
+    }
+    throw new Error("Failed to create node");
   };
 
   const handleAction = async (action: string, targetListId?: number | null) => {
@@ -141,7 +146,10 @@ export function GTDOutlineDialog({
             userId,
             metadata: { completed: true },
           });
-          updatedNode = { ...node, metadata: { ...node.metadata, completed: true } };
+          updatedNode = {
+            ...node,
+            metadata: { ...node.metadata, completed: true },
+          };
           break;
         case "delete":
           await updateNodeMutation.mutateAsync({
@@ -149,7 +157,10 @@ export function GTDOutlineDialog({
             userId,
             metadata: { completed: true },
           });
-          updatedNode = { ...node, metadata: { ...node.metadata, completed: true } };
+          updatedNode = {
+            ...node,
+            metadata: { ...node.metadata, completed: true },
+          };
           break;
         default:
           if (targetListId) {
@@ -164,12 +175,12 @@ export function GTDOutlineDialog({
           }
           break;
       }
-      
+
       // Notify parent of the update
       if (onNodeUpdated) {
         onNodeUpdated(updatedNode);
       }
-      
+
       handleProcessNext();
     } finally {
       setIsProcessing(false);
@@ -178,9 +189,12 @@ export function GTDOutlineDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent ref={contentRef} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        ref={contentRef}
+        className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+      >
         {isProcessing && (
-          <div className="sticky top-0 left-0 right-0 bottom-0 z-50 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm h-screen">
+          <div className="sticky bottom-0 left-0 right-0 top-0 z-50 flex h-screen items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="text-sm text-muted-foreground">Processing...</p>
@@ -232,19 +246,28 @@ export function GTDOutlineDialog({
                 <div className="text-base font-semibold">
                   {node.name}
                   {node.related_nodes.length > 0 && (
-                    <span className="ml-2 font-normal text-muted-foreground text-xs">
-                      · {node.related_nodes.map((related) => related.name).join(", ")}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      ·{" "}
+                      {node.related_nodes
+                        .map((related) => related.name)
+                        .join(", ")}
                     </span>
                   )}
                 </div>
                 {node.content && (
                   <div className="text-sm text-muted-foreground">
                     <div
-                      className={isDescriptionExpanded ? "markdown-content" : "line-clamp-1 markdown-content"}
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(node.content) }}
+                      className={
+                        isDescriptionExpanded
+                          ? "markdown-content"
+                          : "markdown-content line-clamp-1"
+                      }
+                      dangerouslySetInnerHTML={{
+                        __html: renderMarkdown(node.content),
+                      }}
                       onClick={(e) => {
                         // Allow clicks on links within the markdown content
-                        if ((e.target as HTMLElement).tagName === 'A') {
+                        if ((e.target as HTMLElement).tagName === "A") {
                           e.stopPropagation();
                         }
                       }}
@@ -270,62 +293,74 @@ export function GTDOutlineDialog({
 
         <div className="space-y-6">
           {/* Quick Tag Assignment and Edit Row */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            {tagNodes && tagNodes.length > 0 && tagNodes.map((category) => {
-              const options: Option[] = category.children.map((child) => ({
-                id: child.id,
-                label: child.name,
-                value: child.id,
-              }));
-              
-              const categorySelectedValues = selectedRelatedNodes.filter((nodeId) =>
-                options.some((option) => option.value === nodeId)
-              );
-              
-              return (
-                <div key={category.id} className="flex-1">
-                  <MultiSelectAutocomplete
-                    options={options}
-                    value={categorySelectedValues}
-                    onChange={async (newValues) => {
-                      // Process new values (handle string inputs as new items to create)
-                      const processedValues: number[] = [];
-                      
-                      for (const value of newValues) {
-                        if (typeof value === 'number') {
-                          processedValues.push(value);
-                        } else if (typeof value === 'string') {
-                          // Create new item
-                          try {
-                            const newItemId = await handleCreateNewTag(category.id, value);
-                            processedValues.push(newItemId);
-                          } catch (error) {
-                            console.error('Failed to create new tag:', error);
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {tagNodes &&
+              tagNodes.length > 0 &&
+              tagNodes.map((category) => {
+                const options: Option[] = category.children.map((child) => ({
+                  id: child.id,
+                  label: child.name,
+                  value: child.id,
+                }));
+
+                const categorySelectedValues = selectedRelatedNodes.filter(
+                  (nodeId) => options.some((option) => option.value === nodeId),
+                );
+
+                return (
+                  <div key={category.id} className="flex-1">
+                    <MultiSelectAutocomplete
+                      options={options}
+                      value={categorySelectedValues}
+                      onChange={async (newValues) => {
+                        // Process new values (handle string inputs as new items to create)
+                        const processedValues: number[] = [];
+
+                        for (const value of newValues) {
+                          if (typeof value === "number") {
+                            processedValues.push(value);
+                          } else if (typeof value === "string") {
+                            // Create new item
+                            try {
+                              const newItemId = await handleCreateNewTag(
+                                category.id,
+                                value,
+                              );
+                              processedValues.push(newItemId);
+                            } catch (error) {
+                              console.error("Failed to create new tag:", error);
+                            }
                           }
                         }
-                      }
-                      
-                      // Remove old selections from this category and add new ones
-                      const otherCategorySelections = selectedRelatedNodes.filter(
-                        (nodeId) => !options.some((option) => option.value === nodeId)
-                      );
-                      
-                      handleTagSelectionChange([...otherCategorySelections, ...processedValues]);
-                    }}
-                    placeholder={category.name}
-                    disabled={isProcessing}
-                    className="w-full"
-                  />
-                </div>
-              );
-            })}
-            
+
+                        // Remove old selections from this category and add new ones
+                        const otherCategorySelections =
+                          selectedRelatedNodes.filter(
+                            (nodeId) =>
+                              !options.some(
+                                (option) => option.value === nodeId,
+                              ),
+                          );
+
+                        handleTagSelectionChange([
+                          ...otherCategorySelections,
+                          ...processedValues,
+                        ]);
+                      }}
+                      placeholder={category.name}
+                      disabled={isProcessing}
+                      className="w-full"
+                    />
+                  </div>
+                );
+              })}
+
             {onEdit && (
               <Button
                 onClick={onEdit}
                 disabled={isProcessing}
                 variant="outline"
-                className="h-10 whitespace-nowrap flex-shrink-0"
+                className="h-10 flex-shrink-0 whitespace-nowrap"
               >
                 <Edit className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Edit item</span>
