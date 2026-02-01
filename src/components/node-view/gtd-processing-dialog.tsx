@@ -143,7 +143,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">✅ Do it now (2 min rule)</div>
+                  <div className="font-medium">Do it now (2 min rule)</div>
                   <div className="text-xs text-muted-foreground">Complete this task immediately and mark as done</div>
                 </div>
               </Button>
@@ -163,7 +163,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">⚡ Next Actions</div>
+                  <div className="font-medium">Next Actions</div>
                   <div className="text-xs text-muted-foreground">Single action I can do myself</div>
                 </div>
               </Button>
@@ -175,7 +175,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">⏳ Waiting For</div>
+                  <div className="font-medium">Waiting For</div>
                   <div className="text-xs text-muted-foreground">Delegated to someone else or waiting for response</div>
                 </div>
               </Button>
@@ -187,7 +187,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">📂 Projects</div>
+                  <div className="font-medium">Projects</div>
                   <div className="text-xs text-muted-foreground">Multi-step outcome requiring several actions</div>
                 </div>
               </Button>
@@ -207,7 +207,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">🔮 Someday/Maybe</div>
+                  <div className="font-medium">Someday/Maybe</div>
                   <div className="text-xs text-muted-foreground">Might want to do this in the future</div>
                 </div>
               </Button>
@@ -219,7 +219,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">📚 Reference</div>
+                  <div className="font-medium">Reference</div>
                   <div className="text-xs text-muted-foreground">Information I might need later</div>
                 </div>
               </Button>
@@ -230,7 +230,7 @@ export function GTDProcessingDialog({
                 variant="outline"
               >
                 <div>
-                  <div className="font-medium">🗑️ Delete</div>
+                  <div className="font-medium">Delete</div>
                   <div className="text-xs text-muted-foreground">Not needed anymore</div>
                 </div>
               </Button>

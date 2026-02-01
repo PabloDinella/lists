@@ -70,6 +70,8 @@ export function NodeView() {
   const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
   const [processingNode, setProcessingNode] = useState<TreeNode | null>(null);
+  const [processingQueue, setProcessingQueue] = useState<TreeNode[]>([]);
+  const [processingIndex, setProcessingIndex] = useState<number>(0);
 
   const { user } = useAuth();
 
@@ -156,34 +158,63 @@ export function NodeView() {
   const handleStartProcessing = () => {
     if (!tree || tree.length === 0) return;
     
-    // Find the first unprocessed item (not completed)
-    const firstUnprocessedItem = tree.find((item) => !item.metadata?.completed);
-    if (firstUnprocessedItem) {
-      setProcessingNode(firstUnprocessedItem);
+    // Capture the list of unprocessed items at the start
+    const unprocessedItems = tree.filter((item) => !item.metadata?.completed);
+    if (unprocessedItems.length > 0) {
+      setProcessingQueue(unprocessedItems);
+      setProcessingIndex(0);
+      setProcessingNode(unprocessedItems[0]);
     }
   };
 
   const handleProcessingClose = () => {
     setProcessingNode(null);
+    setProcessingQueue([]);
+    setProcessingIndex(0);
   };
 
-  const handleProcessNext = (currentNodeId: number) => {
-    if (!tree) {
-      setProcessingNode(null);
-      return;
-    }
-
-    // Find the next unprocessed item after the current one
-    const currentIndex = tree.findIndex((item) => item.id === currentNodeId);
-    const nextUnprocessedItem = tree
-      .slice(currentIndex + 1)
-      .find((item) => !item.metadata?.completed);
-
-    if (nextUnprocessedItem) {
-      setProcessingNode(nextUnprocessedItem);
+  const handleProcessNext = (_currentNodeId: number) => {
+    const nextIndex = processingIndex + 1;
+    
+    if (nextIndex < processingQueue.length) {
+      setProcessingIndex(nextIndex);
+      setProcessingNode(processingQueue[nextIndex]);
     } else {
       // No more items to process, close the dialog
-      setProcessingNode(null);
+      handleProcessingClose();
+    }
+  };
+
+  const handleNavigatePrevious = () => {
+    if (processingIndex > 0) {
+      const prevIndex = processingIndex - 1;
+      setProcessingIndex(prevIndex);
+      setProcessingNode(processingQueue[prevIndex]);
+    }
+  };
+
+  const handleNavigateNext = () => {
+    if (processingIndex < processingQueue.length - 1) {
+      const nextIndex = processingIndex + 1;
+      setProcessingIndex(nextIndex);
+      setProcessingNode(processingQueue[nextIndex]);
+    }
+  };
+
+  const handleEditFromProcessing = () => {
+    if (processingNode) {
+      handleEditStart(processingNode);
+    }
+  };
+
+  const handleNodeUpdated = (updatedNode: TreeNode) => {
+    // Update the node in the processing queue
+    setProcessingQueue(prevQueue => 
+      prevQueue.map(n => n.id === updatedNode.id ? updatedNode : n)
+    );
+    // Update the current processing node if it matches
+    if (processingNode && processingNode.id === updatedNode.id) {
+      setProcessingNode(updatedNode);
     }
   };
 
@@ -442,15 +473,26 @@ export function NodeView() {
         />
       )}
 
-      {processingNode && userId && (
-        <GTDOutlineDialog
-          node={processingNode}
-          userId={userId}
-          isOpen={!!processingNode}
-          onClose={handleProcessingClose}
-          onProcessNext={handleProcessNext}
-        />
-      )}
+      {processingNode && userId && processingQueue.length > 0 && tree && (() => {
+        // Find the current node from the live tree to get updated data
+        const currentLiveNode = tree.find(item => item.id === processingNode.id) || processingNode;
+        return (
+          <GTDOutlineDialog
+            node={currentLiveNode}
+            userId={userId}
+            isOpen={!!processingNode}
+            onClose={handleProcessingClose}
+            onProcessNext={handleProcessNext}
+            currentIndex={processingIndex}
+            totalCount={processingQueue.length}
+            onNavigatePrevious={handleNavigatePrevious}
+            onNavigateNext={handleNavigateNext}
+            onEdit={handleEditFromProcessing}
+            onNodeUpdated={handleNodeUpdated}
+            tagNodes={tagNodes}
+          />
+        );
+      })()}
     </AppLayout>
   );
 }
