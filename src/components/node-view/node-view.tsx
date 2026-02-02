@@ -8,15 +8,16 @@ import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
 import { GTDOutlineDialog } from "./gtd-outline-dialog";
+import { EisenhowerMatrixDialog } from "./eisenhower-matrix-dialog";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
 import { Edit } from "lucide-react";
 import { BrushCleaning } from "lucide-react";
 import { Settings } from "lucide-react";
+import { Grid2x2 } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
-import { useSettings } from "@/hooks/use-settings";
 import { renderMarkdown } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -72,11 +73,13 @@ export function NodeView() {
   const [processingNode, setProcessingNode] = useState<TreeNode | null>(null);
   const [processingQueue, setProcessingQueue] = useState<TreeNode[]>([]);
   const [processingIndex, setProcessingIndex] = useState<number>(0);
+  const [refiningNode, setRefiningNode] = useState<TreeNode | null>(null);
+  const [refiningQueue, setRefiningQueue] = useState<TreeNode[]>([]);
+  const [refiningIndex, setRefiningIndex] = useState<number>(0);
 
   const { user } = useAuth();
 
   const userId = user?.id || null;
-  const { data: settings } = useSettings(userId);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -157,7 +160,7 @@ export function NodeView() {
 
   const handleStartProcessing = () => {
     if (!tree || tree.length === 0) return;
-    
+
     // Capture the list of unprocessed items at the start
     const unprocessedItems = tree.filter((item) => !item.metadata?.completed);
     if (unprocessedItems.length > 0) {
@@ -173,9 +176,9 @@ export function NodeView() {
     setProcessingIndex(0);
   };
 
-  const handleProcessNext = (_currentNodeId: number) => {
+  const handleProcessNext = () => {
     const nextIndex = processingIndex + 1;
-    
+
     if (nextIndex < processingQueue.length) {
       setProcessingIndex(nextIndex);
       setProcessingNode(processingQueue[nextIndex]);
@@ -209,12 +212,44 @@ export function NodeView() {
 
   const handleNodeUpdated = (updatedNode: TreeNode) => {
     // Update the node in the processing queue
-    setProcessingQueue(prevQueue => 
-      prevQueue.map(n => n.id === updatedNode.id ? updatedNode : n)
+    setProcessingQueue((prevQueue) =>
+      prevQueue.map((n) => (n.id === updatedNode.id ? updatedNode : n)),
     );
     // Update the current processing node if it matches
     if (processingNode && processingNode.id === updatedNode.id) {
       setProcessingNode(updatedNode);
+    }
+  };
+
+  const handleStartRefining = () => {
+    if (!tree || tree.length === 0) return;
+
+    // Capture the list of unclassified items at the start
+    const unclassifiedItems = tree.filter(
+      (item) => !item.metadata?.completed && !item.metadata?.eisenhowerQuadrant,
+    );
+    if (unclassifiedItems.length > 0) {
+      setRefiningQueue(unclassifiedItems);
+      setRefiningIndex(0);
+      setRefiningNode(unclassifiedItems[0]);
+    }
+  };
+
+  const handleRefiningClose = () => {
+    setRefiningNode(null);
+    setRefiningQueue([]);
+    setRefiningIndex(0);
+  };
+
+  const handleRefineNext = () => {
+    const nextIndex = refiningIndex + 1;
+
+    if (nextIndex < refiningQueue.length) {
+      setRefiningIndex(nextIndex);
+      setRefiningNode(refiningQueue[nextIndex]);
+    } else {
+      // No more items to refine, close the dialog
+      handleRefiningClose();
     }
   };
 
@@ -258,11 +293,15 @@ export function NodeView() {
       ? filterTreeByTags(tree, selectedFilters)
       : tree;
 
-  // Check if current node is the inbox list
-  const isInboxList = settings?.inbox && currentNode?.id === settings.inbox;
-
   // Get unprocessed items count for the Process button
-  const unprocessedCount = filteredTree?.filter((item) => !item.metadata?.completed).length || 0;
+  const unprocessedCount =
+    filteredTree?.filter((item) => !item.metadata?.completed).length || 0;
+
+  // Get unclassified items count for the Refine button
+  const unclassifiedCount =
+    filteredTree?.filter(
+      (item) => !item.metadata?.completed && !item.metadata?.eisenhowerQuadrant,
+    ).length || 0;
 
   // Helper function to filter tree based on selected tag filters
   function filterTreeByTags(
@@ -355,7 +394,7 @@ export function NodeView() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-200 sm:group-hover:opacity-100">
-                    {isInboxList && unprocessedCount > 0 && (
+                    {!isManagingLists && unprocessedCount > 0 && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -368,7 +407,24 @@ export function NodeView() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Process inbox items using GTD workflow</p>
+                          <p>Process items using GTD workflow</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    {!isManagingLists && unclassifiedCount > 0 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleStartRefining}
+                          >
+                            <Grid2x2 className="h-4 w-4" />
+                            Refine ({unclassifiedCount})
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Classify items using Eisenhower Matrix</p>
                         </TooltipContent>
                       </Tooltip>
                     )}
@@ -473,26 +529,47 @@ export function NodeView() {
         />
       )}
 
-      {processingNode && userId && processingQueue.length > 0 && tree && (() => {
-        // Find the current node from the live tree to get updated data
-        const currentLiveNode = tree.find(item => item.id === processingNode.id) || processingNode;
-        return (
-          <GTDOutlineDialog
-            node={currentLiveNode}
-            userId={userId}
-            isOpen={!!processingNode}
-            onClose={handleProcessingClose}
-            onProcessNext={handleProcessNext}
-            currentIndex={processingIndex}
-            totalCount={processingQueue.length}
-            onNavigatePrevious={handleNavigatePrevious}
-            onNavigateNext={handleNavigateNext}
-            onEdit={handleEditFromProcessing}
-            onNodeUpdated={handleNodeUpdated}
-            tagNodes={tagNodes}
-          />
-        );
-      })()}
+      {processingNode &&
+        userId &&
+        processingQueue.length > 0 &&
+        tree &&
+        (() => {
+          // Find the current node from the live tree to get updated data
+          const currentLiveNode =
+            tree.find((item) => item.id === processingNode.id) ||
+            processingNode;
+          return (
+            <GTDOutlineDialog
+              node={currentLiveNode}
+              userId={userId}
+              isOpen={!!processingNode}
+              onClose={handleProcessingClose}
+              onProcessNext={handleProcessNext}
+              currentIndex={processingIndex}
+              totalCount={processingQueue.length}
+              onNavigatePrevious={handleNavigatePrevious}
+              onNavigateNext={handleNavigateNext}
+              onEdit={handleEditFromProcessing}
+              onNodeUpdated={handleNodeUpdated}
+              tagNodes={tagNodes}
+            />
+          );
+        })()}
+      {refiningNode &&
+        (() => {
+          // Find the current node from the live tree to get updated data
+          const currentLiveNode =
+            tree?.find((item) => item.id === refiningNode.id) || refiningNode;
+          return (
+            <EisenhowerMatrixDialog
+              node={currentLiveNode}
+              userId={userId}
+              isOpen={!!refiningNode}
+              onClose={handleRefiningClose}
+              onProcessNext={handleRefineNext}
+            />
+          );
+        })()}
     </AppLayout>
   );
 }
