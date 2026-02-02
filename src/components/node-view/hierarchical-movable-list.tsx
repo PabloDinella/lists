@@ -81,6 +81,7 @@ export function HierarchicalMovableList({
         )}
         renderItem={({ value: item, props, isDragged }) => {
           const { key, ...restProps } = props;
+          
           return (
             <div
               key={key}
