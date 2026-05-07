@@ -31,6 +31,75 @@ const convertNodeToTreeNode = (node: Node): TreeNode => ({
   related_nodes: node.related_nodes.map(relatedNode => convertNodeToTreeNode(relatedNode)),
 });
 
+// Helper function to get priority score for Eisenhower quadrant
+const getEisenhowerPriority = (quadrant?: string): number => {
+  switch (quadrant) {
+    case "urgent-important":
+      return 1; // Highest priority
+    case "not-urgent-important":
+      return 2;
+    case "urgent-not-important":
+      return 3;
+    case "not-urgent-not-important":
+      return 4; // Lowest priority
+    default:
+      return 5; // Unclassified items go last
+  }
+};
+
+// Helper function to get time score
+const getTimeScore = (time?: string): number => {
+  switch (time) {
+    case "short":
+      return 1;
+    case "medium":
+      return 2;
+    case "long":
+      return 3;
+    default:
+      return 2; // Default to medium
+  }
+};
+
+// Helper function to get energy score
+const getEnergyScore = (energy?: string): number => {
+  switch (energy) {
+    case "low":
+      return 1;
+    case "medium":
+      return 2;
+    case "high":
+      return 3;
+    default:
+      return 2; // Default to medium
+  }
+};
+
+// Sort nodes by priority: Eisenhower quadrant, then time, then energy
+const sortByPriority = (a: Node, b: Node): number => {
+  // First, sort by Eisenhower quadrant
+  const priorityA = getEisenhowerPriority(a.metadata?.eisenhowerQuadrant);
+  const priorityB = getEisenhowerPriority(b.metadata?.eisenhowerQuadrant);
+  
+  if (priorityA !== priorityB) {
+    return priorityA - priorityB;
+  }
+  
+  // If same quadrant, sort by time (shorter tasks first)
+  const timeA = getTimeScore(a.metadata?.time);
+  const timeB = getTimeScore(b.metadata?.time);
+  
+  if (timeA !== timeB) {
+    return timeA - timeB;
+  }
+  
+  // If same time, sort by energy (lower energy first)
+  const energyA = getEnergyScore(a.metadata?.energy);
+  const energyB = getEnergyScore(b.metadata?.energy);
+  
+  return energyA - energyB;
+};
+
 export function useListData({ userId }: UseListDataProps): UseListDataReturn {
   const {
     data: allNodes,
@@ -72,7 +141,13 @@ export function useListData({ userId }: UseListDataProps): UseListDataReturn {
             // Then add any nodes not in the order list
             ...childNodes.filter((node) => !childrenOrder.includes(node.id)),
           ];
+        } else {
+          // If no manual ordering, sort by Eisenhower priority
+          orderedChildNodes = [...childNodes].sort(sortByPriority);
         }
+      } else {
+        // For root level nodes, also apply priority sorting if no specific order
+        orderedChildNodes = [...childNodes].sort(sortByPriority);
       }
 
       return orderedChildNodes.map((node) => {
