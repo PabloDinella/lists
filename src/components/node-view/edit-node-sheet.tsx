@@ -42,6 +42,11 @@ interface FormData {
   selectedRelatedNodes: number[];
 }
 
+const normalizeDescription = (description: string): string | null => {
+  const trimmedDescription = description.trim();
+  return trimmedDescription ? trimmedDescription : null;
+};
+
 export function EditNodeSheet({
   node,
   isOpen,
@@ -224,7 +229,7 @@ export function EditNodeSheet({
       await addUpdateNodeMutation.mutateAsync({
         nodeId: mode === "edit" && node ? node.id : undefined,
         name: data.name.trim(),
-        content: data.description.trim() || undefined,
+        content: normalizeDescription(data.description),
         parentNode: data.parentId || undefined,
         userId: user.id,
         metadata: metadata, // Always provide metadata
@@ -275,7 +280,7 @@ export function EditNodeSheet({
       if (mode === "create") {
         const result = await addUpdateNodeMutation.mutateAsync({
           name: data.name.trim(),
-          content: data.description.trim() || undefined,
+          content: normalizeDescription(data.description),
           parentNode: data.parentId || undefined,
           userId: user.id,
           metadata: metadata, // Always provide metadata

@@ -5,7 +5,7 @@ import { Metadata } from "@/method/access/nodeAccess/models";
 type AddUpdateNodeParams = {
   nodeId?: number; // If provided, updates existing node; if not, creates new node
   name: string;
-  content?: string;
+  content?: string | null;
   parentNode?: number | null;
   userId: string;
   metadata?: Metadata;
