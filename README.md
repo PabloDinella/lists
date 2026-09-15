@@ -27,7 +27,6 @@ The app follows the core principles of the GTD methodology:
 - [x] Flexible lists (add, remove and modify any list)
 - [x] Drag and drop reordering
 
-
 ## Braindump
 
 Ideas and thoughts that could turn into new features:
@@ -68,12 +67,14 @@ Ideas and thoughts that could turn into new features:
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/pablodinella/lists.git
    cd lists
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    # or
@@ -83,6 +84,7 @@ Ideas and thoughts that could turn into new features:
    ```
 
 3. Create a `.env` file in the root directory:
+
    ```
    VITE_SUPABASE_URL=your-supabase-project-url
    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
@@ -94,6 +96,7 @@ Ideas and thoughts that could turn into new features:
    - Configure authentication providers as needed
 
 5. Start the development server:
+
    ```bash
    npm run dev
    # or
@@ -103,6 +106,51 @@ Ideas and thoughts that could turn into new features:
    ```
 
 6. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Database Backups
+
+The repository includes a GitHub Actions workflow at `.github/workflows/supabase-backup.yml`
+that runs hourly and can also be run manually from the Actions tab.
+
+Before using it, add these repository secrets in GitHub:
+
+```
+SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+BACKUP_ENCRYPTION_PASSPHRASE=a-long-random-passphrase
+BACKUP_S3_BUCKET=your-private-backup-bucket
+BACKUP_S3_ENDPOINT_URL=https://your-s3-compatible-endpoint
+BACKUP_S3_ACCESS_KEY_ID=your-storage-access-key-id
+BACKUP_S3_SECRET_ACCESS_KEY=your-storage-secret-access-key
+BACKUP_S3_PREFIX=supabase
+BACKUP_S3_REGION=auto
+```
+
+If your database password contains special characters, use Supabase's copied connection
+string or percent-encode the password.
+
+The workflow dumps roles, schema, and data, compresses the dump files, encrypts the
+archive with GPG, and uploads only the encrypted `.tar.gz.gpg` file to private
+S3-compatible storage. Do not commit raw database dumps to the repository or upload
+them as GitHub Actions artifacts from this public repository.
+
+For Cloudflare R2, use this endpoint format:
+
+```
+https://[ACCOUNT-ID].r2.cloudflarestorage.com
+```
+
+This backs up the app database tables, but Supabase-managed Auth and Storage data are
+not included in the Supabase CLI dump. Back up Storage bucket files separately if the
+app starts using them.
+
+To decrypt a downloaded backup file:
+
+```bash
+gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_PASSPHRASE" \
+  --decrypt supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz.gpg \
+  > supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz
+tar -xzf supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz
+```
 
 ## Supabase Schema
 
