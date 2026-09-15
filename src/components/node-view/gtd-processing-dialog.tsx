@@ -122,9 +122,11 @@ export function GTDProcessingDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] overflow-x-hidden sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>GTD Processing: {node.name}</DialogTitle>
+          <DialogTitle className="break-words">
+            GTD Processing: {node.name}
+          </DialogTitle>
           <DialogDescription>
             Choose the appropriate action for this item based on the Getting Things Done methodology.
           </DialogDescription>
@@ -139,10 +141,10 @@ export function GTDProcessingDialog({
             <div className="grid grid-cols-1 gap-2">
               <Button
                 onClick={handleMarkComplete}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Do it now (2 min rule)</div>
                   <div className="text-xs text-muted-foreground">Complete this task immediately and mark as done</div>
                 </div>
@@ -159,10 +161,10 @@ export function GTDProcessingDialog({
               <Button
                 onClick={handleMoveToNextActions}
                 disabled={!settings?.nextActions}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Next Actions</div>
                   <div className="text-xs text-muted-foreground">Single action I can do myself</div>
                 </div>
@@ -171,10 +173,10 @@ export function GTDProcessingDialog({
               <Button
                 onClick={handleMoveToWaiting}
                 disabled={!settings?.waiting}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Waiting For</div>
                   <div className="text-xs text-muted-foreground">Delegated to someone else or waiting for response</div>
                 </div>
@@ -183,10 +185,10 @@ export function GTDProcessingDialog({
               <Button
                 onClick={handleMoveToProjects}
                 disabled={!settings?.projects}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Projects</div>
                   <div className="text-xs text-muted-foreground">Multi-step outcome requiring several actions</div>
                 </div>
@@ -203,10 +205,10 @@ export function GTDProcessingDialog({
               <Button
                 onClick={handleMoveToSomedayMaybe}
                 disabled={!settings?.somedayMaybe}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Someday/Maybe</div>
                   <div className="text-xs text-muted-foreground">Might want to do this in the future</div>
                 </div>
@@ -215,10 +217,10 @@ export function GTDProcessingDialog({
               <Button
                 onClick={handleMoveToReference}
                 disabled={!settings?.reference}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Reference</div>
                   <div className="text-xs text-muted-foreground">Information I might need later</div>
                 </div>
@@ -226,10 +228,10 @@ export function GTDProcessingDialog({
               
               <Button
                 onClick={handleDelete}
-                className="justify-start text-left h-auto py-3"
+                className="h-auto justify-start whitespace-normal py-3 text-left"
                 variant="outline"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="font-medium">Delete</div>
                   <div className="text-xs text-muted-foreground">Not needed anymore</div>
                 </div>

@@ -191,7 +191,7 @@ export function GTDOutlineDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         ref={contentRef}
-        className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+        className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-x-hidden overflow-y-auto sm:max-w-2xl"
       >
         {isProcessing && (
           <div className="sticky bottom-0 left-0 right-0 top-0 z-50 flex h-screen items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
@@ -204,8 +204,8 @@ export function GTDOutlineDialog({
         <DialogHeader>
           <DialogTitle>
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="text-sm font-normal text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-0 text-sm font-normal text-muted-foreground">
                   GTD Processing
                 </div>
                 {currentIndex !== undefined && totalCount !== undefined && (
@@ -242,11 +242,11 @@ export function GTDOutlineDialog({
                   </div>
                 )}
               </div>
-              <div className="space-y-2 rounded-md border bg-muted/50 px-3 py-2">
-                <div className="text-base font-semibold">
+              <div className="min-w-0 space-y-2 rounded-md border bg-muted/50 px-3 py-2">
+                <div className="break-words text-base font-semibold">
                   {node.name}
                   {node.related_nodes.length > 0 && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="ml-2 break-words text-xs font-normal text-muted-foreground">
                       ·{" "}
                       {node.related_nodes
                         .map((related) => related.name)
@@ -308,7 +308,7 @@ export function GTDOutlineDialog({
                 );
 
                 return (
-                  <div key={category.id} className="flex-1">
+                  <div key={category.id} className="min-w-0 flex-1">
                     <MultiSelectAutocomplete
                       options={options}
                       value={categorySelectedValues}
@@ -376,14 +376,14 @@ export function GTDOutlineDialog({
               </div>
               <h3 className="font-semibold">Can you do it in 2 minutes?</h3>
             </div>
-            <div className="ml-8">
+            <div className="ml-8 min-w-0">
               <Button
                 onClick={() => handleAction("move", settings?.nextActions)}
                 disabled={!settings?.nextActions}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Yes - Do it now</div>
                   <div className="text-xs text-muted-foreground">
                     Mark item as completed
@@ -405,14 +405,14 @@ export function GTDOutlineDialog({
                 If it takes longer, what type of action is it?
               </h3>
             </div>
-            <div className="ml-8 space-y-2">
+            <div className="ml-8 min-w-0 space-y-2">
               <Button
                 onClick={() => handleAction("move", settings?.nextActions)}
                 disabled={!settings?.nextActions}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Single action (myself)</div>
                   <div className="text-xs text-muted-foreground">
                     Move to Next Actions
@@ -423,10 +423,10 @@ export function GTDOutlineDialog({
               <Button
                 onClick={() => handleAction("move", settings?.waiting)}
                 disabled={!settings?.waiting}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Single action (delegate)</div>
                   <div className="text-xs text-muted-foreground">
                     Move to Waiting For
@@ -437,10 +437,10 @@ export function GTDOutlineDialog({
               <Button
                 onClick={() => handleAction("move", settings?.projects)}
                 disabled={!settings?.projects}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Multi-step project</div>
                   <div className="text-xs text-muted-foreground">
                     Move to Projects
@@ -462,14 +462,14 @@ export function GTDOutlineDialog({
                 Or is it not actionable right now?
               </h3>
             </div>
-            <div className="ml-8 space-y-2">
+            <div className="ml-8 min-w-0 space-y-2">
               <Button
                 onClick={() => handleAction("move", settings?.somedayMaybe)}
                 disabled={!settings?.somedayMaybe}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Might do someday</div>
                   <div className="text-xs text-muted-foreground">
                     Move to Someday/Maybe
@@ -480,10 +480,10 @@ export function GTDOutlineDialog({
               <Button
                 onClick={() => handleAction("move", settings?.reference)}
                 disabled={!settings?.reference}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Keep for reference</div>
                   <div className="text-xs text-muted-foreground">
                     Move to Reference
@@ -493,10 +493,10 @@ export function GTDOutlineDialog({
 
               <Button
                 onClick={() => handleAction("delete")}
-                className="h-auto w-full justify-start py-3"
+                className="h-auto w-full justify-start whitespace-normal py-3"
                 variant="outline"
               >
-                <div className="text-left">
+                <div className="min-w-0 text-left">
                   <div className="font-medium">Not needed</div>
                   <div className="text-xs text-muted-foreground">
                     Delete this item
