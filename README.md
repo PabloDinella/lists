@@ -115,7 +115,7 @@ that runs hourly and can also be run manually from the Actions tab.
 Before using it, add these repository secrets in GitHub:
 
 ```
-SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+SUPABASE_DB_URL=postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@[POOLER-HOST]:6543/postgres
 BACKUP_ENCRYPTION_PASSPHRASE=a-long-random-passphrase
 BACKUP_S3_BUCKET=your-private-backup-bucket
 BACKUP_S3_ENDPOINT_URL=https://your-s3-compatible-endpoint
@@ -126,12 +126,24 @@ BACKUP_S3_REGION=auto
 ```
 
 If your database password contains special characters, use Supabase's copied connection
-string or percent-encode the password.
+string or percent-encode the password. GitHub Actions does not support IPv6 database
+connections, so use the IPv4 Transaction pooler connection string from Supabase
+Dashboard > Connect > Transaction pooler instead of the direct database connection
+string.
 
-The workflow dumps roles, schema, and data, compresses the dump files, encrypts the
-archive with GPG, and uploads only the encrypted `.tar.gz.gpg` file to private
-S3-compatible storage. Do not commit raw database dumps to the repository or upload
-them as GitHub Actions artifacts from this public repository.
+When setting `SUPABASE_DB_URL` with the GitHub CLI, wrap the connection string in
+single quotes so shell characters such as `$` are not expanded locally before the
+secret is stored:
+
+```bash
+gh secret set SUPABASE_DB_URL \
+  --body 'postgresql://postgres.[PROJECT-REF]:p%24ssword@[POOLER-HOST]:6543/postgres'
+```
+
+The workflow dumps roles plus one full `public` schema database dump, compresses the
+dump files, encrypts the archive with GPG, and uploads only the encrypted `.tar.gz.gpg`
+file to private S3-compatible storage. Do not commit raw database dumps to the
+repository or upload them as GitHub Actions artifacts from this public repository.
 
 For Cloudflare R2, use this endpoint format:
 

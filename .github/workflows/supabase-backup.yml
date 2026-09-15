@@ -76,8 +76,17 @@ jobs:
           mkdir "$backup_dir"
 
           supabase db dump --db-url "$SUPABASE_DB_URL" --file "$backup_dir/roles.sql" --role-only
-          supabase db dump --db-url "$SUPABASE_DB_URL" --file "$backup_dir/schema.sql"
-          supabase db dump --db-url "$SUPABASE_DB_URL" --file "$backup_dir/data.sql" --data-only --use-copy
+          docker run --rm \
+            --env SUPABASE_DB_URL \
+            --volume "$PWD/$backup_dir:/backup" \
+            postgres:17-alpine \
+            sh -c 'pg_dump \
+                --dbname "$SUPABASE_DB_URL" \
+                --file /backup/database.sql \
+                --schema public \
+                --quote-all-identifiers \
+                --no-owner \
+                --no-privileges'
 
           tar -czf "$backup_dir.tar.gz" "$backup_dir"
           printf '%s' "$BACKUP_ENCRYPTION_PASSPHRASE" | gpg --batch --yes \
