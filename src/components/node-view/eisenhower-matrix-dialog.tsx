@@ -12,6 +12,10 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useSettings } from "@/hooks/use-settings";
 import { TreeNode } from "./use-list-data";
+import {
+  EisenhowerQuadrant,
+  EISENHOWER_QUADRANTS,
+} from "./eisenhower-matrix";
 import { Info, Check } from "lucide-react";
 
 interface EisenhowerMatrixDialogProps {
@@ -21,12 +25,6 @@ interface EisenhowerMatrixDialogProps {
   onClose: () => void;
   onProcessNext?: () => void;
 }
-
-type EisenhowerQuadrant =
-  | "urgent-important"
-  | "not-urgent-important"
-  | "urgent-not-important"
-  | "not-urgent-not-important";
 
 export function EisenhowerMatrixDialog({
   node,
@@ -111,44 +109,7 @@ export function EisenhowerMatrixDialog({
     }
   };
 
-  const quadrants = [
-    {
-      id: "urgent-important" as EisenhowerQuadrant,
-      title: "Focus Now",
-      description: "Urgent & Important",
-      className:
-        "bg-red-100 hover:bg-red-200 border-red-300 dark:bg-red-950 dark:hover:bg-red-900 dark:border-red-800",
-      textClassName: "text-red-900 dark:text-red-100",
-      descClassName: "text-red-700 dark:text-red-300",
-    },
-    {
-      id: "not-urgent-important" as EisenhowerQuadrant,
-      title: "Plan",
-      description: "Not Urgent & Important",
-      className:
-        "bg-blue-100 hover:bg-blue-200 border-blue-300 dark:bg-blue-950 dark:hover:bg-blue-900 dark:border-blue-800",
-      textClassName: "text-blue-900 dark:text-blue-100",
-      descClassName: "text-blue-700 dark:text-blue-300",
-    },
-    {
-      id: "urgent-not-important" as EisenhowerQuadrant,
-      title: "Quick Win",
-      description: "Urgent & Not Important",
-      className:
-        "bg-yellow-100 hover:bg-yellow-200 border-yellow-300 dark:bg-yellow-950 dark:hover:bg-yellow-900 dark:border-yellow-800",
-      textClassName: "text-yellow-900 dark:text-yellow-100",
-      descClassName: "text-yellow-700 dark:text-yellow-300",
-    },
-    {
-      id: "not-urgent-not-important" as EisenhowerQuadrant,
-      title: "Later",
-      description: "Not Urgent & Not Important",
-      className:
-        "bg-gray-100 hover:bg-gray-200 border-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600",
-      textClassName: "text-gray-900 dark:text-gray-100",
-      descClassName: "text-gray-700 dark:text-gray-300",
-    },
-  ];
+  const quadrants = EISENHOWER_QUADRANTS;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>

@@ -14,6 +14,13 @@ import { useFeatureFlagEnabled } from "posthog-js/react";
 import clsx from "clsx";
 import { TreeNode } from "./use-list-data";
 import { Node } from "@/method/access/nodeAccess/models";
+import {
+  getEisenhowerQuadrantConfig,
+  getEisenhowerPriorityScore,
+  PRIORITY_FILL_COLORS,
+  ENERGY_LABELS,
+  TIME_LABELS,
+} from "./eisenhower-matrix";
 import { renderMarkdown } from "@/lib/utils";
 
 interface BaseNodeItemProps {
@@ -47,6 +54,11 @@ export function BaseNodeItem({
   const isGtdProcessingFeatureEnabled = useFeatureFlagEnabled(
     "gtd-processing-feature",
   );
+
+  const eisenhowerQuadrant = getEisenhowerQuadrantConfig(
+    node.metadata?.eisenhowerQuadrant,
+  );
+  const eisenhowerPriority = getEisenhowerPriorityScore(node.metadata);
 
   const handleNodeClick = () => {
     // Navigate to the list view for this node
@@ -159,15 +171,46 @@ export function BaseNodeItem({
                 <h3
                   className={clsx(
                     "font-medium wrap-anywhere break-all",
-                    "text-sm",
+                    "text-sm flex flex-wrap items-center gap-1.5",
                     {
                       "line-through": node.metadata?.completed,
                     }
                   )}
                 >
-                  {node.name}
+                  <span>{node.name}</span>
+                  {eisenhowerQuadrant && eisenhowerPriority ? (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-0.5"
+                      title={
+                        [
+                          `${eisenhowerQuadrant.title} — ${eisenhowerQuadrant.description}`,
+                          `Priority ${eisenhowerPriority}/4`,
+                          node.metadata?.time
+                            ? TIME_LABELS[node.metadata.time]
+                            : undefined,
+                          node.metadata?.energy
+                            ? ENERGY_LABELS[node.metadata.energy]
+                            : undefined,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")
+                      }
+                    >
+                      {[1, 2, 3, 4].map((level) => (
+                        <span
+                          key={level}
+                          className={clsx(
+                            "h-1.5 w-1.5 rounded-full",
+                            level <= eisenhowerPriority
+                              ? PRIORITY_FILL_COLORS[eisenhowerPriority]
+                              : "bg-muted-foreground/20",
+                          )}
+                        />
+                      ))}
+                    </span>
+                  ) : null}
                   {relatedNodes.length > 0 && (
-                    <span className="ml-2 font-normal text-muted-foreground text-xs">
+                    <span className="font-normal text-muted-foreground text-xs">
                       · {relatedNodes.map((related) => related.name).join(", ")}
                     </span>
                   )}
