@@ -20,6 +20,11 @@ import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
 import { renderMarkdown } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import {
+  filterTreeByTags,
+  getProcessingQueue,
+  getRefiningQueue,
+} from "./node-view-queues";
 
 const findNodeById = (
   nodeTree: TreeNode[],
@@ -159,14 +164,10 @@ export function NodeView() {
   };
 
   const handleStartProcessing = () => {
-    if (!tree || tree.length === 0) return;
-
-    // Capture the list of unprocessed items at the start
-    const unprocessedItems = tree.filter((item) => !item.metadata?.completed);
-    if (unprocessedItems.length > 0) {
-      setProcessingQueue(unprocessedItems);
+    if (processingCandidates.length > 0) {
+      setProcessingQueue(processingCandidates);
       setProcessingIndex(0);
-      setProcessingNode(unprocessedItems[0]);
+      setProcessingNode(processingCandidates[0]);
     }
   };
 
@@ -222,16 +223,10 @@ export function NodeView() {
   };
 
   const handleStartRefining = () => {
-    if (!tree || tree.length === 0) return;
-
-    // Capture the list of unclassified items at the start
-    const unclassifiedItems = tree.filter(
-      (item) => !item.metadata?.completed && !item.metadata?.eisenhowerQuadrant,
-    );
-    if (unclassifiedItems.length > 0) {
-      setRefiningQueue(unclassifiedItems);
+    if (refiningCandidates.length > 0) {
+      setRefiningQueue(refiningCandidates);
       setRefiningIndex(0);
-      setRefiningNode(unclassifiedItems[0]);
+      setRefiningNode(refiningCandidates[0]);
     }
   };
 
@@ -293,48 +288,12 @@ export function NodeView() {
       ? filterTreeByTags(tree, selectedFilters)
       : tree;
 
-  // Get unprocessed items count for the Process button
-  const unprocessedCount =
-    filteredTree?.filter((item) => !item.metadata?.completed).length || 0;
+  // Use the same filtered candidates for button counts and processing queues.
+  const processingCandidates = getProcessingQueue(tree ?? [], selectedFilters);
+  const refiningCandidates = getRefiningQueue(tree ?? [], selectedFilters);
 
-  // Get unclassified items count for the Refine button
-  const unclassifiedCount =
-    filteredTree?.filter(
-      (item) => !item.metadata?.completed && !item.metadata?.eisenhowerQuadrant,
-    ).length || 0;
-
-  // Helper function to filter tree based on selected tag filters
-  function filterTreeByTags(
-    nodes: TreeNode[],
-    filterTagIds: number[],
-  ): TreeNode[] {
-    return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
-      // Check if this node has ALL of the selected tags in its related_nodes (AND logic)
-      const hasAllSelectedTags = filterTagIds.every((tagId) =>
-        node.related_nodes.some((relatedNode) => relatedNode.id === tagId),
-      );
-
-      // If it has all selected tags or if no filters are applied, include it
-      if (hasAllSelectedTags || filterTagIds.length === 0) {
-        const filteredChildren = filterTreeByTags(node.children, filterTagIds);
-        filteredNodes.push({
-          ...node,
-          children: filteredChildren,
-        });
-      } else {
-        // Even if the node doesn't match, check if any children match
-        const filteredChildren = filterTreeByTags(node.children, filterTagIds);
-        if (filteredChildren.length > 0) {
-          filteredNodes.push({
-            ...node,
-            children: filteredChildren,
-          });
-        }
-      }
-
-      return filteredNodes;
-    }, []);
-  }
+  const unprocessedCount = processingCandidates.length;
+  const unclassifiedCount = refiningCandidates.length;
 
   // Create breadcrumb title component
   const breadcrumbTitle = isManagingLists ? (
