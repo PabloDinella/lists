@@ -12,11 +12,9 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import { useSettings } from "@/hooks/use-settings";
 import { TreeNode } from "./use-list-data";
-import {
-  EisenhowerQuadrant,
-  EISENHOWER_QUADRANTS,
-} from "./eisenhower-matrix";
+import { EisenhowerQuadrant, EISENHOWER_QUADRANTS } from "./eisenhower-matrix";
 import { Info, Check } from "lucide-react";
+import clsx from "clsx";
 
 interface EisenhowerMatrixDialogProps {
   node: TreeNode;
@@ -115,11 +113,14 @@ export function EisenhowerMatrixDialog({
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Eisenhower Matrix: {node.name}</DialogTitle>
+          <DialogTitle>Refine</DialogTitle>
           <DialogDescription>
             Classify this item by urgency and importance to prioritize your
             work.
           </DialogDescription>
+          <div className="wrap-anywhere break-words rounded-md border bg-muted/50 px-3 py-2 text-center text-lg font-semibold text-foreground">
+            {node.name}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -136,13 +137,19 @@ export function EisenhowerMatrixDialog({
                 }`}
               >
                 <div className="space-y-2 text-left">
-                  <h3
-                    className={`text-lg font-semibold ${quadrant.textClassName}`}
-                  >
-                    {quadrant.title}
-                  </h3>
+                  {!onProcessNext && (
+                    <h3
+                      className={`text-lg font-semibold ${quadrant.textClassName}`}
+                    >
+                      {quadrant.title}
+                    </h3>
+                  )}
                   <p
-                    className={`text-sm font-medium ${quadrant.descClassName}`}
+                    className={clsx(
+                      "font-medium",
+                      onProcessNext ? "text-base" : "text-sm",
+                      quadrant.descClassName,
+                    )}
                   >
                     {quadrant.description}
                   </p>
