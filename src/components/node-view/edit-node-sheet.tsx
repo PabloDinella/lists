@@ -18,6 +18,7 @@ import { SingleSelectAutocomplete } from "../ui/single-select-autocomplete";
 
 import { NodeTypeSelector } from "./node-type-selector";
 import { TagsSelector } from "./tags-selector";
+import { DueDatePicker } from "./due-date-picker";
 import { useAddUpdateNode } from "@/hooks/use-add-update-node";
 import { useAuth } from "@/hooks/use-auth";
 import { useNodeId } from "@/hooks/use-node-id";
@@ -37,6 +38,7 @@ interface EditNodeSheetProps {
 interface FormData {
   name: string;
   description: string;
+  dueDate: string;
   parentId: number | null;
   nodeType: "list" | "tagging" | "tag" | "loop";
   selectedRelatedNodes: number[];
@@ -66,6 +68,7 @@ export function EditNodeSheet({
 
   // State for "create more" option
   const [createMore, setCreateMore] = useState(false);
+  const [sheetContent, setSheetContent] = useState<HTMLDivElement | null>(null);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -132,6 +135,7 @@ export function EditNodeSheet({
     defaultValues: {
       name: "",
       description: "",
+      dueDate: "",
       parentId: defaultParentId,
       nodeType:
         defaultMetadata?.type === "root" || !defaultMetadata?.type
@@ -156,6 +160,7 @@ export function EditNodeSheet({
       reset({
         name: node.name || "",
         description: node.content || "",
+        dueDate: node.metadata?.dueDate || "",
         parentId: node.parent_node || defaultParentId,
         nodeType:
           (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
@@ -166,6 +171,7 @@ export function EditNodeSheet({
       reset({
         name: "",
         description: "",
+        dueDate: "",
         parentId: defaultParentId,
         nodeType:
           defaultMetadata?.type === "root" || !defaultMetadata?.type
@@ -180,6 +186,7 @@ export function EditNodeSheet({
   const parentId = watch("parentId");
   const nodeType = watch("nodeType");
   const selectedRelatedNodes = watch("selectedRelatedNodes");
+  const dueDate = watch("dueDate");
   const name = watch("name");
 
   // Check if saving
@@ -215,10 +222,16 @@ export function EditNodeSheet({
   const handleSave = handleSubmit(async (data: FormData) => {
     if (!data.name.trim() || !user?.id) return;
 
-    let metadata: Metadata | undefined = undefined;
+    const metadata: Metadata = {
+      ...(mode === "edit" ? node?.metadata : defaultMetadata),
+      type: data.nodeType,
+    };
 
-    // Always use the selected node type
-    metadata = { type: data.nodeType };
+    if (data.dueDate) {
+      metadata.dueDate = data.dueDate;
+    } else {
+      delete metadata.dueDate;
+    }
 
     // Add default children metadata for lists
     if (data.nodeType === "list") {
@@ -243,6 +256,7 @@ export function EditNodeSheet({
         reset({
           name: "",
           description: "",
+          dueDate: "",
           parentId: data.parentId, // Keep the same parent
           nodeType: data.nodeType, // Keep the same type
           selectedRelatedNodes: [], // Clear tags for new item
@@ -266,10 +280,16 @@ export function EditNodeSheet({
   const handleSaveAndOpen = handleSubmit(async (data: FormData) => {
     if (!data.name.trim() || !user?.id) return;
 
-    let metadata: Metadata | undefined = undefined;
+    const metadata: Metadata = {
+      ...(mode === "edit" ? node?.metadata : defaultMetadata),
+      type: data.nodeType,
+    };
 
-    // Always use the selected node type
-    metadata = { type: data.nodeType };
+    if (data.dueDate) {
+      metadata.dueDate = data.dueDate;
+    } else {
+      delete metadata.dueDate;
+    }
 
     // Add default children metadata for lists
     if (data.nodeType === "list") {
@@ -308,6 +328,7 @@ export function EditNodeSheet({
         reset({
           name: "",
           description: "",
+          dueDate: "",
           parentId: defaultParentId,
           nodeType:
             defaultMetadata?.type === "root" || !defaultMetadata?.type
@@ -320,6 +341,7 @@ export function EditNodeSheet({
         reset({
           name: node.name || "",
           description: node.content || "",
+          dueDate: node.metadata?.dueDate || "",
           parentId: node.parent_node || defaultParentId,
           nodeType:
             (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
@@ -359,7 +381,7 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="flex flex-col w-full h-full sm:w-3/4 sm:max-w-md">
+      <SheetContent ref={setSheetContent} className="flex flex-col w-full h-full sm:w-3/4 sm:max-w-md">
         <SheetHeader className="flex-shrink-0">
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
@@ -404,6 +426,17 @@ export function EditNodeSheet({
                 </kbd>{" "}
                 to save
               </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="dueDate">Due date</Label>
+              <DueDatePicker
+                id="dueDate"
+                value={dueDate}
+                onChange={(value) => setValue("dueDate", value)}
+                disabled={isSaving}
+                portalContainer={sheetContent}
+              />
             </div>
 
             {/* Show parent selection for create mode or edit mode with existing parent */}

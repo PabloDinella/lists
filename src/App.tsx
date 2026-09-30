@@ -3,6 +3,7 @@ import { ThemeProvider } from "./components/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { NodeView } from "./components/node-view/node-view";
+import { DueView } from "./components/due-view";
 import { SignIn } from "./components/sign-in";
 import { ProtectedRoute } from "./components/protected-route";
 import { SettingsView } from "./components/settings-view";
@@ -30,6 +31,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AppRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/due"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <DueView />
+                  </SidebarProvider>
                 </ProtectedRoute>
               }
             />

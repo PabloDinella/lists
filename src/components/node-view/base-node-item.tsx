@@ -1,4 +1,4 @@
-import { GripVertical, Edit, Trash2, Sparkles, Grid2x2 } from "lucide-react";
+import { GripVertical, Edit, Trash2, Sparkles, Grid2x2, CalendarDays } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -22,6 +22,7 @@ import {
   TIME_LABELS,
 } from "./eisenhower-matrix";
 import { renderMarkdown } from "@/lib/utils";
+import { formatDueDate } from "@/lib/due-date";
 
 interface BaseNodeItemProps {
   node: TreeNode;
@@ -212,6 +213,15 @@ export function BaseNodeItem({
                   {relatedNodes.length > 0 && (
                     <span className="font-normal text-muted-foreground text-xs">
                       · {relatedNodes.map((related) => related.name).join(", ")}
+                    </span>
+                  )}
+                  {node.metadata?.dueDate && (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground"
+                      title={`Due ${formatDueDate(node.metadata.dueDate)}`}
+                    >
+                      <CalendarDays className="h-3 w-3" aria-hidden="true" />
+                      <span>Due {formatDueDate(node.metadata.dueDate)}</span>
                     </span>
                   )}
                 </h3>

@@ -19,6 +19,7 @@ import { Grid2x2 } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
 import { renderMarkdown } from "@/lib/utils";
+import { formatDueDate } from "@/lib/due-date";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   filterTreeByTags,
@@ -437,6 +438,11 @@ export function NodeView() {
                       }
                     }}
                   />
+                )}
+                {currentNode.metadata?.dueDate && (
+                  <p className="text-sm text-muted-foreground">
+                    Due {formatDueDate(currentNode.metadata.dueDate)}
+                  </p>
                 )}
               </div>
             )}

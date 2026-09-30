@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   MessageSquare,
+  CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -222,6 +223,7 @@ export function AppSidebar() {
   const { user } = useAuth();
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Sign out function
   const handleSignOut = async () => {
@@ -250,6 +252,21 @@ export function AppSidebar() {
             <h1 className="text-xl font-bold">trylists.app</h1>
           </Link>
         </div>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/due"}>
+                  <Link to="/due" className="select-none">
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    <span>Due items</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto">
