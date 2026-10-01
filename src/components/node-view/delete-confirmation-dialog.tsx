@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
+import { ShortcutHint } from "../ui/shortcut-hint";
 import { TreeNode } from "./use-list-data";
 
 interface DeleteConfirmationDialogProps {
@@ -180,6 +181,7 @@ export function DeleteConfirmationDialog({
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose} disabled={isDeleting}>
             Cancel
+            <ShortcutHint shortcut="Esc" />
           </Button>
           <Button 
             variant="destructive" 

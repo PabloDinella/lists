@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useNodeSearch, SearchResult } from '@/hooks/use-node-search';
 import { TreeNode } from './node-view/use-list-data';
+import { ShortcutHint } from './ui/shortcut-hint';
 
 interface SearchInputProps {
   nodes: TreeNode[];
@@ -13,7 +14,7 @@ interface SearchInputProps {
   placeholder?: string;
 }
 
-export function SearchInput({ nodes, className, placeholder = "Search lists and items... (Cmd/Ctrl + /)" }: SearchInputProps) {
+export function SearchInput({ nodes, className, placeholder = "Search lists and items..." }: SearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -105,8 +106,14 @@ export function SearchInput({ nodes, className, placeholder = "Search lists and 
             setTimeout(() => setIsOpen(false), 150);
           }}
           onKeyDown={handleKeyDown}
-          className="pl-10 pr-10"
+          className={cn('pl-10', query ? 'pr-10' : 'pr-20')}
         />
+        {!query && (
+          <ShortcutHint
+            shortcut="Mod+/"
+            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+        )}
         {query && (
           <Button
             size="sm"

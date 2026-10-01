@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import {
@@ -13,7 +12,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Checkbox } from "../ui/checkbox";
+import { ShortcutHint } from "../ui/shortcut-hint";
 import { SingleSelectAutocomplete } from "../ui/single-select-autocomplete";
 
 import { NodeTypeSelector } from "./node-type-selector";
@@ -58,7 +57,6 @@ export function EditNodeSheet({
   defaultMetadata,
 }: EditNodeSheetProps) {
   const nodeId = useNodeId();
-  const navigate = useNavigate();
 
   const { user } = useAuth();
   const addUpdateNodeMutation = useAddUpdateNode();
@@ -66,8 +64,6 @@ export function EditNodeSheet({
   // Get user settings for quick list buttons
   const { data: settings } = useSettings(user?.id || null);
 
-  // State for "create more" option
-  const [createMore, setCreateMore] = useState(false);
   const [sheetContent, setSheetContent] = useState<HTMLDivElement | null>(null);
 
   // Determine if we're managing lists (root level) or viewing a specific list
@@ -219,7 +215,7 @@ export function EditNodeSheet({
   // Determine if the current node is structural based on metadata
   const isStructuralMode = node?.metadata?.type === "list";
 
-  const handleSave = handleSubmit(async (data: FormData) => {
+  const saveNode = async (data: FormData, createAnother: boolean) => {
     if (!data.name.trim() || !user?.id) return;
 
     const metadata: Metadata = {
@@ -250,8 +246,7 @@ export function EditNodeSheet({
         relationType: "tagged_with",
       });
 
-      // In create mode, check if user wants to create more
-      if (mode === "create" && createMore) {
+      if (mode === "create" && createAnother) {
         // Reset form for next item but keep parent and type
         reset({
           name: "",
@@ -275,50 +270,10 @@ export function EditNodeSheet({
     } catch (error) {
       console.error(`Failed to ${mode} node:`, error);
     }
-  });
+  };
 
-  const handleSaveAndOpen = handleSubmit(async (data: FormData) => {
-    if (!data.name.trim() || !user?.id) return;
-
-    const metadata: Metadata = {
-      ...(mode === "edit" ? node?.metadata : defaultMetadata),
-      type: data.nodeType,
-    };
-
-    if (data.dueDate) {
-      metadata.dueDate = data.dueDate;
-    } else {
-      delete metadata.dueDate;
-    }
-
-    // Add default children metadata for lists
-    if (data.nodeType === "list") {
-      metadata.defaultChildrenMetadata = { type: "loop" };
-    }
-
-    try {
-      if (mode === "create") {
-        const result = await addUpdateNodeMutation.mutateAsync({
-          name: data.name.trim(),
-          content: normalizeDescription(data.description),
-          parentNode: data.parentId || undefined,
-          userId: user.id,
-          metadata: metadata, // Always provide metadata
-          relatedNodeIds: data.selectedRelatedNodes,
-          relationType: "tagged_with",
-        });
-
-        handleClose(); // Close the sheet after successful save
-
-        // Navigate to the created item
-        if ("result" in result) {
-          navigate(`/lists/${result.result.id}`);
-        }
-      }
-    } catch (error) {
-      console.error(`Failed to ${mode} node:`, error);
-    }
-  });
+  const handleSave = handleSubmit((data) => saveNode(data, false));
+  const handleCreateMore = handleSubmit((data) => saveNode(data, true));
 
   const handleClose = () => {
     onClose();
@@ -381,7 +336,25 @@ export function EditNodeSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent ref={setSheetContent} className="flex flex-col w-full h-full sm:w-3/4 sm:max-w-md">
+      <SheetContent
+        ref={setSheetContent}
+        className="flex h-full w-full flex-col sm:w-[36rem] sm:max-w-[90vw]"
+        onKeyDownCapture={(event) => {
+          if (
+            event.key === "Enter" &&
+            (event.ctrlKey || event.metaKey) &&
+            !event.altKey &&
+            !event.repeat
+          ) {
+            if (event.shiftKey && mode !== "create") return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isSaving && name.trim()) {
+              void (event.shiftKey ? handleCreateMore() : handleSave());
+            }
+          }
+        }}
+      >
         <SheetHeader className="flex-shrink-0">
           <SheetTitle>{modeContent.title}</SheetTitle>
           <SheetDescription>{modeContent.description}</SheetDescription>
@@ -408,24 +381,7 @@ export function EditNodeSheet({
                 placeholder={modeContent.descriptionPlaceholder}
                 rows={3}
                 disabled={isSaving}
-                onKeyDown={(e) => {
-                  if (e.ctrlKey && e.key === "Enter") {
-                    e.preventDefault();
-                    handleSave();
-                  }
-                }}
               />
-              <p className="text-xs text-muted-foreground">
-                Press{" "}
-                <kbd className="rounded border bg-muted px-1.5 py-0.5 text-xs font-semibold">
-                  Ctrl
-                </kbd>
-                +
-                <kbd className="rounded border bg-muted px-1.5 py-0.5 text-xs font-semibold">
-                  Enter
-                </kbd>{" "}
-                to save
-              </p>
             </div>
 
             <div className="grid gap-2">
@@ -591,24 +547,7 @@ export function EditNodeSheet({
             />
           </div>
 
-          {/* Create more option for create mode */}
-          {mode === "create" && (
-            <div className="mb-2 flex items-center justify-end space-x-2 px-1 py-2">
-              <Checkbox
-                id="create-more"
-                checked={createMore}
-                onCheckedChange={(checked) => setCreateMore(checked === true)}
-              />
-              <Label
-                htmlFor="create-more"
-                className="cursor-pointer text-sm font-normal"
-              >
-                Create more items
-              </Label>
-            </div>
-          )}
-
-          <SheetFooter className="flex-shrink-0 mt-auto">
+          <SheetFooter className="mt-auto flex-shrink-0">
             <Button
               type="button"
               variant="outline"
@@ -616,15 +555,17 @@ export function EditNodeSheet({
               disabled={isSaving}
             >
               Cancel
+              <ShortcutHint shortcut="Esc" />
             </Button>
             {mode === "create" && (
               <Button
                 type="button"
-                onClick={handleSaveAndOpen}
+                onClick={handleCreateMore}
                 disabled={!name.trim() || isSaving}
                 variant="outline"
               >
-                {isSaving ? "Creating..." : "Create and open"}
+                {isSaving ? "Creating..." : "Create and add another"}
+                <ShortcutHint shortcut="Mod+Shift+Enter" />
               </Button>
             )}
             <Button type="submit" disabled={!name.trim() || isSaving}>
@@ -635,6 +576,7 @@ export function EditNodeSheet({
                 : mode === "create"
                   ? "Create"
                   : "Save changes"}
+              <ShortcutHint shortcut="Mod+Enter" />
             </Button>
           </SheetFooter>
         </form>

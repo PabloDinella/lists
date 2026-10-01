@@ -12,7 +12,7 @@ import { EisenhowerMatrixDialog } from "./eisenhower-matrix-dialog";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
 import { Button } from "../ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Plus } from "lucide-react";
 import { BrushCleaning } from "lucide-react";
 import { Settings } from "lucide-react";
 import { Grid2x2 } from "lucide-react";
@@ -74,7 +74,7 @@ export function NodeView() {
   const nodeId = useNodeId();
   const navigate = useNavigate();
   const [editingNode, setEditingNode] = useState<Node | null>(null);
-  const [sheetMode, setSheetMode] = useState<"edit" | "create">("edit");
+  const [isCreatingList, setIsCreatingList] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<number[]>([]);
   const [processingNode, setProcessingNode] = useState<TreeNode | null>(null);
   const [processingQueue, setProcessingQueue] = useState<TreeNode[]>([]);
@@ -119,17 +119,11 @@ export function NodeView() {
 
   const handleEditStart = (node: Node) => {
     setEditingNode(node);
-    setSheetMode("edit");
-  };
-
-  const handleCreateStart = () => {
-    setEditingNode(null);
-    setSheetMode("create");
   };
 
   const handleSheetClose = () => {
     setEditingNode(null);
-    setSheetMode("edit"); // Reset to edit mode
+    setIsCreatingList(false);
   };
 
   const handleDelete = async (nodeId: number) => {
@@ -311,8 +305,6 @@ export function NodeView() {
   return (
     <AppLayout
       title={breadcrumbTitle}
-      onNewItem={handleCreateStart}
-      newItemLabel={isManagingLists ? "New List" : "New Item"}
       searchNodes={allNodesTree}
     >
       {/* Tag filters - full width outside container */}
@@ -334,7 +326,13 @@ export function NodeView() {
         {!isLoading && !isError && (
           <div className="space-y-4">
             {isManagingLists && (
-              <h2 className="text-xl font-semibold">Your lists</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Your lists</h2>
+                <Button onClick={() => setIsCreatingList(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New List
+                </Button>
+              </div>
             )}
 
             {/* Show current list name and description when viewing a specific list */}
@@ -481,15 +479,17 @@ export function NodeView() {
         )}
       </Container>
 
-      {(sheetMode === "create" || editingNode !== null) && (
+      {(editingNode !== null || isCreatingList) && (
         <EditNodeSheet
           node={editingNode}
-          isOpen={sheetMode === "create" || editingNode !== null}
+          isOpen={editingNode !== null || isCreatingList}
           onClose={handleSheetClose}
-          mode={sheetMode}
+          mode={isCreatingList ? "create" : "edit"}
           defaultParentId={currentNode?.id ?? 1}
           defaultMetadata={
-            currentNode?.metadata?.defaultChildrenMetadata ?? undefined
+            isCreatingList
+              ? { type: "list" }
+              : currentNode?.metadata?.defaultChildrenMetadata ?? undefined
           }
         />
       )}
