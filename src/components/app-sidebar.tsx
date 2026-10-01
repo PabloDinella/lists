@@ -7,6 +7,7 @@ import {
   ChevronRight,
   MessageSquare,
   CalendarDays,
+  ClipboardCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -261,6 +262,14 @@ export function AppSidebar() {
                   <Link to="/due" className="select-none">
                     <CalendarDays className="mr-2 h-4 w-4" />
                     <span>Needs Attention</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/review"}>
+                  <Link to="/review" className="select-none">
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    <span>Review</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

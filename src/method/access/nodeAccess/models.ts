@@ -19,6 +19,7 @@ export const metadataSchema = z.object({
   energy: z.string().optional(),
   time: z.string().optional(),
   dueDate: z.string().optional(),
+  lastReviewedAt: z.string().datetime({ offset: true }).optional(),
   waitingFor: z.string().optional(),
   scheduledDate: z.string().optional(),
   isRepeating: z.boolean().optional(),

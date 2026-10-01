@@ -319,12 +319,13 @@ export function BaseNodeItem({
       </div>
       {children}
       {/* GTD Processing Dialog */}
-      {user?.id && (
+      {user?.id && isGTDDialogOpen && (
         <GTDProcessingDialog
           node={node}
           userId={user.id}
           isOpen={isGTDDialogOpen}
           onClose={() => setIsGTDDialogOpen(false)}
+          onEdit={() => onEditStart(node)}
         />
       )}
       {/* Eisenhower Matrix Dialog */}

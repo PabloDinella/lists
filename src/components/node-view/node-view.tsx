@@ -7,7 +7,7 @@ import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
 import { EditNodeSheet } from "./edit-node-sheet";
-import { GTDOutlineDialog } from "./gtd-outline-dialog";
+import { GTDWorkflowDialog } from "./gtd-workflow-dialog";
 import { EisenhowerMatrixDialog } from "./eisenhower-matrix-dialog";
 import { TreeNode, useListData } from "./use-list-data";
 import { TagFilters } from "./tag-filters";
@@ -18,6 +18,7 @@ import { Settings } from "lucide-react";
 import { Grid2x2 } from "lucide-react";
 import { Node } from "@/method/access/nodeAccess/models";
 import { useAuth } from "@/hooks/use-auth";
+import { useSettings } from "@/hooks/use-settings";
 import { renderMarkdown } from "@/lib/utils";
 import { formatDueDate } from "@/lib/due-date";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -86,6 +87,7 @@ export function NodeView() {
   const { user } = useAuth();
 
   const userId = user?.id || null;
+  const { data: settings } = useSettings(userId);
 
   // Determine if we're managing lists (root level) or viewing a specific list
   const isManagingLists = !nodeId;
@@ -192,28 +194,9 @@ export function NodeView() {
     }
   };
 
-  const handleNavigateNext = () => {
-    if (processingIndex < processingQueue.length - 1) {
-      const nextIndex = processingIndex + 1;
-      setProcessingIndex(nextIndex);
-      setProcessingNode(processingQueue[nextIndex]);
-    }
-  };
-
   const handleEditFromProcessing = () => {
     if (processingNode) {
-      handleEditStart(processingNode);
-    }
-  };
-
-  const handleNodeUpdated = (updatedNode: TreeNode) => {
-    // Update the node in the processing queue
-    setProcessingQueue((prevQueue) =>
-      prevQueue.map((n) => (n.id === updatedNode.id ? updatedNode : n)),
-    );
-    // Update the current processing node if it matches
-    if (processingNode && processingNode.id === updatedNode.id) {
-      setProcessingNode(updatedNode);
+      handleEditStart(findNodeById(allNodesTree, processingNode.id) ?? processingNode);
     }
   };
 
@@ -276,6 +259,10 @@ export function NodeView() {
     !isManagingLists && rootNode
       ? rootNode.children.filter((node) => node.metadata?.type === "tagging")
       : [];
+  const workflowTagCategories = [settings?.areasOfFocus, settings?.contexts]
+    .filter((id): id is number => id != null)
+    .map((id) => flattenedAllItems.find((node) => node.id === id))
+    .filter((node): node is TreeNode => !!node);
 
   // Filter tree based on selected filters
   const filteredTree =
@@ -504,19 +491,40 @@ export function NodeView() {
             tree.find((item) => item.id === processingNode.id) ||
             processingNode;
           return (
-            <GTDOutlineDialog
+            <GTDWorkflowDialog
+              key={currentLiveNode.id}
+              mode="process"
               node={currentLiveNode}
               userId={userId}
+              settings={settings ?? null}
+              tagCategories={workflowTagCategories}
+              context={currentNode?.name}
+              invalidMoveTargetIds={[
+                settings?.nextActions,
+                settings?.waiting,
+                settings?.projects,
+                settings?.scheduled,
+                settings?.somedayMaybe,
+                settings?.reference,
+              ]
+                .filter((id): id is number => id != null)
+                .filter((targetId) => {
+                  const seen = new Set<number>();
+                  let candidate: number | null | undefined = targetId;
+                  while (candidate != null && !seen.has(candidate)) {
+                    if (candidate === currentLiveNode.id) return true;
+                    seen.add(candidate);
+                    candidate = flattenedAllItems.find((node) => node.id === candidate)?.parent_node;
+                  }
+                  return false;
+                })}
               isOpen={!!processingNode}
               onClose={handleProcessingClose}
-              onProcessNext={handleProcessNext}
+              onAdvance={handleProcessNext}
               currentIndex={processingIndex}
               totalCount={processingQueue.length}
-              onNavigatePrevious={handleNavigatePrevious}
-              onNavigateNext={handleNavigateNext}
+              onPrevious={handleNavigatePrevious}
               onEdit={handleEditFromProcessing}
-              onNodeUpdated={handleNodeUpdated}
-              tagNodes={tagNodes}
             />
           );
         })()}

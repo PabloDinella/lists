@@ -1,14 +1,7 @@
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
-import { useUpdateNode } from "@/hooks/use-update-node";
 import { useSettings } from "@/hooks/use-settings";
-import { TreeNode } from "./use-list-data";
+import type { TreeNode } from "./use-list-data";
+import { useListData } from "./use-list-data";
+import { GTDWorkflowDialog } from "./gtd-workflow-dialog";
 
 interface GTDProcessingDialogProps {
   node: TreeNode;
@@ -16,241 +9,64 @@ interface GTDProcessingDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onProcessNext?: (currentNodeId: number) => void;
+  onEdit?: () => void;
 }
 
+function flatten(nodes: TreeNode[]): TreeNode[] {
+  return nodes.flatMap((item) => [item, ...flatten(item.children)]);
+}
+
+/** The item-level Process entry point uses the same workflow dialog as the queues. */
 export function GTDProcessingDialog({
   node,
   userId,
   isOpen,
   onClose,
   onProcessNext,
+  onEdit,
 }: GTDProcessingDialogProps) {
-  const updateNodeMutation = useUpdateNode();
   const { data: settings } = useSettings(userId);
-
-  const handleMarkComplete = () => {
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      metadata: {
-        completed: true,
-      },
+  const { hierarchicalTree } = useListData({ userId });
+  const allNodes = flatten(hierarchicalTree);
+  const nodeById = new Map(allNodes.map((item) => [item.id, item]));
+  const currentNode = nodeById.get(node.id) ?? node;
+  const tagCategories = [settings?.areasOfFocus, settings?.contexts]
+    .filter((id): id is number => id != null)
+    .map((id) => nodeById.get(id))
+    .filter((item): item is TreeNode => !!item);
+  const invalidMoveTargetIds = [
+    settings?.nextActions,
+    settings?.waiting,
+    settings?.projects,
+    settings?.scheduled,
+    settings?.somedayMaybe,
+    settings?.reference,
+  ]
+    .filter((id): id is number => id != null)
+    .filter((targetId) => {
+      const seen = new Set<number>();
+      let candidate: number | null | undefined = targetId;
+      while (candidate != null && !seen.has(candidate)) {
+        if (candidate === node.id) return true;
+        seen.add(candidate);
+        candidate = nodeById.get(candidate)?.parent_node;
+      }
+      return false;
     });
-    handleProcessNext();
-  };
-
-  const handleMoveToNextActions = () => {
-    if (!settings?.nextActions) return;
-    
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      parentNode: settings.nextActions,
-    });
-    handleProcessNext();
-  };
-
-  const handleMoveToWaiting = () => {
-    if (!settings?.waiting) return;
-    
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      parentNode: settings.waiting,
-    });
-    handleProcessNext();
-  };
-
-  const handleMoveToSomedayMaybe = () => {
-    if (!settings?.somedayMaybe) return;
-    
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      parentNode: settings.somedayMaybe,
-    });
-    handleProcessNext();
-  };
-
-  const handleMoveToProjects = () => {
-    if (!settings?.projects) return;
-    
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      parentNode: settings.projects,
-    });
-    handleProcessNext();
-  };
-
-  const handleMoveToReference = () => {
-    if (!settings?.reference) return;
-    
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      parentNode: settings.reference,
-    });
-    handleProcessNext();
-  };
-
-  const handleDelete = () => {
-    // Mark as completed for now - could implement actual deletion if needed
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      userId,
-      metadata: {
-        completed: true,
-      },
-    });
-    handleProcessNext();
-  };
-
-  const handleProcessNext = () => {
-    if (onProcessNext) {
-      onProcessNext(node.id);
-    } else {
-      onClose();
-    }
-  };
-
-  const handleDialogChange = (open: boolean) => {
-    if (!open) {
-      onClose();
-    }
-  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] overflow-x-hidden sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="break-words">
-            GTD Processing: {node.name}
-          </DialogTitle>
-          <DialogDescription>
-            Choose the appropriate action for this item based on the Getting Things Done methodology.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          {/* Quick Actions Section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                onClick={handleMarkComplete}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Do it now (2 min rule)</div>
-                  <div className="text-xs text-muted-foreground">Complete this task immediately and mark as done</div>
-                </div>
-              </Button>
-            </div>
-          </div>
-
-          {/* Actionable Items Section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Actionable Items
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                onClick={handleMoveToNextActions}
-                disabled={!settings?.nextActions}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Next Actions</div>
-                  <div className="text-xs text-muted-foreground">Single action I can do myself</div>
-                </div>
-              </Button>
-              
-              <Button
-                onClick={handleMoveToWaiting}
-                disabled={!settings?.waiting}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Waiting For</div>
-                  <div className="text-xs text-muted-foreground">Delegated to someone else or waiting for response</div>
-                </div>
-              </Button>
-              
-              <Button
-                onClick={handleMoveToProjects}
-                disabled={!settings?.projects}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Projects</div>
-                  <div className="text-xs text-muted-foreground">Multi-step outcome requiring several actions</div>
-                </div>
-              </Button>
-            </div>
-          </div>
-
-          {/* Non-Actionable Items Section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Non-Actionable Items
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                onClick={handleMoveToSomedayMaybe}
-                disabled={!settings?.somedayMaybe}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Someday/Maybe</div>
-                  <div className="text-xs text-muted-foreground">Might want to do this in the future</div>
-                </div>
-              </Button>
-              
-              <Button
-                onClick={handleMoveToReference}
-                disabled={!settings?.reference}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Reference</div>
-                  <div className="text-xs text-muted-foreground">Information I might need later</div>
-                </div>
-              </Button>
-              
-              <Button
-                onClick={handleDelete}
-                className="h-auto justify-start whitespace-normal py-3 text-left"
-                variant="outline"
-              >
-                <div className="min-w-0">
-                  <div className="font-medium">Delete</div>
-                  <div className="text-xs text-muted-foreground">Not needed anymore</div>
-                </div>
-              </Button>
-            </div>
-          </div>
-
-          {/* Cancel Section */}
-          <div className="pt-2 border-t">
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              className="w-full"
-            >
-              Cancel Processing
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <GTDWorkflowDialog
+      key={currentNode.id}
+      mode="process"
+      node={currentNode}
+      userId={userId}
+      settings={settings ?? null}
+      tagCategories={tagCategories}
+      invalidMoveTargetIds={invalidMoveTargetIds}
+      isOpen={isOpen}
+      onClose={onClose}
+      onAdvance={() => onProcessNext ? onProcessNext(node.id) : onClose()}
+      onEdit={onEdit}
+    />
   );
 }

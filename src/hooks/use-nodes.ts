@@ -11,19 +11,19 @@ export function useNodes(params: UseNodesParams) {
     queryKey: ["nodes", params.userId, String(params.parentNode)],
     queryFn: async () => {
       if (!params.userId) {
-        return { result: [] };
+        return [];
       }
-      return viewNodesManager({
+      const response = await viewNodesManager({
         userId: params.userId,
         parentNodeId: params.parentNode,
       });
+      if ("error" in response) {
+        throw response.error instanceof Error
+          ? response.error
+          : new Error("Failed to load nodes");
+      }
+      return response.result;
     },
     enabled: !!params.userId,
-    select: (data) => {
-      if ('result' in data) {
-        return data.result;
-      }
-      return [];
-    },
   });
 }
