@@ -14,6 +14,7 @@ import { PricingPage } from "./site/pricing-page";
 import { PrivacyPolicy } from "./site/privacy-policy";
 import { TermsOfService } from "./site/terms-of-service";
 import { AuthProvider } from "./contexts/auth-context";
+import { OAuthConsent } from "./components/oauth-consent";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/oauth/consent" element={<OAuthConsent />} />
             <Route
               path="/app"
               element={

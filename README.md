@@ -60,7 +60,7 @@ Ideas and thoughts that could turn into new features:
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - npm, yarn, or pnpm
 - Supabase account (for backend)
 
@@ -139,6 +139,55 @@ The integration uses two Supabase Edge Functions and the database migration in
 For local webhook testing, expose the local Edge Function over HTTPS and set
 `TELEGRAM_WEBHOOK_BASE_URL` to that public URL. Telegram retries unsuccessful
 webhook deliveries; the database receipt makes item creation idempotent.
+
+## MCP access
+
+The authenticated MCP Edge Function at `/functions/v1/mcp` lets a user connect
+an MCP client to their Lists account. The initial tools list inbox items, get an
+item, search items, and create an inbox item. The function verifies each OAuth
+request and uses an authenticated database client. Each query also filters by
+the verified user ID. It never accepts a user ID from a tool caller. Supabase
+OAuth access tokens currently have the same data access as a regular user
+session, including direct Supabase API access; MCP tool restrictions do not
+restrict the token itself. Only connect clients you trust. Supabase's standard
+OAuth scopes control identity claims, not Lists database permissions.
+
+To run locally, use Node.js 20+, the Supabase CLI from this repository, and the
+local Supabase stack. `supabase/config.toml` enables the local OAuth server,
+dynamic client registration, and a consent page at `/oauth/consent`. Start the
+app at `http://localhost:5173`, serve the function with
+`npx supabase functions serve mcp`, and connect the MCP Inspector to
+`http://127.0.0.1:54321/functions/v1/mcp` using Streamable HTTP. Sign in and
+approve the request in the app's consent page. The current migrations do not
+recreate the latest `node` and `settings` schema locally, so data tool testing
+against a fresh local database also requires restoring that schema.
+
+Before production deployment:
+
+1. Inspect the `node` and `settings` schema and RLS policies on the target
+   database. Those tables are absent from this repository's original schema
+   migrations. The linked project had owner-scoped RLS on both tables when
+   inspected on 2026-09-30. Confirm this on any other project before enabling
+   OAuth. The function's explicit user filters are a second guard, not a
+   replacement for database policies.
+2. In the Supabase Dashboard, enable the OAuth 2.1 server and dynamic client
+   registration, set the authorization path to `/oauth/consent`, and set the
+   Auth Site URL to the deployed app origin. Add the deployed
+   `/oauth/consent` URL with its `authorization_id` query to Authentication →
+   URL Configuration → Redirect URLs so email sign-in can return to consent.
+   Use an asymmetric JWT signing key (ES256 or RS256), which the function's
+   auth middleware requires.
+3. Deploy the frontend with `/oauth/consent`, then run
+   `npx supabase functions deploy mcp --no-verify-jwt`. The function handles
+   authentication itself and needs unauthenticated OAuth discovery requests.
+   The endpoint is `https://PROJECT.supabase.co/functions/v1/mcp`.
+
+The `site_url` in `supabase/config.toml` is for local development. Change it
+to the production origin before using `supabase config push` against a hosted
+project, or configure the hosted OAuth settings in the Dashboard as above.
+Users can review and revoke connected clients under **Settings → Connected apps**.
+See the [Supabase MCP deployment guide](https://supabase.com/docs/guides/ai-tools/byo-mcp)
+for client setup and deployment details.
 
 ## Database Backups
 

@@ -3,3 +3,17 @@ verify_jwt = false
 
 [functions.telegram-webhook]
 verify_jwt = false
+
+[functions.mcp]
+# The MCP handler validates OAuth access tokens and serves unauthenticated
+# discovery metadata before authorization.
+verify_jwt = false
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/app", "http://localhost:5173/oauth/consent**"]
+
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+allow_dynamic_registration = true

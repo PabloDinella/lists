@@ -14,6 +14,7 @@ import { useResetSystem } from "@/hooks/use-reset-system";
 import { useAuth } from "@/hooks/use-auth";
 import { SeedDataManager } from "./seed-data-manager";
 import { TelegramSettings } from "./telegram-settings";
+import { ConnectedAppsSettings } from "./connected-apps-settings";
 
 const GTD_CATEGORIES = [
   {
@@ -255,6 +256,7 @@ export function SettingsView() {
           )}
 
           <TelegramSettings />
+          <ConnectedAppsSettings />
 
           {/* Reset System Section */}
           {!settingsLoading && !nodesLoading && (

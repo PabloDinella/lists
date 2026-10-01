@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Logo } from "./ui/logo";
+
+function getSafeNextPath(candidate: string | null): string {
+  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//") || candidate.includes("\\")) {
+    return "/app";
+  }
+
+  try {
+    const parsed = new URL(candidate, window.location.origin);
+    if (parsed.origin !== window.location.origin || parsed.pathname === "/sign-in") return "/app";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "/app";
+  }
+}
 
 // Type declarations for Google Sign-In API
 interface GoogleCredentialResponse {
@@ -40,6 +54,7 @@ declare global {
 
 export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +62,8 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
   const [message, setMessage] = useState<string | null>(null);
   const [googleLoaded, setGoogleLoaded] = useState(false);
 
-  const redirectTo = `${window.location.origin}/app`;
+  const nextPath = getSafeNextPath(searchParams.get("next"));
+  const redirectTo = `${window.location.origin}${nextPath}`;
 
   // Handle Google Sign-In response
   const handleGoogleSignIn = useCallback(async (response: GoogleCredentialResponse) => {
@@ -70,16 +86,13 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
         onSignIn();
       }
       
-      // Navigate to app
-      setTimeout(() => {
-        navigate('/app');
-      }, 1000);
+      navigate(nextPath, { replace: true });
       
     } catch (error) {
       console.error('Unexpected error during Google sign-in:', error);
       setError('An unexpected error occurred during Google sign-in');
     }
-  }, [navigate, onSignIn]);
+  }, [navigate, nextPath, onSignIn]);
 
   // Initialize Google Sign-In when component mounts
   useEffect(() => {
@@ -181,10 +194,10 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
           <h2 className="text-2xl font-bold mb-4 text-foreground">Welcome back!</h2>
           <p className="text-muted-foreground mb-6">You're already signed in.</p>
           <Button 
-            onClick={() => navigate('/app')} 
+            onClick={() => navigate(nextPath, { replace: true })}
             className="w-full mb-2"
           >
-            Open App
+            {nextPath === "/app" ? "Open App" : "Continue"}
           </Button>
         </div>
       ) : (
