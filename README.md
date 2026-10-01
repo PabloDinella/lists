@@ -107,6 +107,39 @@ Ideas and thoughts that could turn into new features:
 
 6. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Personal Telegram bots
+
+Each user can connect one bot created with [@BotFather](https://t.me/BotFather)
+from **Settings → Telegram Inbox**. A private text message to the paired bot
+creates an item under that user's currently configured Inbox. The first line
+becomes the item title; remaining lines become its content. Group messages and
+media are outside the initial scope.
+
+The integration uses two Supabase Edge Functions and the database migration in
+`supabase/migrations/`. Deploy in this order:
+
+1. Apply `supabase/migrations/20260930190000_telegram_integrations.sql` to the
+   Supabase project. It enables Vault, creates private integration and update
+   receipt tables, and adds service-only database functions. Inspect the
+   project's existing `node` and `settings` schema and RLS policies before
+   applying the migration, since the original schema is not tracked here.
+2. Set the Edge Function secret `TELEGRAM_WEBHOOK_BASE_URL` to the public URL of
+   the `telegram-webhook` function (for example,
+   `https://PROJECT.supabase.co/functions/v1/telegram-webhook`). The functions
+   also need `APP_BASE_URL` set to the public app origin (for example,
+   `https://lists.example.com`), plus Supabase's server-side URL and service-role
+   key. Never put the
+   service-role key or a bot token in a `VITE_` environment variable.
+3. Deploy `telegram-webhook` and `telegram-connect`. The webhook has JWT
+   verification disabled in `supabase/config.toml` because Telegram cannot send
+   a Supabase user token; it verifies Telegram's per-bot secret header itself.
+4. In Settings, connect a BotFather token, open the pairing link, and send
+   `/start` to the bot. Pairing links expire; Settings can generate a new one.
+
+For local webhook testing, expose the local Edge Function over HTTPS and set
+`TELEGRAM_WEBHOOK_BASE_URL` to that public URL. Telegram retries unsuccessful
+webhook deliveries; the database receipt makes item creation idempotent.
+
 ## Database Backups
 
 The repository includes a GitHub Actions workflow at `.github/workflows/supabase-backup.yml`
@@ -140,9 +173,11 @@ gh secret set SUPABASE_DB_URL \
   --body 'postgresql://postgres.[PROJECT-REF]:p%24ssword@[POOLER-HOST]:6543/postgres'
 ```
 
-The workflow dumps roles plus one full `public` schema database dump, compresses the
-dump files, encrypts the archive with GPG, and uploads only the encrypted `.tar.gz.gpg`
-file to private S3-compatible storage. Do not commit raw database dumps to the
+The workflow dumps roles, the full `public` schema, and encrypted Vault secret
+rows, compresses the dump files, encrypts the archive with GPG, and uploads only
+the encrypted `.tar.gz.gpg` file to private S3-compatible storage. Vault rows
+need the source project's Vault root key to decrypt after a manual restore into
+a different project; otherwise users must reconnect their Telegram bots. Do not commit raw database dumps to the
 repository or upload them as GitHub Actions artifacts from this public repository.
 
 For Cloudflare R2, use this endpoint format:

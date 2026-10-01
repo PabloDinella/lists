@@ -87,6 +87,26 @@ jobs:
                 --quote-all-identifiers \
                 --no-owner \
                 --no-privileges'
+          # Telegram bot tokens live as encrypted rows outside the public schema.
+          vault_exists="$(docker run --rm \
+            --env SUPABASE_DB_URL \
+            --env PGQUERY="select to_regclass('vault.secrets') is not null" \
+            postgres:17-alpine \
+            sh -c 'psql --dbname "$SUPABASE_DB_URL" -Atqc "$PGQUERY"')"
+          if [ "$vault_exists" = "t" ]; then
+            docker run --rm \
+              --env SUPABASE_DB_URL \
+              --volume "$PWD/$backup_dir:/backup" \
+              postgres:17-alpine \
+              sh -c 'pg_dump \
+                  --dbname "$SUPABASE_DB_URL" \
+                  --file /backup/vault-secrets.sql \
+                  --data-only \
+                  --table vault.secrets \
+                  --quote-all-identifiers \
+                  --no-owner \
+                  --no-privileges'
+          fi
 
           tar -czf "$backup_dir.tar.gz" "$backup_dir"
           printf '%s' "$BACKUP_ENCRYPTION_PASSPHRASE" | gpg --batch --yes \

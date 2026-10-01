@@ -13,6 +13,7 @@ import { useListData, TreeNode } from "./node-view/use-list-data";
 import { useResetSystem } from "@/hooks/use-reset-system";
 import { useAuth } from "@/hooks/use-auth";
 import { SeedDataManager } from "./seed-data-manager";
+import { TelegramSettings } from "./telegram-settings";
 
 const GTD_CATEGORIES = [
   {
@@ -252,6 +253,8 @@ export function SettingsView() {
               )}
             </div>
           )}
+
+          <TelegramSettings />
 
           {/* Reset System Section */}
           {!settingsLoading && !nodesLoading && (
