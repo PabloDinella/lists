@@ -11,6 +11,7 @@ import {
 } from "npm:@supabase/server@^1.6.0";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@^2.116.0";
 import { z } from "npm:zod@^4.3.6";
+import { legacyPublishableKeyOverride } from "./publishable-key.ts";
 
 const MAX_PAGE_SIZE = 50;
 const MAX_CONTENT_LENGTH = 5_000;
@@ -89,7 +90,17 @@ async function getAuthenticatedUser(supabase: SupabaseClient): Promise<string> {
 
 Deno.serve(
   pipeline(
-    [withOAuthProtectedResource(), withSupabase({ auth: "user" })],
+    [
+      withOAuthProtectedResource(),
+      withSupabase({
+        auth: "user",
+        env: legacyPublishableKeyOverride({
+          SUPABASE_PUBLISHABLE_KEY: Deno.env.get("SUPABASE_PUBLISHABLE_KEY"),
+          SUPABASE_PUBLISHABLE_KEYS: Deno.env.get("SUPABASE_PUBLISHABLE_KEYS"),
+          SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY"),
+        }),
+      }),
+    ],
     async (request, { supabase }) => {
       // Authenticate before creating tools so all tool closures are bound to this caller.
       let userId: string;
