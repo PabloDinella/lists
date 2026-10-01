@@ -29,16 +29,16 @@ export function DueView() {
   const dueItems = getDueItems(hierarchicalTree, getLocalDateString());
 
   return (
-    <AppLayout title="Due" searchNodes={hierarchicalTree}>
+    <AppLayout title="Needs Attention" searchNodes={hierarchicalTree}>
       <Container size="full">
-        {isLoading && <p>Loading due items…</p>}
+        {isLoading && <p>Loading items…</p>}
         {isError && (
-          <p className="text-sm text-red-500">Failed to load due items.</p>
+          <p className="text-sm text-red-500">Failed to load items.</p>
         )}
         {!isLoading && !isError && dueItems.length === 0 && (
           <div className="rounded-lg border border-dashed p-8 text-center">
             <CalendarDays className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-            <h2 className="font-medium">Nothing due</h2>
+            <h2 className="font-medium">Nothing needs attention</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Items with a due date will appear here.
             </p>

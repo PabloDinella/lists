@@ -260,7 +260,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/due"}>
                   <Link to="/due" className="select-none">
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    <span>Due items</span>
+                    <span>Needs Attention</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
