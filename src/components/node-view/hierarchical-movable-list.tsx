@@ -97,7 +97,7 @@ export function HierarchicalMovableList({
                 onDelete={onDelete}
                 isDragging={isDragged}
                 depth={depth}
-                relatedNodes={item.node.related_nodes}
+                relatedNodes={item.node.related_nodes.filter((related) => related.relation_type === "tagged_with")}
               >
                 <HierarchicalMovableList
                   hierarchicalTree={item.node.children}

@@ -10,6 +10,7 @@ export interface Option {
 }
 
 interface MultiSelectAutocompleteProps {
+  "aria-label"?: string;
   options: Option[];
   value: (string | number)[];
   onChange: (value: (string | number)[]) => void;

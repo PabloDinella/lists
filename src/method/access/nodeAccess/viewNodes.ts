@@ -113,6 +113,8 @@ export async function viewNodes(
               created_at: relatedNodeData.created_at,
               metadata: metadataSchema.safeParse(relatedNodeData.metadata).data || null,
               related_nodes: [], // We don't need nested related nodes for now
+              relation_type: rel.relation_type,
+              relation_direction: "outgoing",
             });
             relatedNodesMap.set(rel.node_id_1, node1Related);
           }
@@ -132,6 +134,8 @@ export async function viewNodes(
               created_at: relatedNodeData.created_at,
               metadata: metadataSchema.safeParse(relatedNodeData.metadata).data || null,
               related_nodes: [], // We don't need nested related nodes for now
+              relation_type: rel.relation_type,
+              relation_direction: "incoming",
             });
             relatedNodesMap.set(rel.node_id_2, node2Related);
           }

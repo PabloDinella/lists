@@ -38,10 +38,12 @@ function getAllDescendants(node: TreeNode): TreeNode[] {
 // Helper function to collect all unique related nodes from a node and its descendants
 function getAllRelatedNodes(node: TreeNode, descendants: TreeNode[]): { id: number; name: string }[] {
   const allNodes = [node, ...descendants];
+  const deletedIds = new Set(allNodes.map((item) => item.id));
   const relatedNodesMap = new Map<number, string>();
   
   for (const currentNode of allNodes) {
     for (const relatedNode of currentNode.related_nodes) {
+      if (deletedIds.has(relatedNode.id)) continue;
       relatedNodesMap.set(relatedNode.id, relatedNode.name);
     }
   }
@@ -121,7 +123,7 @@ export function DeleteConfirmationDialog({
                 <li>• {descendants.length} child item{descendants.length === 1 ? '' : 's'}</li>
               )}
               {hasRelatedNodes && (
-                <li>• Relationships with {relatedNodes.length} tagged item{relatedNodes.length === 1 ? '' : 's'}</li>
+                <li>• Relationships with {relatedNodes.length} other item{relatedNodes.length === 1 ? '' : 's'}</li>
               )}
             </ul>
             <div className="mt-2 pt-2 border-t border-border">
@@ -161,7 +163,7 @@ export function DeleteConfirmationDialog({
           {/* Related Nodes Details */}
           {hasRelatedNodes && (
             <div className="space-y-2">
-              <h4 className="font-medium text-sm">Tagged items that will lose their relationships:</h4>
+              <h4 className="font-medium text-sm">Related items that will lose their links:</h4>
               <div className="max-h-24 overflow-y-auto rounded border p-2 bg-background">
                 <ul className="space-y-1">
                   {relatedNodes.map((relatedNode) => (
@@ -172,7 +174,7 @@ export function DeleteConfirmationDialog({
                 </ul>
               </div>
               <p className="text-xs text-muted-foreground">
-                Note: The tagged items themselves won't be deleted, only their relationships.
+                These related items will remain; only their links to deleted items will be removed.
               </p>
             </div>
           )}

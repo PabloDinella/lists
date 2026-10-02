@@ -39,9 +39,9 @@ const item = (
 test("Process and Refine queues contain only items matching the applied tag filters", () => {
   const work = tag(10, "Work");
   const personal = tag(11, "Personal");
-  const visibleWorkItem = item(100, [work]);
-  const hiddenPersonalItem = item(101, [personal]);
-  const hiddenClassifiedItem = item(102, [personal], {
+  const visibleWorkItem = item(100, [{ ...work, relation_type: "tagged_with" }]);
+  const hiddenPersonalItem = item(101, [{ ...personal, relation_type: "tagged_with" }]);
+  const hiddenClassifiedItem = item(102, [{ ...personal, relation_type: "tagged_with" }], {
     eisenhowerQuadrant: "urgent-important",
   });
   const tree = [visibleWorkItem, hiddenPersonalItem, hiddenClassifiedItem];
@@ -58,7 +58,7 @@ test("Process and Refine queues contain only items matching the applied tag filt
 
 test("tag filtering retains a nonmatching parent only as a path to matching children", () => {
   const work = tag(10, "Work");
-  const child = item(201, [work]);
+  const child = item(201, [{ ...work, relation_type: "tagged_with" }]);
   const parent = { ...item(200, []), children: [child] };
 
   const filteredTree = filterTreeByTags([parent], [work.id]);
@@ -69,4 +69,10 @@ test("tag filtering retains a nonmatching parent only as a path to matching chil
     filteredTree[0].children.map(({ id }) => id),
     [child.id],
   );
+});
+
+test("membership links do not count as tags", () => {
+  const work = tag(10, "Work");
+  const linked = item(300, [{ ...work, relation_type: "member_of" }]);
+  assert.deepEqual(filterTreeByTags([linked], [work.id]), []);
 });

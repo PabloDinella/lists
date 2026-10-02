@@ -1,4 +1,4 @@
-import { GripVertical, Edit, Trash2, Sparkles, Grid2x2, CalendarDays } from "lucide-react";
+import { GripVertical, Edit, Trash2, Sparkles, Grid2x2, CalendarDays, Link2Off, List as ListIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -33,6 +33,8 @@ interface BaseNodeItemProps {
   isDragging?: boolean;
   depth?: number;
   relatedNodes?: { id: number; name: string }[];
+  onRemoveMembership?: (nodeId: number) => void | Promise<void>;
+  hideMembershipListId?: number;
 }
 
 export function BaseNodeItem({
@@ -43,6 +45,8 @@ export function BaseNodeItem({
   depth = 0,
   children,
   relatedNodes = [],
+  onRemoveMembership,
+  hideMembershipListId,
 }: BaseNodeItemProps) {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeMutation = useUpdateNode();
@@ -51,6 +55,7 @@ export function BaseNodeItem({
   const [isGTDDialogOpen, setIsGTDDialogOpen] = useState(false);
   const [isEisenhowerDialogOpen, setIsEisenhowerDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRemovingMembership, setIsRemovingMembership] = useState(false);
 
   const isGtdProcessingFeatureEnabled = useFeatureFlagEnabled(
     "gtd-processing-feature",
@@ -60,6 +65,12 @@ export function BaseNodeItem({
     node.metadata?.eisenhowerQuadrant,
   );
   const eisenhowerPriority = getEisenhowerPriorityScore(node.metadata);
+  const membershipLists = node.related_nodes.filter((related, index, all) =>
+    related.relation_type === "member_of" &&
+    related.relation_direction === "outgoing" &&
+    related.id !== hideMembershipListId &&
+    all.findIndex((candidate) => candidate.id === related.id && candidate.relation_type === "member_of" && candidate.relation_direction === "outgoing") === index
+  );
 
   const handleNodeClick = () => {
     // Navigate to the list view for this node
@@ -101,6 +112,16 @@ export function BaseNodeItem({
     setIsDeleteDialogOpen(true);
   };
 
+  const handleRemoveMembership = async () => {
+    if (!onRemoveMembership || isRemovingMembership) return;
+    setIsRemovingMembership(true);
+    try {
+      await onRemoveMembership(node.id);
+    } finally {
+      setIsRemovingMembership(false);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     try {
       const result = onDelete(node.id);
@@ -130,7 +151,7 @@ export function BaseNodeItem({
         >
           <div className="flex items-center justify-between gap-1 sm:gap-2">
             <div className="flex flex-1 items-center gap-1 sm:gap-2">
-              <button
+              {!onRemoveMembership && <button
                 // react-movable handle
                 data-movable-handle
                 tabIndex={-1}
@@ -141,7 +162,7 @@ export function BaseNodeItem({
                 <div className="relative">
                   <GripVertical className="h-3 w-3" />
                 </div>
-              </button>
+              </button>}
               {node.metadata?.type === "loop" && (
                 <Checkbox
                   checked={node.metadata?.completed || false}
@@ -167,7 +188,7 @@ export function BaseNodeItem({
                     handleNodeClick();
                   }
                 }}
-                aria-label={`View ${node.name}. Right-click to edit.`}
+                aria-label={`View ${node.name}.${membershipLists.length > 0 ? ` Also in ${membershipLists.map((list) => list.name).join(", ")}.` : ""} Right-click to edit.`}
               >
                 <h3
                   className={clsx(
@@ -225,6 +246,17 @@ export function BaseNodeItem({
                     </span>
                   )}
                 </h3>
+                {membershipLists.length > 0 && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs" aria-label="Additional list memberships">
+                    <span className="text-muted-foreground">Also in</span>
+                    {membershipLists.map((list) => (
+                      <span key={list.id} className="inline-flex max-w-full items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 font-medium text-primary">
+                        <ListIcon className="h-3 w-3 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0 truncate">{list.name}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {/* Show description content */}
                 {node.content && (
                   <div
@@ -302,15 +334,17 @@ export function BaseNodeItem({
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteClick();
+                      if (onRemoveMembership) void handleRemoveMembership();
+                      else handleDeleteClick();
                     }}
-                    disabled={deleteNodeMutation.isPending}
+                    disabled={onRemoveMembership ? isRemovingMembership : deleteNodeMutation.isPending}
+                    aria-label={onRemoveMembership ? `Remove ${node.name} from this list` : `Delete ${node.name}`}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    {onRemoveMembership ? <Link2Off className="h-3 w-3" /> : <Trash2 className="h-3 w-3" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Delete</p>
+                  <p>{onRemoveMembership ? "Remove from this list" : "Delete"}</p>
                 </TooltipContent>
               </Tooltip>
             </div>

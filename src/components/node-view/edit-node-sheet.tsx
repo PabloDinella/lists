@@ -17,6 +17,7 @@ import { SingleSelectAutocomplete } from "../ui/single-select-autocomplete";
 
 import { NodeTypeSelector } from "./node-type-selector";
 import { TagsSelector } from "./tags-selector";
+import { ListMembershipField } from "./list-membership-field";
 import { DueDatePicker } from "./due-date-picker";
 import { useAddUpdateNode } from "@/hooks/use-add-update-node";
 import { useAuth } from "@/hooks/use-auth";
@@ -126,6 +127,11 @@ export function EditNodeSheet({
     (node) => node.metadata?.type === "tagging",
   );
 
+  const getSelectedTagIds = (relatedNodes: Node["related_nodes"] = []) =>
+    relatedNodes
+      .filter((relatedNode) => relatedNode.relation_type === "tagged_with")
+      .map((relatedNode) => relatedNode.id);
+
   // Initialize form with react-hook-form
   const form = useForm<FormData>({
     defaultValues: {
@@ -161,7 +167,7 @@ export function EditNodeSheet({
         nodeType:
           (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
           "loop",
-        selectedRelatedNodes: node.related_nodes?.map((rn) => rn.id) || [],
+        selectedRelatedNodes: getSelectedTagIds(node.related_nodes),
       });
     } else if (mode === "create") {
       reset({
@@ -301,7 +307,7 @@ export function EditNodeSheet({
           nodeType:
             (node.metadata?.type as "list" | "tagging" | "tag" | "loop") ||
             "loop",
-          selectedRelatedNodes: node.related_nodes?.map((rn) => rn.id) || [],
+          selectedRelatedNodes: getSelectedTagIds(node.related_nodes),
         });
       }
     }, 300);
@@ -535,6 +541,14 @@ export function EditNodeSheet({
               defaultExpanded={!isManagingLists}
               onCreateNewItem={handleCreateNewItem}
             />
+
+            {mode === "edit" && node && user?.id && (
+              <ListMembershipField
+                node={node}
+                allNodes={flattenedAllItems}
+                userId={user.id}
+              />
+            )}
 
             {/* Node type selection when managing lists or editing existing nodes */}
             <NodeTypeSelector

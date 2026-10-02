@@ -1,6 +1,13 @@
-# GTD Task Management App
+# Lists
 
-A modern task management application based on David Allen's "Getting Things Done" (GTD) methodology, similar to NirvanaHQ. Built with React, TypeScript, Tailwind CSS, and Supabase.
+A flexible system of nodes, lists, and relationships with a first-class Getting Things Done (GTD) interface. The underlying data model does not encode GTD categories as special node types: users configure which lists serve as Inbox, Next Actions, Projects, and other GTD destinations. Built with React, TypeScript, Tailwind CSS, and Supabase.
+
+## Data model
+
+- Every node has one owning parent (`parent_node`). Ownership defines its place in the hierarchy and its project context.
+- Nodes can also have typed relationships. `tagged_with` associates an item with a tag; `member_of` shows the same item in another list without changing its owning parent.
+- A list shows its owned children and items with a `member_of` relationship to that list. Removing an additional membership removes the relationship, not the item. Deleting an owner can still affect its children, even when they also appear in another list.
+- GTD is implemented through configured lists and workflows on top of these generic capabilities. A project action can remain under its project while also appearing in Next Actions through list membership.
 
 ## Features
 
@@ -92,7 +99,7 @@ Ideas and thoughts that could turn into new features:
 
 4. Set up Supabase:
    - Create a new Supabase project
-   - Run the SQL from `supabase/schema.sql` in the SQL editor
+   - Restore the app's `node`, `relationship`, and `settings` schema, then apply the migrations in `supabase/migrations/`. The original base schema is not fully tracked in this repository; see the deployment notes below.
    - Configure authentication providers as needed
 
 5. Start the development server:
@@ -246,39 +253,6 @@ gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_PASSPHRASE" \
   --decrypt supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz.gpg \
   > supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz
 tar -xzf supabase-backup-YYYYMMDDTHHMMSSZ.tar.gz
-```
-
-## Supabase Schema
-
-Create the following table in your Supabase project:
-
-```sql
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL CHECK (status IN ('inbox', 'next', 'waiting', 'scheduled', 'someday', 'completed', 'trashed')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  due_date TIMESTAMP WITH TIME ZONE,
-  project TEXT,
-  area TEXT,
-  tags TEXT[],
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
-);
-
--- Create indexes for common queries
-CREATE INDEX idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX idx_tasks_status ON tasks(status);
-CREATE INDEX idx_tasks_project ON tasks(project);
-CREATE INDEX idx_tasks_area ON tasks(area);
-
--- Row level security
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-
--- Policy for users to only access their own tasks
-CREATE POLICY "Users can manage their own tasks" ON tasks
-  FOR ALL
-  USING (auth.uid() = user_id);
 ```
 
 ## License

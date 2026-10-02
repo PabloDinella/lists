@@ -62,4 +62,8 @@ export type Node = {
   created_at: string;
   metadata: Metadata | null;
   related_nodes: Node[];
+  /** Relationship metadata is present on nodes returned through related_nodes. */
+  relation_type?: string | null;
+  /** Direction of the relationship from the owning node to this related node. */
+  relation_direction?: "outgoing" | "incoming";
 };

@@ -9,7 +9,7 @@ export function filterTreeByTags(
   return nodes.reduce<TreeNode[]>((filteredNodes, node) => {
     const filteredChildren = filterTreeByTags(node.children, filterTagIds);
     const hasAllSelectedTags = filterTagIds.every((tagId) =>
-      node.related_nodes.some((relatedNode) => relatedNode.id === tagId),
+      node.related_nodes.some((relatedNode) => relatedNode.id === tagId && relatedNode.relation_type === "tagged_with"),
     );
 
     if (hasAllSelectedTags || filteredChildren.length > 0) {

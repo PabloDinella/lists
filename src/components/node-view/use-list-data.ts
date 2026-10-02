@@ -12,6 +12,8 @@ export type TreeNode = {
   metadata: Metadata | null;
   children: TreeNode[];
   related_nodes: TreeNode[];
+  relation_type?: string | null;
+  relation_direction?: "outgoing" | "incoming";
 };
 
 interface UseListDataProps {

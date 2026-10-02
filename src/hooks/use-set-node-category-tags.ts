@@ -21,7 +21,7 @@ export function useSetNodeCategoryTags() {
     }: SetNodeCategoryTagsParams) => {
       const { data: relationships, error: readError } = await supabase
         .from("relationship")
-        .select("id, node_id_1, node_id_2")
+        .select("id, node_id_1, node_id_2, relation_type")
         .eq("user_id", userId)
         .or(`node_id_1.eq.${nodeId},node_id_2.eq.${nodeId}`);
 
@@ -30,6 +30,8 @@ export function useSetNodeCategoryTags() {
       const categoryIds = new Set(categoryTagIds);
       const selectedIds = new Set(selectedTagIds.filter((id) => categoryIds.has(id)));
       const categoryRelationships = (relationships ?? []).flatMap((relationship) => {
+        if (relationship.relation_type !== "tagged_with") return [];
+
         const otherNodeId = relationship.node_id_1 === nodeId
           ? relationship.node_id_2
           : relationship.node_id_2 === nodeId

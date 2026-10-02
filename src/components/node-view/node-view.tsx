@@ -5,7 +5,9 @@ import { Container } from "../ui/container";
 import { ResponsiveBreadcrumb } from "../ui/responsive-breadcrumb";
 import { useNodeId } from "@/hooks/use-node-id";
 import { useDeleteNode } from "@/hooks/use-delete-node";
+import { useListMembership } from "@/hooks/use-list-membership";
 import { HierarchicalMovableList } from "./hierarchical-movable-list";
+import { BaseNodeItem } from "./base-node-item";
 import { EditNodeSheet } from "./edit-node-sheet";
 import { GTDWorkflowDialog } from "./gtd-workflow-dialog";
 import { EisenhowerMatrixDialog } from "./eisenhower-matrix-dialog";
@@ -21,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
 import { renderMarkdown } from "@/lib/utils";
 import { formatDueDate } from "@/lib/due-date";
+import { getListMembers } from "@/lib/list-membership";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   filterTreeByTags,
@@ -83,6 +86,7 @@ export function NodeView() {
   const [refiningNode, setRefiningNode] = useState<TreeNode | null>(null);
   const [refiningQueue, setRefiningQueue] = useState<TreeNode[]>([]);
   const [refiningIndex, setRefiningIndex] = useState<number>(0);
+  const [membershipError, setMembershipError] = useState<string | null>(null);
 
   const { user } = useAuth();
 
@@ -96,6 +100,7 @@ export function NodeView() {
     node.metadata?.type === "list" || node.metadata?.type === "tagging";
 
   const deleteNodeMutation = useDeleteNode();
+  const listMembership = useListMembership();
 
   // Get all nodes to find current node for display
   const {
@@ -137,6 +142,16 @@ export function NodeView() {
       });
     } catch (error) {
       console.error("Failed to delete list:", error);
+    }
+  };
+
+  const handleRemoveMembership = async (memberId: number) => {
+    if (!userId || !currentNode) return;
+    setMembershipError(null);
+    try {
+      await listMembership.mutateAsync({ userId, nodeId: memberId, listId: currentNode.id, member: false });
+    } catch {
+      setMembershipError("Could not remove this item from the list. Please try again.");
     }
   };
 
@@ -182,6 +197,17 @@ export function NodeView() {
       setProcessingNode(processingQueue[nextIndex]);
     } else {
       // No more items to process, close the dialog
+      handleProcessingClose();
+    }
+  };
+
+  const handleProcessDeleted = () => {
+    if (!processingNode) return;
+    const nextQueue = processingQueue.filter((item) => item.id !== processingNode.id);
+    if (processingIndex < nextQueue.length) {
+      setProcessingQueue(nextQueue);
+      setProcessingNode(nextQueue[processingIndex]);
+    } else {
       handleProcessingClose();
     }
   };
@@ -253,6 +279,10 @@ export function NodeView() {
   const tree = isManagingLists
     ? currentNode?.children.reduce(reduce, [])
     : currentNode?.children;
+  const membershipItems = !isManagingLists && currentNode
+    ? getListMembers(currentNode, flattenedAllItems)
+    : [];
+  const otherRelatedItems = currentNode?.related_nodes.filter((related) => related.relation_type !== "member_of") ?? [];
 
   // Get tag nodes for filtering (only when viewing a specific list, not when managing lists)
   const tagNodes =
@@ -269,10 +299,14 @@ export function NodeView() {
     tree && selectedFilters.length > 0
       ? filterTreeByTags(tree, selectedFilters)
       : tree;
+  const filteredMembershipItems = selectedFilters.length > 0
+    ? filterTreeByTags(membershipItems, selectedFilters)
+    : membershipItems;
 
   // Use the same filtered candidates for button counts and processing queues.
-  const processingCandidates = getProcessingQueue(tree ?? [], selectedFilters);
-  const refiningCandidates = getRefiningQueue(tree ?? [], selectedFilters);
+  const visibleItems = [...(tree ?? []), ...membershipItems];
+  const processingCandidates = getProcessingQueue(visibleItems, selectedFilters);
+  const refiningCandidates = getRefiningQueue(visibleItems, selectedFilters);
 
   const unprocessedCount = processingCandidates.length;
   const unclassifiedCount = refiningCandidates.length;
@@ -328,10 +362,10 @@ export function NodeView() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{currentNode.name}</h1>
-                    {currentNode.related_nodes.length > 0 && (
+                    {otherRelatedItems.length > 0 && (
                       <div className="mt-2">
                         <span className="text-sm text-muted-foreground">
-                          {currentNode.related_nodes
+                          {otherRelatedItems
                             .map((related) => related.name)
                             .join(", ")}
                         </span>
@@ -449,19 +483,43 @@ export function NodeView() {
               </p>
             )}
 
-            {currentNode?.related_nodes &&
-              currentNode.related_nodes.length > 0 && (
-                <div>
-                  <h2 className="mb-2 mt-10 text-xl">Related items</h2>
+            {membershipError && <p role="alert" className="mt-3 text-sm text-destructive">{membershipError}</p>}
+            {filteredMembershipItems.length > 0 && currentNode && (
+              <section className="mt-6" aria-label="Items also in this list">
+                <h2 className="mb-2 text-xl">Also in this list</h2>
+                <p className="mb-2 text-sm text-muted-foreground">These items live elsewhere and are also shown here.</p>
+                {filteredMembershipItems.map((item) => {
+                  const ownerPath = buildBreadcrumbPath(flattenedAllItems, item.parent_node)
+                    .map((ancestor) => ancestor.name);
+                  return <div key={item.id}>
+                    {ownerPath.length > 0 && <p className="ml-1 text-xs text-muted-foreground">{ownerPath.join(" › ")}</p>}
+                    <BaseNodeItem
+                      node={item}
+                      onEditStart={handleEditStart}
+                      onDelete={handleDelete}
+                      onRemoveMembership={handleRemoveMembership}
+                      hideMembershipListId={currentNode.id}
+                      relatedNodes={item.related_nodes.filter((related) => related.relation_type === "tagged_with")}
+                    >{null}</BaseNodeItem>
+                  </div>;
+                })}
+              </section>
+            )}
 
-                  <HierarchicalMovableList
-                    hierarchicalTree={currentNode.related_nodes}
-                    rootNode={currentNode!}
-                    onEditStart={handleEditStart}
-                    onDelete={handleDelete}
-                  />
+            {otherRelatedItems.length > 0 && currentNode && (
+              <section className="mt-10" aria-label="Related items">
+                <h2 className="mb-2 text-xl">Related items</h2>
+                <div className="flex flex-wrap gap-2">
+                  {otherRelatedItems.map((related) => <Button
+                    key={`${related.id}-${related.relation_type}-${related.relation_direction}`}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/lists/${related.id}`)}
+                  >{related.name}</Button>)}
                 </div>
-              )}
+              </section>
+            )}
           </div>
         )}
       </Container>
@@ -488,7 +546,7 @@ export function NodeView() {
         (() => {
           // Find the current node from the live tree to get updated data
           const currentLiveNode =
-            tree.find((item) => item.id === processingNode.id) ||
+            flattenedAllItems.find((item) => item.id === processingNode.id) ||
             processingNode;
           return (
             <GTDWorkflowDialog
@@ -498,7 +556,9 @@ export function NodeView() {
               userId={userId}
               settings={settings ?? null}
               tagCategories={workflowTagCategories}
-              context={currentNode?.name}
+              context={currentLiveNode.parent_node === currentNode?.id
+                ? currentNode?.name
+                : flattenedAllItems.find((item) => item.id === currentLiveNode.parent_node)?.name}
               invalidMoveTargetIds={[
                 settings?.nextActions,
                 settings?.waiting,
@@ -521,6 +581,7 @@ export function NodeView() {
               isOpen={!!processingNode}
               onClose={handleProcessingClose}
               onAdvance={handleProcessNext}
+              onDeleted={handleProcessDeleted}
               currentIndex={processingIndex}
               totalCount={processingQueue.length}
               onPrevious={handleNavigatePrevious}
