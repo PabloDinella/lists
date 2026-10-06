@@ -27,7 +27,7 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
-        event.key.toLowerCase() !== "n" ||
+        event.key.toLowerCase() !== "i" ||
         event.repeat ||
         event.altKey ||
         event.ctrlKey ||
@@ -84,10 +84,10 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
                   onClick={openCreateSheet}
                   size="sm"
                   className="px-2"
-                  aria-label="New Inbox Item (N)"
+                  aria-label="New Inbox Item (I)"
                 >
                   <Plus className="h-4 w-4" />
-                  <ShortcutHint shortcut="N" />
+                  <ShortcutHint shortcut="I" />
                 </Button>
               )}
             </div>
@@ -103,7 +103,7 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
                 <Button onClick={openCreateSheet}>
                   <Plus className="h-4 w-4 mr-2" />
                   New Inbox Item
-                  <ShortcutHint shortcut="N" className="ml-1" />
+                  <ShortcutHint shortcut="I" className="ml-1" />
                 </Button>
               )}
             </div>

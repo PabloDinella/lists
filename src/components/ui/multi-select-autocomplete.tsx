@@ -21,6 +21,7 @@ interface MultiSelectAutocompleteProps {
   renderOption?: (option: Option) => React.ReactNode;
   freeSolo?: boolean;
   onInputChange?: (value: string) => void;
+  onSelectionComplete?: () => void;
   inputValue?: string;
   noOptionsText?: string;
   maxHeight?: number;
@@ -42,6 +43,7 @@ export const MultiSelectAutocomplete = React.forwardRef<
       renderOption,
       freeSolo = true,
       onInputChange,
+      onSelectionComplete,
       inputValue: controlledInputValue,
       noOptionsText = "No options found",
       maxHeight = 240,
@@ -89,13 +91,15 @@ export const MultiSelectAutocomplete = React.forwardRef<
       setInternalInputValue("");
       onInputChange?.("");
       setIsOpen(false);
-      inputRef.current?.focus();
+      if (onSelectionComplete) onSelectionComplete();
+      else inputRef.current?.focus();
     };
 
     // Handle removing selected option
     const handleRemoveOption = (optionValue: string | number) => {
       onChange(value.filter((v) => v !== optionValue));
-      inputRef.current?.focus();
+      if (onSelectionComplete) onSelectionComplete();
+      else inputRef.current?.focus();
     };
 
     // Handle keyboard navigation
@@ -131,6 +135,10 @@ export const MultiSelectAutocomplete = React.forwardRef<
           }
           break;
         case "Escape":
+          if (isOpen) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
           setIsOpen(false);
           setFocusedIndex(-1);
           break;

@@ -106,7 +106,7 @@ export function SearchInput({ nodes, className, placeholder = "Search lists and 
             setTimeout(() => setIsOpen(false), 150);
           }}
           onKeyDown={handleKeyDown}
-          className={cn('pl-10', query ? 'pr-10' : 'pr-20')}
+          className={cn('pl-10', query ? 'pr-10' : 'pr-10 sm:pr-20')}
         />
         {!query && (
           <ShortcutHint

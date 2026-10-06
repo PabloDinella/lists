@@ -14,16 +14,20 @@ export function ShortcutHint({ shortcut, className }: ShortcutHintProps) {
     Mod: isMac ? "⌘" : "^",
     Shift: "⇧",
     Enter: "⏎",
+    ArrowLeft: "←",
+    ArrowRight: "→",
   };
   const labels: Record<string, string> = {
     Mod: isMac ? "Command" : "Control",
+    ArrowLeft: "Left arrow",
+    ArrowRight: "Right arrow",
   };
 
   return (
     <kbd
       aria-label={keys.map((key) => labels[key] ?? key).join(" plus ")}
       className={cn(
-        "inline-flex shrink-0 items-center rounded border border-current/30 px-1.5 py-0.5 font-sans text-[13px] font-medium leading-none opacity-70",
+        "hidden shrink-0 items-center rounded border border-current/30 px-1.5 py-0.5 font-sans text-[13px] font-medium leading-none opacity-70 sm:inline-flex",
         className,
       )}
     >
