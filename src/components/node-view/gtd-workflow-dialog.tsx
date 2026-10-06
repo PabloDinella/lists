@@ -7,6 +7,7 @@ import { useSetNodeCategoryTags } from "@/hooks/use-set-node-category-tags";
 import { useUpdateNode } from "@/hooks/use-update-node";
 import type { GTDSettings } from "@/hooks/use-settings";
 import type { Metadata } from "@/method/access/nodeAccess/models";
+import { renderMarkdown } from "@/lib/utils";
 import { useListData, type TreeNode } from "./use-list-data";
 import { DueDatePicker } from "./due-date-picker";
 import { getWorkflowShortcut, type FollowUpStep, type WorkflowShortcut } from "./gtd-workflow-shortcuts";
@@ -466,16 +467,21 @@ export function GTDWorkflowDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle ref={titleRef} tabIndex={-1} className="break-words focus:outline-none">{node.name}</DialogTitle>
+          <DialogTitle ref={titleRef} tabIndex={-1} className="min-w-0 [overflow-wrap:anywhere] focus:outline-none">{node.name}</DialogTitle>
           <DialogDescription>
             {mode === "review" ? `Reviewing item ${currentIndex + 1} of ${totalCount}` : `Processing item ${currentIndex + 1} of ${totalCount}`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {context && <p className="text-sm text-muted-foreground">{context}</p>}
+        <div className="min-w-0 space-y-4">
+          {context && <p className="[overflow-wrap:anywhere] text-sm text-muted-foreground">{context}</p>}
           {mode === "review" && <p className="text-xs text-muted-foreground">{formatReviewedAt(node.metadata?.lastReviewedAt)}</p>}
-          {node.content && <div className="whitespace-pre-wrap break-words rounded-md bg-muted/50 p-4 text-sm">{node.content}</div>}
+          {node.content && (
+            <div
+              className="markdown-content min-w-0 max-w-full [overflow-wrap:anywhere] rounded-md bg-muted/50 p-4 text-sm"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(node.content) }}
+            />
+          )}
         </div>
 
         {tagCategories.length > 0 && (
@@ -507,7 +513,7 @@ export function GTDWorkflowDialog({
         {confirmingDelete ? (
           <section className="space-y-3 border-t pt-3" aria-label="Confirm deletion" data-workflow-step="">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertTriangle className="h-4 w-4" aria-hidden="true" />Delete this item?</h3>
-            <p className="break-words text-sm">This will permanently delete <strong>{node.name}</strong>{descendantCount > 0 && ` and ${descendantCount} child item${descendantCount === 1 ? "" : "s"}`}.</p>
+            <p className="[overflow-wrap:anywhere] text-sm">This will permanently delete <strong>{node.name}</strong>{descendantCount > 0 && ` and ${descendantCount} child item${descendantCount === 1 ? "" : "s"}`}.</p>
             <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
             {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">

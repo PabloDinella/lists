@@ -58,6 +58,11 @@ export const MultiSelectAutocomplete = React.forwardRef<
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    }, []);
 
     const inputValue = controlledInputValue ?? internalInputValue;
 
@@ -185,6 +190,17 @@ export const MultiSelectAutocomplete = React.forwardRef<
       <div
         ref={ref || containerRef}
         className={cn("relative", className)}
+        onBlur={(event) => {
+          const container = event.currentTarget;
+          if (event.relatedTarget instanceof Node && container.contains(event.relatedTarget)) return;
+          if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+          blurTimerRef.current = setTimeout(() => {
+            blurTimerRef.current = null;
+            if (container.contains(document.activeElement)) return;
+            setIsOpen(false);
+            setFocusedIndex(-1);
+          }, 0);
+        }}
         {...props}
       >
         <div
@@ -242,7 +258,10 @@ export const MultiSelectAutocomplete = React.forwardRef<
 
         {/* Dropdown list */}
         {isOpen && !disabled && (
-          <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+          <div
+            className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg"
+            onMouseDown={(event) => event.preventDefault()}
+          >
             <ul
               ref={listRef}
               className="py-1 overflow-auto"
