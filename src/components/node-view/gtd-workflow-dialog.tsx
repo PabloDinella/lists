@@ -444,7 +444,7 @@ export function GTDWorkflowDialog({
     }}>
       <DialogContent
         ref={dialogContentRef}
-        className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-x-hidden overflow-y-auto sm:max-w-2xl"
+        className="overflow-x-hidden sm:max-h-[90vh] sm:max-w-2xl sm:overflow-y-auto"
         onKeyDownCapture={handleShortcut}
         onEscapeKeyDown={(event) => {
           if (busy) {
