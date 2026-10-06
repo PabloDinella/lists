@@ -596,6 +596,7 @@ export function NodeView() {
             tree?.find((item) => item.id === refiningNode.id) || refiningNode;
           return (
             <EisenhowerMatrixDialog
+              key={currentLiveNode.id}
               node={currentLiveNode}
               userId={userId}
               isOpen={!!refiningNode}

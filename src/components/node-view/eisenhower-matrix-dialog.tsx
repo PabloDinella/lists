@@ -33,21 +33,30 @@ export function EisenhowerMatrixDialog({
 }: EisenhowerMatrixDialogProps) {
   const [selectedQuadrant, setSelectedQuadrant] =
     useState<EisenhowerQuadrant | null>(
-      (node.metadata?.eisenhowerQuadrant as EisenhowerQuadrant) || null,
+      node.metadata?.eisenhowerQuadrant ?? null,
     );
-  const [energy, setEnergy] = useState<string>(
-    node.metadata?.energy || "medium",
-  );
-  const [time, setTime] = useState<string>(node.metadata?.time || "medium");
+  const [energy, setEnergy] = useState(node.metadata?.energy ?? "");
+  const [time, setTime] = useState(node.metadata?.time ?? "");
   const [movedToSomedayMaybe, setMovedToSomedayMaybe] = useState(false);
 
   const updateNodeMutation = useUpdateNode();
   const { data: settings } = useSettings(userId);
 
-  // Reset the moved state when the node changes
+  const savedQuadrant = node.metadata?.eisenhowerQuadrant ?? null;
+  const savedEnergy = node.metadata?.energy ?? "";
+  const savedTime = node.metadata?.time ?? "";
+
+  // Each item starts with its own saved values; unselected fields stay blank.
   useEffect(() => {
-    setMovedToSomedayMaybe(false);
-  }, [node.id]);
+    if (!isOpen) return;
+    setSelectedQuadrant(savedQuadrant);
+    setEnergy(savedEnergy);
+    setTime(savedTime);
+  }, [node.id, isOpen, savedQuadrant, savedEnergy, savedTime]);
+
+  useEffect(() => {
+    if (isOpen) setMovedToSomedayMaybe(false);
+  }, [node.id, isOpen]);
 
   const handleClassify = () => {
     if (!selectedQuadrant) return;
@@ -57,8 +66,8 @@ export function EisenhowerMatrixDialog({
       userId,
       metadata: {
         eisenhowerQuadrant: selectedQuadrant,
-        energy,
-        time,
+        ...(energy && { energy }),
+        ...(time && { time }),
       },
     });
 
@@ -75,8 +84,8 @@ export function EisenhowerMatrixDialog({
         parentNode: settings.somedayMaybe,
         metadata: {
           eisenhowerQuadrant: selectedQuadrant || undefined,
-          energy,
-          time,
+          ...(energy && { energy }),
+          ...(time && { time }),
         },
       });
 
