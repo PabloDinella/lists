@@ -1,7 +1,10 @@
-import { createRxDatabase, type RxCollection, type RxDatabase } from "rxdb";
+import { addRxPlugin, createRxDatabase, type RxCollection, type RxDatabase } from "rxdb";
+import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import type { Tables } from "@/database.types";
 import { supabase } from "@/lib/supabase";
+
+addRxPlugin(RxDBQueryBuilderPlugin);
 
 export type NodeRow = Tables<"node">;
 export type RelationshipRow = Tables<"relationship">;
