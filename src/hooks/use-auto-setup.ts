@@ -4,6 +4,7 @@ import { useNewUserSetup } from "./use-new-user-setup";
 
 export function useAutoSetup(userId: string | null) {
   const newUserSetupMutation = useNewUserSetup();
+  const mutateSetup = newUserSetupMutation.mutateAsync;
   const setupInitiatedRef = useRef(new Set<string>());
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function useAutoSetup(userId: string | null) {
         const rootExists = (await store.nodes()).some(node =>
           node.user_id === userId && (node.metadata as { type?: string } | null)?.type === "root"
         );
-        if (!rootExists) await newUserSetupMutation.mutateAsync({ userId });
+        if (!rootExists) await mutateSetup({ userId });
         setupInitiatedRef.current.add(userId);
       } catch (error) {
         console.error("Failed to check or set up user:", error);
@@ -46,5 +47,5 @@ export function useAutoSetup(userId: string | null) {
       disposed = true;
       unsubscribe();
     };
-  }, [userId, newUserSetupMutation]);
+  }, [userId, mutateSetup]);
 }
