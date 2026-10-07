@@ -61,7 +61,7 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
   return (
     <>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="shrink-0 border-b">
           {/* Mobile: Two-row layout, Desktop: Single row */}
           <div className="md:hidden">
