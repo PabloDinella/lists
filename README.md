@@ -127,6 +127,9 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) and create a local account.
+Magic links for local accounts appear in the test inbox at
+[http://127.0.0.1:54324](http://127.0.0.1:54324); they are not sent to your
+regular email inbox. The sign-in screen links there after you request a link.
 The generated `.env.local` is ignored by Git and takes precedence over `.env` in
 Vite. Restart the dev server after changing between local and hosted databases.
 To test offline behavior, create an item, switch the browser's network to

@@ -60,10 +60,12 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [googleLoaded, setGoogleLoaded] = useState(false);
 
   const nextPath = getSafeNextPath(searchParams.get("next"));
   const redirectTo = `${window.location.origin}${nextPath}`;
+  const localMailUrl = import.meta.env.VITE_LOCAL_MAIL_URL;
 
   // Handle Google Sign-In response
   const handleGoogleSignIn = useCallback(async (response: GoogleCredentialResponse) => {
@@ -161,6 +163,7 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
     setLoading(true);
     setError(null);
     setMessage(null);
+    setMagicLinkSent(false);
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
       options: {
@@ -171,7 +174,10 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
     if (error) {
       setError(error.message);
     } else {
-      setMessage("Check your email for the login link!");
+      setMessage(localMailUrl
+        ? "Your login link is in the local test inbox."
+        : "Check your email for the login link!");
+      setMagicLinkSent(true);
       if (onSignIn) onSignIn();
     }
   };
@@ -243,7 +249,15 @@ export function SignIn({ onSignIn }: { onSignIn?: () => void }) {
               {loading ? "Sending..." : "Send Magic Link"}
             </Button>
             {error && <div className="text-destructive text-sm mt-2">{error}</div>}
-            {message && <div className="text-green-600 dark:text-green-400 text-sm mt-2">{message}</div>}
+            {message && <div className="text-green-600 dark:text-green-400 text-sm mt-2">
+              {message}
+              {magicLinkSent && localMailUrl && <a
+                href={localMailUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block underline mt-1"
+              >Open local test inbox</a>}
+            </div>}
           </form>
         </div>
       )}
