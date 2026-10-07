@@ -1,9 +1,7 @@
-import { createNode } from "@/method/access/nodeAccess/createNode";
-import { createRelationship } from "@/method/access/nodeAccess/createRelationship";
 import { Metadata } from "@/method/access/nodeAccess/models";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { GTDSettings } from "@/hooks/use-settings";
-import { Json } from "@/database.types";
+import { Tables } from "@/database.types";
 
 interface SeedNode {
   name: string;
@@ -15,6 +13,7 @@ interface SeedNode {
 
 export async function createSeedData(userId: string): Promise<Map<string, number>> {
   console.log("Creating seed data for user:", userId);
+  const store = await getOfflineStore(userId);
   
   // Comprehensive GTD structure with realistic sample data
   const seedNodes: SeedNode[] = [
@@ -635,10 +634,10 @@ export async function createSeedData(userId: string): Promise<Map<string, number
 
   // Create nodes recursively
   const nodeIdMap = new Map<string, number>();
-  await createNodesRecursively(seedNodes, null, userId, nodeIdMap);
+  await createNodesRecursively(seedNodes, null, userId, nodeIdMap, store);
 
   // Create relationships between nodes and their tags
-  await createTagRelationships(seedNodes, nodeIdMap, userId);
+  await createTagRelationships(seedNodes, nodeIdMap, userId, store);
 
   // Create default settings based on the created nodes
   await createDefaultSettings(userId, nodeIdMap);
@@ -664,14 +663,14 @@ async function createDefaultSettings(
   };
 
   // Insert the default settings
-  const { error } = await supabase.from("settings").upsert({
+  const store = await getOfflineStore(userId);
+  const existing = (await store.settings()).find(row => row.user_id === userId);
+  await store.upsertSettings({
+    id: existing?.id ?? store.newId(),
+    created_at: existing?.created_at ?? new Date().toISOString(),
     user_id: userId,
-    settings: defaultSettings as unknown as Json,
+    settings: defaultSettings as unknown as Tables<"settings">["settings"],
   });
-
-  if (error) {
-    throw new Error(`Failed to create default settings: ${error.message}`);
-  }
 }
 
 async function createNodesRecursively(
@@ -679,25 +678,23 @@ async function createNodesRecursively(
   parentId: number | null,
   userId: string,
   nodeIdMap: Map<string, number>,
+  store: Awaited<ReturnType<typeof getOfflineStore>>,
 ): Promise<void> {
   for (const node of nodes) {
-    const result = await createNode({
+    const id = store.newId();
+    await store.upsertNode({
+      id,
+      created_at: new Date().toISOString(),
       name: node.name,
-      content: node.description || undefined,
-      parentNode: parentId || undefined,
-      userId,
-      metadata: node.metadata,
+      content: node.description || null,
+      parent_node: parentId,
+      user_id: userId,
+      metadata: (node.metadata ?? null) as unknown as Tables<"node">["metadata"],
     });
-
-    if ("error" in result) {
-      throw new Error(`Failed to create node ${node.name}: ${result.error}`);
-    }
-
-    const nodeId = result.result.id;
-    nodeIdMap.set(node.name, nodeId);
+    nodeIdMap.set(node.name, id);
 
     if (node.children && node.children.length > 0) {
-      await createNodesRecursively(node.children, nodeId, userId, nodeIdMap);
+      await createNodesRecursively(node.children, id, userId, nodeIdMap, store);
     }
   }
 }
@@ -706,6 +703,7 @@ async function createTagRelationships(
   nodes: SeedNode[],
   nodeIdMap: Map<string, number>,
   userId: string,
+  store: Awaited<ReturnType<typeof getOfflineStore>>,
 ): Promise<void> {
   for (const node of nodes) {
     if (node.tags && node.tags.length > 0) {
@@ -714,16 +712,14 @@ async function createTagRelationships(
         for (const tagName of node.tags) {
           const tagId = nodeIdMap.get(tagName);
           if (tagId) {
-            const result = await createRelationship({
-              nodeId1: nodeId,
-              nodeId2: tagId,
-              relationType: "tagged_with",
-              userId,
+            await store.upsertRelationship({
+              id: store.newId(),
+              created_at: new Date().toISOString(),
+              node_id_1: nodeId,
+              node_id_2: tagId,
+              relation_type: "tagged_with",
+              user_id: userId,
             });
-
-            if ("error" in result) {
-              console.warn(`Failed to create relationship between ${node.name} and ${tagName}:`, result.error);
-            }
           }
         }
       }
@@ -731,7 +727,7 @@ async function createTagRelationships(
 
     // Recursively process children
     if (node.children) {
-      await createTagRelationships(node.children, nodeIdMap, userId);
+      await createTagRelationships(node.children, nodeIdMap, userId, store);
     }
   }
 }
@@ -739,15 +735,22 @@ async function createTagRelationships(
 // Function to clear all data for a user (useful for testing)
 export async function clearUserData(userId: string): Promise<void> {
   console.log("Clearing user data for:", userId);
+  const store = await getOfflineStore(userId);
   
   // Delete relationships first (due to foreign key constraints)
-  await supabase.from("relationship").delete().eq("user_id", userId);
+  for (const relationship of await store.relationships()) {
+    if (relationship.user_id === userId) await store.deleteRelationship(relationship.id);
+  }
   
   // Delete nodes
-  await supabase.from("node").delete().eq("user_id", userId);
+  for (const node of await store.nodes()) {
+    if (node.user_id === userId) await store.deleteNode(node.id);
+  }
   
   // Delete settings
-  await supabase.from("settings").delete().eq("user_id", userId);
+  for (const settings of await store.settings()) {
+    if (settings.user_id === userId) await store.deleteSettings(settings.id);
+  }
   
   console.log("User data cleared!");
 }

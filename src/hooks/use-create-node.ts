@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNodeManager } from "@/method/manager/productivityManager/createNode";
 import { Metadata } from "@/method/access/nodeAccess/models";
+import { unwrapResult } from "@/lib/unwrap-result";
 
 type CreateNodeParams = {
   name: string;
@@ -16,7 +17,7 @@ export function useCreateNode() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: CreateNodeParams) => createNodeManager(params),
+    mutationFn: async (params: CreateNodeParams) => unwrapResult(await createNodeManager(params)),
     onSuccess: (_, variables) => {
       // Invalidate nodes queries for this user
       queryClient.invalidateQueries({

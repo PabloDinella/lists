@@ -99,7 +99,7 @@ Ideas and thoughts that could turn into new features:
 
 4. Set up Supabase:
    - Create a new Supabase project
-   - Restore the app's `node`, `relationship`, and `settings` schema, then apply the migrations in `supabase/migrations/`. The original base schema is not fully tracked in this repository; see the deployment notes below.
+   - Apply the migrations in `supabase/migrations/`. The core `node`, `relationship`, and `settings` tables are included for fresh databases.
    - Configure authentication providers as needed
 
 5. Start the development server:
@@ -113,6 +113,29 @@ Ideas and thoughts that could turn into new features:
    ```
 
 6. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Local staging for offline sync
+
+Docker and the Supabase CLI are required. This uses a separate database on your
+machine, including local authentication and the RxDB sync API. It does not use
+the hosted project's data.
+
+```bash
+npx supabase start --exclude storage-api,imgproxy,studio,logflare,vector,edge-runtime,postgres-meta,supavisor
+npm run staging:configure
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) and create a local account.
+Magic links for local accounts appear in the test inbox at
+[http://127.0.0.1:54324](http://127.0.0.1:54324); they are not sent to your
+regular email inbox. The sign-in screen links there after you request a link.
+The generated `.env.local` is ignored by Git and takes precedence over `.env` in
+Vite. Restart the dev server after changing between local and hosted databases.
+To test offline behavior, create an item, switch the browser's network to
+offline, make another change, then reconnect and verify it appears after sync.
+Run `npx supabase stop` when finished. For a clean local database, run
+`npx supabase db reset` (without `--linked`); this deletes only local data.
 
 ## Personal Telegram bots
 
@@ -129,7 +152,7 @@ The integration uses two Supabase Edge Functions and the database migration in
    Supabase project. It enables Vault, creates private integration and update
    receipt tables, and adds service-only database functions. Inspect the
    project's existing `node` and `settings` schema and RLS policies before
-   applying the migration, since the original schema is not tracked here.
+   applying the migration.
 2. Set the Edge Function secret `TELEGRAM_WEBHOOK_BASE_URL` to the public URL of
    the `telegram-webhook` function (for example,
    `https://PROJECT.supabase.co/functions/v1/telegram-webhook`). The functions
@@ -165,15 +188,13 @@ dynamic client registration, and a consent page at `/oauth/consent`. Start the
 app at `http://localhost:5173`, serve the function with
 `npx supabase functions serve mcp`, and connect the MCP Inspector to
 `http://127.0.0.1:54321/functions/v1/mcp` using Streamable HTTP. Sign in and
-approve the request in the app's consent page. The current migrations do not
-recreate the latest `node` and `settings` schema locally, so data tool testing
-against a fresh local database also requires restoring that schema.
+approve the request in the app's consent page. The migrations recreate the
+current `node` and `settings` schema locally.
 
 Before production deployment:
 
 1. Inspect the `node` and `settings` schema and RLS policies on the target
-   database. Those tables are absent from this repository's original schema
-   migrations. The linked project had owner-scoped RLS on both tables when
+   database. The linked project had owner-scoped RLS on both tables when
    inspected on 2026-09-30. Confirm this on any other project before enabling
    OAuth. The function's explicit user filters are a second guard, not a
    replacement for database policies.

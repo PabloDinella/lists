@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
+import { Tables } from "@/database.types";
 import { Metadata } from "@/method/access/nodeAccess/models";
 
 export interface NirvanaRow {
@@ -51,6 +52,7 @@ export function useImportNirvana() {
       tagMappings: TagMapping;
       ignoreCompleted?: boolean;
     }) => {
+      const store = await getOfflineStore(userId);
       const results = [];
       const startTime = Date.now();
       
@@ -70,21 +72,14 @@ export function useImportNirvana() {
         console.log("Creating Logbook list node...");
         
         // Find the root node (parent_node is null)
-        const rootNodeQuery = await supabase
-          .from("node")
-          .select("id")
-          .eq("user_id", userId)
-          .is("parent_node", null)
-          .single();
-        
-        if (rootNodeQuery.error) throw rootNodeQuery.error;
-        
-        const rootNodeId = rootNodeQuery.data.id;
+        const rootNode = (await store.nodes()).find(node => node.user_id === userId && node.parent_node === null);
+        if (!rootNode) throw new Error("Could not find the root node for this user.");
+        const rootNodeId = rootNode.id;
         
         // Create the Logbook node as a child of root
-        const { data: logbookNodeData, error: logbookNodeError } = await supabase
-          .from("node")
-          .insert({
+        const logbookNodeData: Tables<"node"> = {
+            id: store.newId(),
+            created_at: new Date().toISOString(),
             name: "Logbook",
             content: null,
             parent_node: rootNodeId,
@@ -92,11 +87,8 @@ export function useImportNirvana() {
             metadata: {
               type: "list" as const,
             }
-          })
-          .select()
-          .single();
-        
-        if (logbookNodeError) throw logbookNodeError;
+          };
+        await store.upsertNode(logbookNodeData);
         
         logbookNodeId = logbookNodeData.id;
         results.push(logbookNodeData);
@@ -121,16 +113,11 @@ export function useImportNirvana() {
         console.log(`Processing ${allTags.size} tags...`);
         
         // First, check for existing tags in both Contexts and Areas of Focus
-        const existingTagsQuery = await supabase
-          .from("node")
-          .select("id, name, parent_node")
-          .eq("user_id", userId)
-          .in("parent_node", [mapping.contexts, mapping.areasOfFocus].filter(Boolean))
-          .eq("metadata->>type", "tag");
-        
-        if (existingTagsQuery.error) throw existingTagsQuery.error;
-        
-        const existingTags = existingTagsQuery.data || [];
+        const parents = [mapping.contexts, mapping.areasOfFocus].filter((id): id is number => id !== null);
+        const existingTags = (await store.nodes()).filter(tag =>
+          tag.user_id === userId && tag.parent_node !== null && parents.includes(tag.parent_node) &&
+          (tag.metadata as { type?: string } | null)?.type === "tag"
+        );
         
         // Map existing tags by name
         existingTags.forEach(tag => {
@@ -158,7 +145,9 @@ export function useImportNirvana() {
         // Create context tags
         if (contextTags.length > 0 && mapping.contexts) {
           console.log(`Creating ${contextTags.length} new context tags...`);
-          const contextTagsToInsert = contextTags.map(tagName => ({
+          const contextTagsToInsert: Tables<"node">[] = contextTags.map(tagName => ({
+            id: store.newId(),
+            created_at: new Date().toISOString(),
             name: tagName,
             content: null,
             parent_node: mapping.contexts!,
@@ -168,14 +157,9 @@ export function useImportNirvana() {
             }
           }));
           
-          const { data: contextTagsData, error: contextTagsError } = await supabase
-            .from("node")
-            .insert(contextTagsToInsert)
-            .select();
-          
-          if (contextTagsError) throw contextTagsError;
-          
-          if (contextTagsData) {
+          await Promise.all(contextTagsToInsert.map(tag => store.upsertNode(tag)));
+          {
+            const contextTagsData = contextTagsToInsert;
             contextTagsData.forEach(tag => {
               tagIdMap.set(tag.name, tag.id);
             });
@@ -186,7 +170,9 @@ export function useImportNirvana() {
         // Create area of focus tags
         if (areaOfFocusTags.length > 0 && mapping.areasOfFocus) {
           console.log(`Creating ${areaOfFocusTags.length} new area of focus tags...`);
-          const areaTagsToInsert = areaOfFocusTags.map(tagName => ({
+          const areaTagsToInsert: Tables<"node">[] = areaOfFocusTags.map(tagName => ({
+            id: store.newId(),
+            created_at: new Date().toISOString(),
             name: tagName,
             content: null,
             parent_node: mapping.areasOfFocus!,
@@ -196,14 +182,9 @@ export function useImportNirvana() {
             }
           }));
           
-          const { data: areaTagsData, error: areaTagsError } = await supabase
-            .from("node")
-            .insert(areaTagsToInsert)
-            .select();
-          
-          if (areaTagsError) throw areaTagsError;
-          
-          if (areaTagsData) {
+          await Promise.all(areaTagsToInsert.map(tag => store.upsertNode(tag)));
+          {
+            const areaTagsData = areaTagsToInsert;
             areaTagsData.forEach(tag => {
               tagIdMap.set(tag.name, tag.id);
             });
@@ -231,6 +212,8 @@ export function useImportNirvana() {
             
             return {
               node: {
+                id: store.newId(),
+                created_at: new Date().toISOString(),
                 name: row.NAME,
                 content: row.NOTES || null,
                 parent_node: parentId,
@@ -250,14 +233,9 @@ export function useImportNirvana() {
         if (projectsWithTags.length > 0) {
           const projectsToInsert = projectsWithTags.map(item => item.node);
           
-          const { data: projectsData, error: projectsError } = await supabase
-            .from("node")
-            .insert(projectsToInsert)
-            .select();
-          
-          if (projectsError) throw projectsError;
-          
-          if (projectsData) {
+          await Promise.all(projectsToInsert.map(project => store.upsertNode(project)));
+          {
+            const projectsData = projectsToInsert;
             // Map project names to their IDs
             projectsData.forEach((project, index) => {
               const originalName = projectsWithTags[index].originalName;
@@ -275,8 +253,11 @@ export function useImportNirvana() {
                 const tagId = tagIdMap.get(tagName);
                 if (tagId) {
                   relationshipsToInsert.push({
+                    id: store.newId(),
+                    created_at: new Date().toISOString(),
                     node_id_1: project.id,
                     node_id_2: tagId,
+                    relation_type: "tagged_with",
                     user_id: userId
                   });
                 }
@@ -285,11 +266,7 @@ export function useImportNirvana() {
             
             if (relationshipsToInsert.length > 0) {
               console.log(`Creating ${relationshipsToInsert.length} project tag relationships...`);
-              const { error: relationshipsError } = await supabase
-                .from("relationship")
-                .insert(relationshipsToInsert);
-              
-              if (relationshipsError) throw relationshipsError;
+              await Promise.all(relationshipsToInsert.map(relationship => store.upsertRelationship(relationship)));
             }
           }
         }
@@ -361,6 +338,8 @@ export function useImportNirvana() {
             
             return {
               node: {
+                id: store.newId(),
+                created_at: new Date().toISOString(),
                 name: row.NAME,
                 content: row.NOTES || null,
                 parent_node: parentId,
@@ -375,14 +354,9 @@ export function useImportNirvana() {
         if (tasksWithTags.length > 0) {
           const tasksToInsert = tasksWithTags.map(item => item.node);
           
-          const { data: tasksData, error: tasksError } = await supabase
-            .from("node")
-            .insert(tasksToInsert)
-            .select();
-          
-          if (tasksError) throw tasksError;
-          
-          if (tasksData) {
+          await Promise.all(tasksToInsert.map(task => store.upsertNode(task)));
+          {
+            const tasksData = tasksToInsert;
             results.push(...tasksData);
             
             // Create relationships between tasks and tags
@@ -395,8 +369,11 @@ export function useImportNirvana() {
                 const tagId = tagIdMap.get(tagName);
                 if (tagId) {
                   relationshipsToInsert.push({
+                    id: store.newId(),
+                    created_at: new Date().toISOString(),
                     node_id_1: task.id,
                     node_id_2: tagId,
+                    relation_type: "tagged_with",
                     user_id: userId
                   });
                 }
@@ -405,11 +382,7 @@ export function useImportNirvana() {
             
             if (relationshipsToInsert.length > 0) {
               console.log(`Creating ${relationshipsToInsert.length} tag relationships...`);
-              const { error: relationshipsError } = await supabase
-                .from("relationship")
-                .insert(relationshipsToInsert);
-              
-              if (relationshipsError) throw relationshipsError;
+              await Promise.all(relationshipsToInsert.map(relationship => store.upsertRelationship(relationship)));
             }
           }
         }

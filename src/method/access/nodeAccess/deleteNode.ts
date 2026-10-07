@@ -1,32 +1,12 @@
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 
-type DeleteNodeParams = {
-  nodeId: number;
-  userId: string;
-};
+type DeleteNodeParams = { nodeId: number; userId: string };
+type DeleteNodeResult = { result: { success: true } } | { error: unknown };
 
-type DeleteNodeResult =
-  | {
-      result: { success: true };
-    }
-  | {
-      error: unknown;
-    };
-
-export async function deleteNode(
-  params: DeleteNodeParams
-): Promise<DeleteNodeResult> {
-  const { error } = await supabase
-    .from("node")
-    .delete()
-    .eq("id", params.nodeId)
-    .eq("user_id", params.userId);
-
-  if (error) {
-    return { error };
-  }
-
-  return {
-    result: { success: true },
-  };
+export async function deleteNode(params: DeleteNodeParams): Promise<DeleteNodeResult> {
+  try {
+    const store = await getOfflineStore(params.userId);
+    await store.deleteNode(params.nodeId);
+    return { result: { success: true } };
+  } catch (error) { return { error }; }
 }

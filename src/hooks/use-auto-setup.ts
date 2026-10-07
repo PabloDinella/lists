@@ -1,38 +1,51 @@
 import { useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { useNewUserSetup } from "./use-new-user-setup";
 
 export function useAutoSetup(userId: string | null) {
   const newUserSetupMutation = useNewUserSetup();
+  const mutateSetup = newUserSetupMutation.mutateAsync;
   const setupInitiatedRef = useRef(new Set<string>());
 
   useEffect(() => {
+    if (!userId || setupInitiatedRef.current.has(userId)) return;
+    let disposed = false;
+    let inProgress = false;
+    let unsubscribe = () => {};
+
     const checkAndSetupUser = async () => {
-      if (!userId || setupInitiatedRef.current.has(userId)) {
-        return;
-      }
-
+      if (disposed || inProgress || !userId || setupInitiatedRef.current.has(userId)) return;
+      inProgress = true;
       try {
-        // Check if user has any nodes with metadata.type == 'root'
-        const { data: rootNodes } = await supabase
-          .from("node")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("metadata->>type", "root")
-          .limit(1);
-
-        // If no root nodes exist, set up the user
-        if (!rootNodes || rootNodes.length === 0) {
-          setupInitiatedRef.current.add(userId);
-          await newUserSetupMutation.mutateAsync({ userId });
-        }
+        const store = await getOfflineStore(userId);
+        // Never mistake an empty, not-yet-synced cache for a new account.
+        if (!store.status().initialSyncComplete) return;
+        const rootExists = (await store.nodes()).some(node =>
+          node.user_id === userId && (node.metadata as { type?: string } | null)?.type === "root"
+        );
+        if (!rootExists) await mutateSetup({ userId });
+        setupInitiatedRef.current.add(userId);
       } catch (error) {
         console.error("Failed to check or set up user:", error);
-        // Remove from initiated set on error so we can retry
-        setupInitiatedRef.current.delete(userId);
+      } finally {
+        inProgress = false;
       }
     };
 
-    checkAndSetupUser();
-  }, [userId, newUserSetupMutation]);
+    void (async () => {
+      try {
+        const store = await getOfflineStore(userId);
+        unsubscribe = store.subscribe(() => void checkAndSetupUser());
+        await store.ready;
+        await checkAndSetupUser();
+      } catch (error) {
+        console.error("Failed to initialize offline store for setup:", error);
+      }
+    })();
+
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, [userId, mutateSetup]);
 }

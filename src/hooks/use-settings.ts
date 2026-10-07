@@ -1,6 +1,7 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { Json } from "@/database.types";
+import { getOfflineStore } from "@/lib/offline";
+import type { Json } from "@/database.types";
 
 export interface GTDSettings {
   inbox: number | null;
@@ -14,36 +15,44 @@ export interface GTDSettings {
   scheduled: number | null;
 }
 
+const defaultSettings: GTDSettings = {
+  inbox: null,
+  nextActions: null,
+  waiting: null,
+  projects: null,
+  somedayMaybe: null,
+  contexts: null,
+  areasOfFocus: null,
+  reference: null,
+  scheduled: null,
+};
+
 export function useSettings(userId: string | null) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!userId) return;
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+    getOfflineStore(userId).then((store) => {
+      if (!disposed) {
+        unsubscribe = store.subscribe(() => {
+          queryClient.invalidateQueries({ queryKey: ["settings", userId] });
+        });
+      }
+    }).catch(console.error);
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, [userId, queryClient]);
+
   return useQuery({
     queryKey: ["settings", userId],
     queryFn: async () => {
       if (!userId) return null;
-      
-      const { data, error } = await supabase
-        .from("settings")
-        .select("settings")
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      
-      // Return default settings if no settings exist
-      if (!data) {
-        return {
-          inbox: null,
-          nextActions: null,
-          waiting: null,
-          projects: null,
-          somedayMaybe: null,
-          contexts: null,
-          areasOfFocus: null,
-          reference: null,
-          scheduled: null,
-        } as GTDSettings;
-      }
-      
-      return data.settings as unknown as GTDSettings;
+      const store = await getOfflineStore(userId);
+      const row = (await store.settings())[0];
+      return row?.settings ? row.settings as unknown as GTDSettings : defaultSettings;
     },
     enabled: !!userId,
   });
@@ -51,36 +60,18 @@ export function useSettings(userId: string | null) {
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ userId, settings }: { userId: string; settings: GTDSettings }) => {
-      // First, try to update existing settings
-      const { data: updateData, error: updateError } = await supabase
-        .from("settings")
-        .update({
-          settings: settings as unknown as Json,
-        })
-        .eq("user_id", userId)
-        .select()
-        .maybeSingle();
-      
-      // If no rows were updated (user doesn't have settings yet), insert new record
-      if (!updateError && updateData) {
-        return updateData;
-      }
-      
-      // Insert new settings record
-      const { data: insertData, error: insertError } = await supabase
-        .from("settings")
-        .insert({
-          user_id: userId,
-          settings: settings as unknown as Json,
-        })
-        .select()
-        .single();
-      
-      if (insertError) throw insertError;
-      return insertData;
+      const store = await getOfflineStore(userId);
+      const existing = (await store.settings())[0];
+      const row = {
+        id: existing?.id ?? store.newId(),
+        created_at: existing?.created_at ?? new Date().toISOString(),
+        user_id: userId,
+        settings: settings as unknown as Json,
+      };
+      await store.upsertSettings(row);
+      return row;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["settings", variables.userId] });

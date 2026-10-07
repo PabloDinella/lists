@@ -25,6 +25,7 @@ import { useNodeId } from "@/hooks/use-node-id";
 import { useSettings } from "@/hooks/use-settings";
 import { TreeNode, useListData } from "./use-list-data";
 import { Metadata, Node } from "@/method/access/nodeAccess/models";
+import { getOutgoingTagIds } from "@/lib/local-node-view";
 
 interface EditNodeSheetProps {
   node: Node | null; // The node being edited (null for create)
@@ -128,9 +129,7 @@ export function EditNodeSheet({
   );
 
   const getSelectedTagIds = (relatedNodes: Node["related_nodes"] = []) =>
-    relatedNodes
-      .filter((relatedNode) => relatedNode.relation_type === "tagged_with")
-      .map((relatedNode) => relatedNode.id);
+    getOutgoingTagIds({ related_nodes: relatedNodes });
 
   // Initialize form with react-hook-form
   const form = useForm<FormData>({

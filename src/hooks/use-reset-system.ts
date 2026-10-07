@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { createDefaultStructure } from "@/lib/default-structure";
 
 export function useResetSystem() {
@@ -26,21 +26,19 @@ export function useResetSystem() {
 }
 
 async function deleteAllUserData(userId: string) {
+  const store = await getOfflineStore(userId);
   // Delete all nodes for this user (cascading will handle children)
-  const { error: nodesError } = await supabase
-    .from("node")
-    .delete()
-    .eq("user_id", userId);
-
-  if (nodesError) throw nodesError;
+  for (const relationship of await store.relationships()) {
+    if (relationship.user_id === userId) await store.deleteRelationship(relationship.id);
+  }
+  for (const node of await store.nodes()) {
+    if (node.user_id === userId) await store.deleteNode(node.id);
+  }
 
   // Delete settings for this user
-  const { error: settingsError } = await supabase
-    .from("settings")
-    .delete()
-    .eq("user_id", userId);
-
-  if (settingsError) throw settingsError;
+  for (const settings of await store.settings()) {
+    if (settings.user_id === userId) await store.deleteSettings(settings.id);
+  }
 
   // Delete any other user data (tasks, projects, areas) if they exist
   // Note: These tables might not exist in the current schema, so we skip them for now
