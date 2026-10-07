@@ -38,6 +38,7 @@
     "react-hook-form": "^7.62.0",
     "react-movable": "^3.4.1",
     "react-router-dom": "^7.6.3",
+    "rxdb": "^17.6.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.17"

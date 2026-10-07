@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 
 type SetNodeCategoryTagsParams = {
   userId: string;
@@ -8,75 +8,37 @@ type SetNodeCategoryTagsParams = {
   selectedTagIds: number[];
 };
 
-/** Sets the selected tags for one category, preserving every other relationship. */
+/** Replaces this category's tag links while preserving every other relationship. */
 export function useSetNodeCategoryTags() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async ({
-      userId,
-      nodeId,
-      categoryTagIds,
-      selectedTagIds,
-    }: SetNodeCategoryTagsParams) => {
-      const { data: relationships, error: readError } = await supabase
-        .from("relationship")
-        .select("id, node_id_1, node_id_2, relation_type")
-        .eq("user_id", userId)
-        .or(`node_id_1.eq.${nodeId},node_id_2.eq.${nodeId}`);
-
-      if (readError) throw readError;
-
-      const categoryIds = new Set(categoryTagIds);
-      const selectedIds = new Set(selectedTagIds.filter((id) => categoryIds.has(id)));
-      const categoryRelationships = (relationships ?? []).flatMap((relationship) => {
-        if (relationship.relation_type !== "tagged_with") return [];
-
-        const otherNodeId = relationship.node_id_1 === nodeId
-          ? relationship.node_id_2
-          : relationship.node_id_2 === nodeId
-            ? relationship.node_id_1
-            : null;
-
-        return otherNodeId !== null && otherNodeId !== undefined && categoryIds.has(otherNodeId)
-          ? [{ id: relationship.id, otherNodeId }]
-          : [];
+    mutationFn: async ({ userId, nodeId, categoryTagIds, selectedTagIds }: SetNodeCategoryTagsParams) => {
+      const store = await getOfflineStore(userId);
+      const category = new Set(categoryTagIds);
+      const selected = new Set(selectedTagIds.filter((id) => category.has(id)));
+      const links = (await store.relationships()).flatMap((edge) => {
+        if (edge.relation_type !== "tagged_with") return [];
+        const other = edge.node_id_1 === nodeId ? edge.node_id_2 : null;
+        return other !== null && category.has(other) ? [{ edge, other }] : [];
       });
-
-      const relationshipIdsToDelete = categoryRelationships
-        .filter(({ otherNodeId }) => !selectedIds.has(otherNodeId))
-        .map(({ id }) => id);
-
-      if (relationshipIdsToDelete.length > 0) {
-        const { error } = await supabase
-          .from("relationship")
-          .delete()
-          .eq("user_id", userId)
-          .in("id", relationshipIdsToDelete);
-        if (error) throw error;
+      for (const { edge, other } of links) {
+        if (!selected.has(other)) await store.deleteRelationship(edge.id);
       }
-
-      const existingTagIds = new Set(categoryRelationships.map(({ otherNodeId }) => otherNodeId));
-      const missingTagIds = [...selectedIds].filter((id) => !existingTagIds.has(id));
-
-      if (missingTagIds.length > 0) {
-        const { error } = await supabase.from("relationship").insert(
-          missingTagIds.map((tagId) => ({
-            user_id: userId,
-            node_id_1: nodeId,
-            node_id_2: tagId,
-            relation_type: "tagged_with",
-          }))
-        );
-        if (error) throw error;
+      const existing = new Set(links.map(({ other }) => other));
+      for (const tagId of selected) {
+        if (existing.has(tagId)) continue;
+        await store.upsertRelationship({
+          id: store.newId(),
+          created_at: new Date().toISOString(),
+          user_id: userId,
+          node_id_1: nodeId,
+          node_id_2: tagId,
+          relation_type: "tagged_with",
+        });
       }
     },
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["nodes", variables.userId] });
-    },
-    onError: async (_error, variables) => {
-      // A delete may succeed before a later insert fails; refresh either way.
-      await queryClient.invalidateQueries({ queryKey: ["nodes", variables.userId] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["nodes", variables.userId] });
     },
   });
 }

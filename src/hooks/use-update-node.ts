@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateNodeManager } from "@/method/manager/productivityManager/updateNode";
 import { Metadata } from "@/method/access/nodeAccess/models";
+import { unwrapResult } from "@/lib/unwrap-result";
 
 type UpdateNodeParams = {
   nodeId: number;
@@ -17,7 +18,7 @@ export function useUpdateNode() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: UpdateNodeParams) => updateNodeManager(params),
+    mutationFn: async (params: UpdateNodeParams) => unwrapResult(await updateNodeManager(params)),
     onSuccess: (_, variables) => {
       // Invalidate all nodes queries for this user
       queryClient.invalidateQueries({

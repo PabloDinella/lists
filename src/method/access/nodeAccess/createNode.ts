@@ -1,104 +1,33 @@
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { Metadata, metadataSchema, Node } from "./models";
 import { createRelationship } from "./createRelationship";
 
 type CreateNodeParams = {
-  name: string;
-  content?: string;
-  parentNode?: number;
-  userId: string;
-  metadata?: Metadata;
-  relatedNodeIds?: number[];
-  relationType?: string;
+  name: string; content?: string; parentNode?: number; userId: string;
+  metadata?: Metadata; relatedNodeIds?: number[]; relationType?: string;
 };
+type CreateNodeResult = { result: Node } | { error: unknown };
 
-type CreateNodeResult =
-  | {
-      result: Node;
+export async function createNode(params: CreateNodeParams): Promise<CreateNodeResult> {
+  try {
+    const store = await getOfflineStore(params.userId);
+    let finalMetadata = params.metadata;
+    if (!params.metadata && params.parentNode !== undefined) {
+      const parent = (await store.nodes()).find((node) => node.id === params.parentNode && node.user_id === params.userId);
+      const defaults = metadataSchema.safeParse(parent?.metadata).data?.defaultChildrenMetadata;
+      if (defaults) finalMetadata = { ...defaults, defaultChildrenMetadata: defaults };
     }
-  | {
-      error: unknown;
+    const row = {
+      id: store.newId(), name: params.name, content: params.content || null,
+      parent_node: params.parentNode ?? null, user_id: params.userId,
+      created_at: new Date().toISOString(), metadata: finalMetadata ?? null,
     };
-
-export async function createNode(
-  params: CreateNodeParams
-): Promise<CreateNodeResult> {
-  let finalMetadata = params.metadata;
-
-  // If no metadata is provided and there's a parent node, check for defaultChildrenMetadata
-  if (!params.metadata && params.parentNode) {
-    const { data: parentNode, error: parentError } = await supabase
-      .from("node")
-      .select("metadata")
-      .eq("id", params.parentNode)
-      .eq("user_id", params.userId)
-      .single();
-
-    if (!parentError && parentNode && parentNode.metadata) {
-      const parentMetadata = metadataSchema.safeParse(parentNode.metadata).data;
-      if (parentMetadata?.defaultChildrenMetadata) {
-        finalMetadata = {
-          ...parentMetadata.defaultChildrenMetadata,
-          // Inherit the same defaultChildrenMetadata so this node can pass it to its children
-          defaultChildrenMetadata: parentMetadata.defaultChildrenMetadata,
-        };
-      }
+    await store.upsertNode(row);
+    for (const relatedNodeId of params.relatedNodeIds ?? []) {
+      const linked = await createRelationship({ nodeId1: row.id, nodeId2: relatedNodeId,
+        relationType: params.relationType || "tagged_with", userId: params.userId });
+      if ("error" in linked) return linked;
     }
-  }
-
-  const newNode = {
-    name: params.name,
-    content: params.content || null,
-    parent_node: params.parentNode || null,
-    user_id: params.userId,
-    metadata: finalMetadata || null,
-  };
-
-  const { data, error } = await supabase
-    .from("node")
-    .insert([newNode])
-    .select()
-    .single();
-
-  if (error) {
-    return { error };
-  }
-
-  if (!data) {
-    return {
-      error: "No data returned",
-    };
-  }
-
-  // Create relationships if provided
-  if (params.relatedNodeIds && params.relatedNodeIds.length > 0) {
-    const relationType = params.relationType || "tagged_with";
-    
-    for (const relatedNodeId of params.relatedNodeIds) {
-      const relationshipResult = await createRelationship({
-        nodeId1: data.id,
-        nodeId2: relatedNodeId,
-        relationType: relationType,
-        userId: params.userId,
-      });
-
-      // Log relationship creation errors but don't fail the entire operation
-      if ("error" in relationshipResult) {
-        console.error("Failed to create relationship:", relationshipResult.error);
-      }
-    }
-  }
-
-  return {
-    result: {
-      id: data.id,
-      name: data.name,
-      content: data.content,
-      parent_node: data.parent_node,
-      user_id: data.user_id!,
-      created_at: data.created_at,
-      metadata: metadataSchema.safeParse(data.metadata).data || null,
-      related_nodes: [],
-    },
-  };
+    return { result: { ...row, metadata: metadataSchema.safeParse(row.metadata).data ?? null, related_nodes: [] } };
+  } catch (error) { return { error }; }
 }

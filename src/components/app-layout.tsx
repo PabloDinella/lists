@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
 import { EditNodeSheet } from "./node-view/edit-node-sheet";
 import { ShortcutHint } from "./ui/shortcut-hint";
+import { SyncStatus } from "./sync-status";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -70,6 +71,7 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
               <SidebarTrigger />
               <ShortcutHint shortcut="Mod+B" />
               <div className="text-lg font-semibold truncate flex-1">{title}</div>
+              <SyncStatus userId={user?.id ?? null} />
             </div>
             {/* Second row: Search + New Item button */}
             <div className="flex h-12 items-center gap-2 px-4 border-t">
@@ -112,6 +114,7 @@ export function AppLayout({ children, title, searchNodes = [] }: AppLayoutProps)
               <SearchInput nodes={searchNodes} />
             </div>
             <ModeToggle />
+            <SyncStatus userId={user?.id ?? null} />
           </div>
 
           {/* Mode toggle for mobile - positioned absolutely */}

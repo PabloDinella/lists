@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { createDefaultStructure } from "@/lib/default-structure";
 
 export function useNewUserSetup() {
@@ -7,12 +7,9 @@ export function useNewUserSetup() {
 
   return useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
+      const store = await getOfflineStore(userId);
       // Check if user already has nodes
-      const { data: existingNodes } = await supabase
-        .from("node")
-        .select("id")
-        .eq("user_id", userId)
-        .limit(1);
+      const existingNodes = (await store.nodes()).filter(node => node.user_id === userId);
 
       // If user already has nodes, don't create default structure
       if (existingNodes && existingNodes.length > 0) {

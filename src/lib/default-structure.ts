@@ -1,8 +1,7 @@
-import { createNode } from "@/method/access/nodeAccess/createNode";
 import { Metadata } from "@/method/access/nodeAccess/models";
-import { supabase } from "@/lib/supabase";
+import { getOfflineStore } from "@/lib/offline";
 import { GTDSettings } from "@/hooks/use-settings";
-import { Json } from "@/database.types";
+import { Tables } from "@/database.types";
 
 interface DefaultNode {
   name: string;
@@ -14,6 +13,7 @@ interface DefaultNode {
 export async function createDefaultStructure(
   userId: string,
 ): Promise<Map<string, number>> {
+  const store = await getOfflineStore(userId);
   // Default GTD structure as JSON
   const defaultNodes: DefaultNode[] = [
     {
@@ -182,7 +182,7 @@ export async function createDefaultStructure(
 
   // Create nodes recursively
   const nodeIdMap = new Map<string, number>();
-  await createNodesRecursively(defaultNodes, null, userId, nodeIdMap);
+  await createNodesRecursively(defaultNodes, null, userId, nodeIdMap, store);
 
   // Create default settings based on the created nodes
   await createDefaultSettings(userId, nodeIdMap);
@@ -207,14 +207,14 @@ async function createDefaultSettings(
   };
 
   // Insert the default settings
-  const { error } = await supabase.from("settings").upsert({
+  const store = await getOfflineStore(userId);
+  const existing = (await store.settings()).find(row => row.user_id === userId);
+  await store.upsertSettings({
+    id: existing?.id ?? store.newId(),
+    created_at: existing?.created_at ?? new Date().toISOString(),
     user_id: userId,
-    settings: defaultSettings as unknown as Json,
+    settings: defaultSettings as unknown as Tables<"settings">["settings"],
   });
-
-  if (error) {
-    throw new Error(`Failed to create default settings: ${error.message}`);
-  }
 }
 
 async function createNodesRecursively(
@@ -222,25 +222,23 @@ async function createNodesRecursively(
   parentId: number | null,
   userId: string,
   nodeIdMap: Map<string, number>,
+  store: Awaited<ReturnType<typeof getOfflineStore>>,
 ): Promise<void> {
   for (const node of nodes) {
-    const result = await createNode({
+    const id = store.newId();
+    await store.upsertNode({
+      id,
+      created_at: new Date().toISOString(),
       name: node.name,
-      content: node.description || undefined,
-      parentNode: parentId || undefined,
-      userId,
-      metadata: node.metadata,
+      content: node.description || null,
+      parent_node: parentId,
+      user_id: userId,
+      metadata: (node.metadata ?? null) as unknown as Tables<"node">["metadata"],
     });
-
-    if ("error" in result) {
-      throw new Error(`Failed to create node ${node.name}: ${result.error}`);
-    }
-
-    const nodeId = result.result.id;
-    nodeIdMap.set(node.name, nodeId);
+    nodeIdMap.set(node.name, id);
 
     if (node.children && node.children.length > 0) {
-      await createNodesRecursively(node.children, nodeId, userId, nodeIdMap);
+      await createNodesRecursively(node.children, id, userId, nodeIdMap, store);
     }
   }
 }

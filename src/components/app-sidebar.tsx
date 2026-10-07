@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TreeNode, useListData } from "./node-view/use-list-data";
 import { useAuth } from "@/hooks/use-auth";
+import { forgetOfflineIdentity } from "@/lib/offline-identity";
 
 // Other sections
 const otherItems = [
@@ -228,6 +229,7 @@ export function AppSidebar() {
 
   // Sign out function
   const handleSignOut = async () => {
+    forgetOfflineIdentity();
     await supabase.auth.signOut();
     navigate("/sign-in");
   };
