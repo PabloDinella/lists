@@ -1,7 +1,8 @@
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEscapeToClose } from "./use-escape-to-close";
 
 export interface Option {
   id: string | number;
@@ -58,6 +59,19 @@ export const MultiSelectAutocomplete = React.forwardRef<
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const getContainer = useCallback(
+      () => (ref && "current" in ref ? ref.current : containerRef.current),
+      [ref]
+    );
+
+    const closeOptions = useCallback(() => {
+      setIsOpen(false);
+      setFocusedIndex(-1);
+    }, []);
+
+    // Escape closes only the options, not a surrounding sheet or dialog
+    useEscapeToClose(isOpen, getContainer, closeOptions);
     const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => () => {
@@ -264,6 +278,8 @@ export const MultiSelectAutocomplete = React.forwardRef<
           >
             <ul
               ref={listRef}
+              // Scrollable lists are tab stops in Chrome; keep Tab moving to the next field
+              tabIndex={-1}
               className="py-1 overflow-auto"
               style={{ maxHeight }}
             >
